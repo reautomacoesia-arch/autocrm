@@ -20,7 +20,7 @@ export default async function TasksPage() {
         <h1 className="text-white text-2xl font-bold">Tarefas</h1>
         <p className="text-slate-400 text-sm mt-1">{pendingCount} pendente(s)</p>
       </div>
-      <TaskList initialTasks={tasks} clients={clients} onTaskAdded={() => {}} />
+      <TaskList initialTasks={tasks} clients={clients} />
     </div>
   )
 }

@@ -43,10 +43,10 @@ function isOverdue(dateStr: string | null, status: TaskStatus): boolean {
 interface TaskListProps {
   initialTasks: Task[]
   clients: Client[]
-  onTaskAdded: (task: Task) => void
+  onTaskAdded?: (task: Task) => void
 }
 
-export default function TaskList({ initialTasks, clients, onTaskAdded }: TaskListProps) {
+export default function TaskList({ initialTasks, clients, onTaskAdded = () => {} }: TaskListProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [filter, setFilter] = useState<TaskStatus | 'all'>('all')
