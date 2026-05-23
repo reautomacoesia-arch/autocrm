@@ -6,6 +6,7 @@ import OnboardingTab from './OnboardingTab'
 import ProjectsTab from './ProjectsTab'
 import HistoryTab from './HistoryTab'
 import TasksTab from './TasksTab'
+import ProposalsTab from './ProposalsTab'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
 import { Building2, DollarSign, Mail, Phone } from 'lucide-react'
@@ -112,9 +113,7 @@ export default function ClientFolder({ client, activeTab }: ClientFolderProps) {
       {activeTab === 'onboarding' && <OnboardingTab clientId={client.id} />}
       {activeTab === 'projects' && <ProjectsTab clientId={client.id} />}
       {activeTab === 'proposals' && (
-        <div className="text-center py-16 text-slate-500 text-sm">
-          Módulo de Propostas — disponível no Plano 3.
-        </div>
+        <ProposalsTab clientId={client.id} clientName={client.name} />
       )}
       {activeTab === 'financial' && (
         <div className="text-center py-16 text-slate-500 text-sm">
