@@ -31,7 +31,7 @@ function formatDate(dateStr: string | null): string {
 }
 
 function formatDatetime(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('pt-BR', {
+  return new Date(dateStr).toLocaleString('pt-BR', {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
@@ -48,7 +48,8 @@ function isOverdue(dateStr: string | null): boolean {
 export default async function DashboardPage() {
   const supabase = await createClient()
 
-  const today = new Date().toISOString().split('T')[0]
+  const d = new Date()
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
   const [
     clientsRes,
@@ -167,8 +168,8 @@ export default async function DashboardPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`text-xs font-medium ${PRIORITY_COLOR[task.priority]}`}>
-                          {PRIORITY_LABEL[task.priority]}
+                        <span className={`text-xs font-medium ${PRIORITY_COLOR[task.priority] ?? ''}`}>
+                          {PRIORITY_LABEL[task.priority] ?? task.priority}
                         </span>
                         {task.due_date && (
                           <span className={`text-xs ${overdue ? 'text-red-400' : 'text-slate-500'}`}>
