@@ -7,6 +7,7 @@ import ProjectsTab from './ProjectsTab'
 import HistoryTab from './HistoryTab'
 import TasksTab from './TasksTab'
 import ProposalsTab from './ProposalsTab'
+import FinancialTab from './FinancialTab'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
 import { Building2, DollarSign, Mail, Phone } from 'lucide-react'
@@ -116,9 +117,7 @@ export default function ClientFolder({ client, activeTab }: ClientFolderProps) {
         <ProposalsTab clientId={client.id} clientName={client.name} />
       )}
       {activeTab === 'financial' && (
-        <div className="text-center py-16 text-slate-500 text-sm">
-          Módulo Financeiro — disponível no Plano 4.
-        </div>
+        <FinancialTab clientId={client.id} monthlyValue={client.monthly_value} />
       )}
       {activeTab === 'history' && <HistoryTab clientId={client.id} />}
       {activeTab === 'tasks' && <TasksTab clientId={client.id} />}
