@@ -35,6 +35,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
         setTransactions(json ?? [])
         setLoading(false)
       })
+      .catch(() => setLoading(false))
   }, [clientId])
 
   const totalReceived = transactions
@@ -59,6 +60,10 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
         description: form.description || null,
       }),
     })
+    if (!res.ok) {
+      setSaving(false)
+      return
+    }
     const transaction = await res.json()
     setTransactions((prev) => [transaction, ...prev])
     setForm({ amount: '', type: 'received', date: '', description: '' })

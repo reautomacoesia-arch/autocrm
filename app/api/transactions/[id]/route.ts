@@ -11,7 +11,13 @@ export async function PATCH(
 
   const { data, error } = await supabase
     .from('transactions')
-    .update({ ...body, updated_at: new Date().toISOString() })
+    .update({
+      amount: body.amount,
+      type: body.type,
+      date: body.date,
+      description: body.description ?? null,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', id)
     .select()
     .single()
