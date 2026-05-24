@@ -1,6 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { formatCurrency } from '@/lib/pipeline'
 
+function formatDate(dateStr: string): string {
+  if (!dateStr) return ''
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [year, month, day] = dateStr.split('-').map(Number)
+    return new Date(year, month - 1, day).toLocaleDateString('pt-BR')
+  }
+  return new Date(dateStr).toLocaleDateString('pt-BR')
+}
+
 export default async function FinancialPage() {
   const supabase = await createClient()
 
@@ -23,14 +32,10 @@ export default async function FinancialPage() {
   const mrr = clients.reduce((sum: number, c: any) => sum + (c.monthly_value || 0), 0)
   const totalReceived = transactions
     .filter((t: any) => t.type === 'received')
-    .reduce((sum: number, t: any) => sum + t.amount, 0)
+    .reduce((sum: number, t: any) => sum + (t.amount ?? 0), 0)
   const totalPending = transactions
     .filter((t: any) => t.type === 'pending')
-    .reduce((sum: number, t: any) => sum + t.amount, 0)
-
-  function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('pt-BR')
-  }
+    .reduce((sum: number, t: any) => sum + (t.amount ?? 0), 0)
 
   return (
     <div>
