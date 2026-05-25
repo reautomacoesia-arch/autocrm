@@ -16,6 +16,8 @@ export interface Lead {
   stage: LeadStage
   estimated_value: number
   notes: string | null
+  instagram: string | null
+  website: string | null
   created_at: string
   updated_at: string
 }
@@ -31,6 +33,9 @@ export interface Client {
   status: ClientStatus
   started_at: string | null
   referred_by: string | null
+  instagram: string | null
+  website: string | null
+  contact_name: string | null
   created_at: string
   updated_at: string
 }
