@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { Interaction, InteractionType } from '@/lib/types'
-import { MessageSquare, Phone, Mail, Plus } from 'lucide-react'
+import { MessageSquare, Phone, Mail, Plus, Trash2 } from 'lucide-react'
 
 const TYPE_ICONS: Record<InteractionType, React.ReactNode> = {
   note: <MessageSquare size={13} />,
@@ -45,6 +45,11 @@ export default function HistoryTab({ clientId }: HistoryTabProps) {
         setLoading(false)
       })
   }, [clientId])
+
+  async function handleDelete(id: string) {
+    setInteractions((prev) => prev.filter((i) => i.id !== id))
+    await fetch(`/api/clients/${clientId}/interactions/${id}`, { method: 'DELETE' })
+  }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -143,9 +148,17 @@ export default function HistoryTab({ clientId }: HistoryTabProps) {
                   <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">
                     {TYPE_LABELS[interaction.type]}
                   </span>
-                  <span className="text-xs text-slate-500">
-                    {formatDate(interaction.happened_at)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-500">
+                      {formatDate(interaction.happened_at)}
+                    </span>
+                    <button
+                      onClick={() => handleDelete(interaction.id)}
+                      className="text-slate-600 hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 </div>
                 <p className="text-slate-300 text-sm">{interaction.description}</p>
               </div>
