@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { Project, ProjectStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 
 const STATUS_BADGE: Record<
   ProjectStatus,
@@ -30,6 +30,15 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
   })
   const [saving, setSaving] = useState(false)
 
+  // Inline editing state
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({
+    name: '',
+    description: '',
+    status: 'in_progress' as ProjectStatus,
+  })
+  const [editSaving, setEditSaving] = useState(false)
+
   useEffect(() => {
     fetch(`/api/clients/${clientId}/projects`)
       .then((res) => res.json())
@@ -52,6 +61,46 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
     setForm({ name: '', description: '', status: 'in_progress' })
     setShowForm(false)
     setSaving(false)
+  }
+
+  function startEdit(project: Project) {
+    setEditingId(project.id)
+    setEditForm({
+      name: project.name,
+      description: project.description ?? '',
+      status: project.status,
+    })
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+  }
+
+  async function handleEdit(e: React.FormEvent, projectId: string) {
+    e.preventDefault()
+    setEditSaving(true)
+    const res = await fetch(`/api/clients/${clientId}/projects/${projectId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: editForm.name,
+        description: editForm.description || null,
+        status: editForm.status,
+      }),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      setProjects((prev) => prev.map((p) => (p.id === projectId ? updated : p)))
+      setEditingId(null)
+    }
+    setEditSaving(false)
+  }
+
+  async function handleDelete(e: React.MouseEvent, projectId: string) {
+    e.stopPropagation()
+    if (!window.confirm('Remover este projeto?')) return
+    setProjects((prev) => prev.filter((p) => p.id !== projectId))
+    await fetch(`/api/clients/${clientId}/projects/${projectId}`, { method: 'DELETE' })
   }
 
   if (loading) {
@@ -122,17 +171,88 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
           </div>
         ) : (
           projects.map((project) => {
+            if (editingId === project.id) {
+              return (
+                <form
+                  key={project.id}
+                  onSubmit={(e) => handleEdit(e, project.id)}
+                  className="bg-[#1e293b] border border-indigo-500 rounded-lg p-4 space-y-3"
+                >
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1.5">Nome *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.name}
+                      onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                      className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1.5">Descrição</label>
+                    <textarea
+                      value={editForm.description}
+                      onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
+                      className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
+                      rows={2}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1.5">Status</label>
+                    <select
+                      value={editForm.status}
+                      onChange={(e) =>
+                        setEditForm((p) => ({ ...p, status: e.target.value as ProjectStatus }))
+                      }
+                      className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="in_progress">Em andamento</option>
+                      <option value="completed">Concluído</option>
+                      <option value="paused">Pausado</option>
+                      <option value="cancelled">Cancelado</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="flex-1 text-slate-400 border border-slate-700 rounded-lg py-2 text-sm"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={editSaving}
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium"
+                    >
+                      {editSaving ? 'Salvando...' : 'Salvar'}
+                    </button>
+                  </div>
+                </form>
+              )
+            }
+
             const badge = STATUS_BADGE[project.status]
             return (
-              <div key={project.id} className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-white text-sm font-medium">{project.name}</p>
-                    {project.description && (
-                      <p className="text-slate-400 text-xs mt-1">{project.description}</p>
-                    )}
-                  </div>
+              <div
+                key={project.id}
+                onClick={() => startEdit(project)}
+                className="flex items-start justify-between bg-[#1e293b] border border-slate-700 rounded-lg p-4 cursor-pointer hover:border-slate-500 transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-medium">{project.name}</p>
+                  {project.description && (
+                    <p className="text-slate-400 text-xs mt-1">{project.description}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 ml-3 flex-shrink-0">
                   <Badge variant={badge.variant}>{badge.label}</Badge>
+                  <button
+                    onClick={(e) => handleDelete(e, project.id)}
+                    className="text-slate-600 hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               </div>
             )
