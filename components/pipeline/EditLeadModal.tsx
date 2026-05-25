@@ -1,28 +1,54 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Modal from '@/components/ui/Modal'
-import type { Lead } from '@/lib/types'
+import type { Lead, LeadStage } from '@/lib/types'
 
-interface AddLeadModalProps {
-  isOpen: boolean
+interface EditLeadModalProps {
+  lead: Lead | null
   onClose: () => void
-  onLeadAdded: (lead: Lead) => void
+  onLeadUpdated: (lead: Lead) => void
 }
 
-export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadModalProps) {
+const STAGE_OPTIONS: { value: LeadStage; label: string }[] = [
+  { value: 'lead', label: 'Lead' },
+  { value: 'contacted', label: 'Contactado' },
+  { value: 'proposal_sent', label: 'Proposta Enviada' },
+  { value: 'negotiating', label: 'Negociando' },
+  { value: 'won', label: 'Ganho' },
+  { value: 'lost', label: 'Perdido' },
+]
+
+export default function EditLeadModal({ lead, onClose, onLeadUpdated }: EditLeadModalProps) {
   const [form, setForm] = useState({
     name: '',
     company: '',
     email: '',
     phone: '',
     estimated_value: '',
+    stage: 'lead' as LeadStage,
+    notes: '',
     instagram: '',
     website: '',
-    notes: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (lead) {
+      setForm({
+        name: lead.name,
+        company: lead.company ?? '',
+        email: lead.email ?? '',
+        phone: lead.phone ?? '',
+        estimated_value: lead.estimated_value > 0 ? String(lead.estimated_value) : '',
+        stage: lead.stage,
+        notes: lead.notes ?? '',
+        instagram: lead.instagram ?? '',
+        website: lead.website ?? '',
+      })
+    }
+  }, [lead])
 
   function handleChange(field: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -30,11 +56,12 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!lead) return
     setLoading(true)
     setError(null)
 
-    const res = await fetch('/api/leads', {
-      method: 'POST',
+    const res = await fetch(`/api/leads/${lead.id}`, {
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: form.name,
@@ -42,26 +69,26 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
         email: form.email || null,
         phone: form.phone || null,
         estimated_value: form.estimated_value ? parseFloat(form.estimated_value) : 0,
+        stage: form.stage,
+        notes: form.notes || null,
         instagram: form.instagram || null,
         website: form.website || null,
-        notes: form.notes || null,
       }),
     })
 
     if (!res.ok) {
-      setError('Erro ao criar lead. Tente novamente.')
+      setError('Erro ao salvar. Tente novamente.')
       setLoading(false)
       return
     }
 
-    const lead = await res.json()
-    onLeadAdded(lead)
-    setForm({ name: '', company: '', email: '', phone: '', estimated_value: '', instagram: '', website: '', notes: '' })
+    const updated = await res.json()
+    onLeadUpdated(updated)
     setLoading(false)
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Novo Lead">
+    <Modal isOpen={!!lead} onClose={onClose} title="Editar Lead">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs text-slate-400 mb-1.5">Nome *</label>
@@ -71,7 +98,6 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
             value={form.name}
             onChange={(e) => handleChange('name', e.target.value)}
             className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-            placeholder="Nome do contato"
           />
         </div>
         <div>
@@ -81,7 +107,6 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
             value={form.company}
             onChange={(e) => handleChange('company', e.target.value)}
             className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-            placeholder="Nome da empresa"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -92,7 +117,6 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
               value={form.email}
               onChange={(e) => handleChange('email', e.target.value)}
               className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-              placeholder="email@empresa.com"
             />
           </div>
           <div>
@@ -128,17 +152,31 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
             />
           </div>
         </div>
-        <div>
-          <label className="block text-xs text-slate-400 mb-1.5">Valor estimado (R$)</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={form.estimated_value}
-            onChange={(e) => handleChange('estimated_value', e.target.value)}
-            className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-            placeholder="0"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">Valor estimado (R$)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.estimated_value}
+              onChange={(e) => handleChange('estimated_value', e.target.value)}
+              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">Estágio</label>
+            <select
+              value={form.stage}
+              onChange={(e) => handleChange('stage', e.target.value)}
+              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            >
+              {STAGE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <div>
           <label className="block text-xs text-slate-400 mb-1.5">Observações</label>
@@ -146,7 +184,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
             value={form.notes}
             onChange={(e) => handleChange('notes', e.target.value)}
             className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
-            rows={2}
+            rows={3}
             placeholder="Observações sobre o lead..."
           />
         </div>
@@ -168,7 +206,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
             disabled={loading}
             className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
           >
-            {loading ? 'Criando...' : 'Criar Lead'}
+            {loading ? 'Salvando...' : 'Salvar'}
           </button>
         </div>
       </form>

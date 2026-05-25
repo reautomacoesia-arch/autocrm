@@ -6,6 +6,7 @@ import type { Lead, LeadStage } from '@/lib/types'
 import { STAGES } from '@/lib/pipeline'
 import KanbanColumn from './KanbanColumn'
 import AddLeadModal from './AddLeadModal'
+import EditLeadModal from './EditLeadModal'
 import ConvertToClientModal from './ConvertToClientModal'
 import { Plus } from 'lucide-react'
 
@@ -16,6 +17,7 @@ interface KanbanBoardProps {
 export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [editLead, setEditLead] = useState<Lead | null>(null)
   const [convertLead, setConvertLead] = useState<Lead | null>(null)
 
   const leadsByStage = STAGES.reduce<Record<LeadStage, Lead[]>>(
@@ -36,19 +38,16 @@ export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
 
       const movedLead = leads.find((l) => l.id === leadId)
 
-      // Optimistic update
       setLeads((prev) =>
         prev.map((l) => (l.id === leadId ? { ...l, stage: newStage } : l))
       )
 
-      // API call
       await fetch(`/api/leads/${leadId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stage: newStage }),
       })
 
-      // If moved to won, offer conversion
       if (newStage === 'won' && movedLead) {
         setConvertLead({ ...movedLead, stage: 'won' })
       }
@@ -59,6 +58,27 @@ export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
   const handleLeadAdded = (newLead: Lead) => {
     setLeads((prev) => [newLead, ...prev])
     setIsAddModalOpen(false)
+  }
+
+  const handleLeadUpdated = (updatedLead: Lead) => {
+    setLeads((prev) => prev.map((l) => (l.id === updatedLead.id ? updatedLead : l)))
+    setEditLead(null)
+    if (updatedLead.stage === 'won') {
+      setConvertLead(updatedLead)
+    }
+  }
+
+  const handleLeadDeleted = async (leadId: string) => {
+    setLeads((prev) => prev.filter((l) => l.id !== leadId))
+    await fetch(`/api/leads/${leadId}`, { method: 'DELETE' })
+  }
+
+  const handleCardEdit = (lead: Lead) => {
+    if (lead.stage === 'won') {
+      setConvertLead(lead)
+    } else {
+      setEditLead(lead)
+    }
   }
 
   const activeCount = leads.filter(
@@ -88,9 +108,8 @@ export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
               key={stage}
               stage={stage}
               leads={leadsByStage[stage]}
-              onCardClick={(lead) => {
-                if (lead.stage === 'won') setConvertLead(lead)
-              }}
+              onCardEdit={handleCardEdit}
+              onCardDelete={handleLeadDeleted}
             />
           ))}
         </div>
@@ -100,6 +119,12 @@ export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onLeadAdded={handleLeadAdded}
+      />
+
+      <EditLeadModal
+        lead={editLead}
+        onClose={() => setEditLead(null)}
+        onLeadUpdated={handleLeadUpdated}
       />
 
       {convertLead && (
