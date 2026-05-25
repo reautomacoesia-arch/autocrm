@@ -5,7 +5,8 @@ import Link from 'next/link'
 import type { Client, ClientStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
-import { Search, ChevronRight } from 'lucide-react'
+import { Search, ChevronRight, Plus } from 'lucide-react'
+import AddClientModal from './AddClientModal'
 
 const STATUS_BADGE: Record<
   ClientStatus,
@@ -20,8 +21,10 @@ interface ClientListProps {
   clients: Client[]
 }
 
-export default function ClientList({ clients }: ClientListProps) {
+export default function ClientList({ clients: initialClients }: ClientListProps) {
+  const [clients, setClients] = useState<Client[]>(initialClients)
   const [search, setSearch] = useState('')
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   const filtered = clients.filter(
     (c) =>
@@ -29,20 +32,34 @@ export default function ClientList({ clients }: ClientListProps) {
       (c.company ?? '').toLowerCase().includes(search.toLowerCase())
   )
 
+  function handleClientAdded(client: Client) {
+    setClients((prev) => [client, ...prev])
+    setIsAddModalOpen(false)
+  }
+
   return (
     <div>
-      <div className="relative mb-4">
-        <Search
-          size={14}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-        />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar cliente ou empresa..."
-          className="w-full bg-[#1e293b] border border-slate-700 text-white rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500"
-        />
+      <div className="flex gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+          />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar cliente ou empresa..."
+            className="w-full bg-[#1e293b] border border-slate-700 text-white rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500"
+          />
+        </div>
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+        >
+          <Plus size={15} />
+          Novo Cliente
+        </button>
       </div>
 
       <div className="space-y-2">
@@ -87,6 +104,12 @@ export default function ClientList({ clients }: ClientListProps) {
           })
         )}
       </div>
+
+      <AddClientModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onClientAdded={handleClientAdded}
+      />
     </div>
   )
 }
