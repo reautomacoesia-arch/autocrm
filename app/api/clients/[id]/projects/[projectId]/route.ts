@@ -3,27 +3,21 @@ import { NextResponse } from 'next/server'
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string; projectId: string }> }
 ) {
   const supabase = await createClient()
-  const { id } = await params
+  const { projectId } = await params
   const body = await request.json()
 
   const { data, error } = await supabase
-    .from('leads')
+    .from('projects')
     .update({
       name: body.name,
-      company: body.company ?? null,
-      email: body.email ?? null,
-      phone: body.phone ?? null,
-      estimated_value: body.estimated_value ?? 0,
-      stage: body.stage,
-      notes: body.notes ?? null,
-      instagram: body.instagram ?? null,
-      website: body.website ?? null,
+      description: body.description ?? null,
+      status: body.status,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', id)
+    .eq('id', projectId)
     .select()
     .single()
 
@@ -33,12 +27,12 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string; projectId: string }> }
 ) {
   const supabase = await createClient()
-  const { id } = await params
+  const { projectId } = await params
 
-  const { error } = await supabase.from('leads').delete().eq('id', id)
+  const { error } = await supabase.from('projects').delete().eq('id', projectId)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }
