@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import type { Client } from '@/lib/types'
+import DataTab from './DataTab'
 import OnboardingTab from './OnboardingTab'
 import ProjectsTab from './ProjectsTab'
 import HistoryTab from './HistoryTab'
@@ -10,9 +12,10 @@ import ProposalsTab from './ProposalsTab'
 import FinancialTab from './FinancialTab'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
-import { Building2, DollarSign, Mail, Phone } from 'lucide-react'
+import { Building2, DollarSign, Mail, Pause, Phone, Play, Trash2 } from 'lucide-react'
 
 const TABS = [
+  { id: 'data', label: '📊 Dados' },
   { id: 'onboarding', label: '📋 Onboarding' },
   { id: 'projects', label: '🚀 Projetos' },
   { id: 'proposals', label: '📄 Propostas' },
@@ -26,12 +29,36 @@ interface ClientFolderProps {
   activeTab: string
 }
 
-export default function ClientFolder({ client, activeTab }: ClientFolderProps) {
+export default function ClientFolder({ client: initialClient, activeTab }: ClientFolderProps) {
+  const [client, setClient] = useState(initialClient)
   const router = useRouter()
   const pathname = usePathname()
 
   function setTab(tab: string) {
     router.push(`${pathname}?tab=${tab}`)
+  }
+
+  async function handleToggleStatus() {
+    const newStatus = client.status === 'active' ? 'inactive' : 'active'
+    const label = newStatus === 'inactive' ? 'pausar' : 'reativar'
+    if (!window.confirm(`Deseja ${label} este cliente?`)) return
+    const res = await fetch(`/api/clients/${client.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      setClient(updated)
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm('Remover este cliente permanentemente?')) return
+    const res = await fetch(`/api/clients/${client.id}`, { method: 'DELETE' })
+    if (res.ok) {
+      router.push('/clients')
+    }
   }
 
   return (
@@ -89,6 +116,30 @@ export default function ClientFolder({ client, activeTab }: ClientFolderProps) {
                 ? 'Churned'
                 : 'Inativo'}
             </Badge>
+            <button
+              onClick={handleToggleStatus}
+              title={client.status === 'active' ? 'Pausar cliente' : 'Reativar cliente'}
+              className="flex items-center gap-1.5 text-slate-400 hover:text-amber-400 border border-slate-700 hover:border-amber-600 rounded-lg px-3 py-1.5 text-xs transition-colors"
+            >
+              {client.status === 'active' ? (
+                <>
+                  <Pause size={13} />
+                  Pausar
+                </>
+              ) : (
+                <>
+                  <Play size={13} />
+                  Reativar
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleDelete}
+              title="Remover cliente"
+              className="text-slate-500 hover:text-red-400 transition-colors p-1.5"
+            >
+              <Trash2 size={15} />
+            </button>
           </div>
         </div>
       </div>
@@ -111,6 +162,7 @@ export default function ClientFolder({ client, activeTab }: ClientFolderProps) {
       </div>
 
       {/* Content */}
+      {activeTab === 'data' && <DataTab client={client} onClientUpdated={setClient} />}
       {activeTab === 'onboarding' && <OnboardingTab clientId={client.id} />}
       {activeTab === 'projects' && <ProjectsTab clientId={client.id} />}
       {activeTab === 'proposals' && (

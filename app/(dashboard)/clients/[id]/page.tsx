@@ -10,7 +10,7 @@ interface Props {
 
 export default async function ClientPage({ params, searchParams }: Props) {
   const { id } = await params
-  const { tab = 'onboarding' } = await searchParams
+  const { tab = 'data' } = await searchParams
 
   const supabase = await createClient()
   const { data: client } = await supabase
