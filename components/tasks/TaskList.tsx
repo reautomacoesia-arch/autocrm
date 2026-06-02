@@ -5,7 +5,7 @@ import type { Client, Task, TaskPriority, TaskStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import CreateTaskModal from './CreateTaskModal'
 import EmptyState from '@/components/ui/EmptyState'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, ChevronRight } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 
@@ -31,6 +31,14 @@ const STATUS_VARIANT: Record<TaskStatus, 'gray' | 'blue' | 'green'> = {
   pending: 'gray',
   in_progress: 'blue',
   done: 'green',
+}
+
+type GroupBy = 'none' | 'status' | 'priority' | 'client'
+
+const GROUP_LABELS_PRIORITY: Record<string, string> = {
+  high: 'Alta prioridade',
+  medium: 'Média prioridade',
+  low: 'Baixa prioridade',
 }
 
 function formatDate(dateStr: string | null): string {
@@ -62,8 +70,64 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
   const { toast } = useToast()
   const confirm = useConfirm()
 
+  const [groupBy, setGroupBy] = useState<GroupBy>('none')
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+
+  function toggleGroup(key: string) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
   const filtered = filter === 'all' ? tasks : tasks.filter((t) => t.status === filter)
   const clientMap = Object.fromEntries(clients.map((c) => [c.id, c.name]))
+
+  interface TaskGroup {
+    key: string
+    label: string
+    tasks: Task[]
+  }
+
+  function computeGroups(tasks: Task[]): TaskGroup[] {
+    if (groupBy === 'none') return []
+
+    if (groupBy === 'status') {
+      const order: TaskStatus[] = ['pending', 'in_progress', 'done']
+      return order
+        .map((s) => ({ key: s, label: STATUS_LABEL[s], tasks: tasks.filter((t) => t.status === s) }))
+        .filter((g) => g.tasks.length > 0)
+    }
+
+    if (groupBy === 'priority') {
+      const order: TaskPriority[] = ['high', 'medium', 'low']
+      return order
+        .map((p) => ({ key: p, label: GROUP_LABELS_PRIORITY[p], tasks: tasks.filter((t) => t.priority === p) }))
+        .filter((g) => g.tasks.length > 0)
+    }
+
+    if (groupBy === 'client') {
+      const map = new Map<string, Task[]>()
+      for (const t of tasks) {
+        const key = t.client_id ?? '__none__'
+        if (!map.has(key)) map.set(key, [])
+        map.get(key)!.push(t)
+      }
+      return Array.from(map.entries())
+        .map(([key, tasks]) => ({
+          key,
+          label: key === '__none__' ? 'Sem cliente' : (clientMap[key] ?? 'Cliente removido'),
+          tasks,
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+    }
+
+    return []
+  }
+
+  const groups = computeGroups(filtered)
 
   async function advanceStatus(task: Task) {
     const next = STATUS_NEXT[task.status]
@@ -94,6 +158,96 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
     setIsModalOpen(false)
   }
 
+  function renderTask(task: Task) {
+    const isExpanded = expandedId === task.id
+    const overdue = isOverdue(task.due_date, task.status)
+    const priority = PRIORITY_BADGE[task.priority]
+
+    return (
+      <div
+        key={task.id}
+        className={`flex items-start gap-3 bg-[#1e293b] border rounded-lg px-4 py-3 ${
+          overdue ? 'border-red-800' : 'border-slate-700'
+        }`}
+      >
+        <button
+          onClick={(e) => { e.stopPropagation(); advanceStatus(task) }}
+          title={task.status === 'done' ? 'Reabrir tarefa' : `Avançar para ${STATUS_NEXT[task.status] === 'done' ? 'Concluída' : STATUS_LABEL[STATUS_NEXT[task.status]]}`}
+          className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 transition-colors ${
+            task.status === 'done'
+              ? 'bg-emerald-600 border-emerald-600 hover:bg-red-600 hover:border-red-600'
+              : task.status === 'in_progress'
+              ? 'border-blue-500 bg-blue-500/20'
+              : 'border-slate-600 hover:border-indigo-500'
+          }`}
+        />
+        <div className="flex-1 min-w-0">
+          <button
+            onClick={() => setExpandedId((prev) => (prev === task.id ? null : task.id))}
+            className={`text-left text-sm font-medium w-full ${
+              task.status === 'done' ? 'line-through text-slate-500' : 'text-white hover:text-indigo-300'
+            } transition-colors`}
+          >
+            {task.title}
+          </button>
+          {task.description && !isExpanded && (
+            <p className="text-slate-400 text-xs mt-0.5 truncate">{task.description}</p>
+          )}
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {task.due_date && (
+              <span className={`text-xs ${overdue ? 'text-red-400' : 'text-slate-500'}`}>
+                {overdue ? '⚠ ' : ''}Vence: {formatDate(task.due_date)}
+              </span>
+            )}
+            {task.client_id && clientMap[task.client_id] && (
+              <span className="text-xs text-slate-500">• {clientMap[task.client_id]}</span>
+            )}
+          </div>
+          {isExpanded && (
+            <div className="mt-2 space-y-1.5 border-t border-slate-700 pt-2">
+              {task.description && (
+                <p className="text-slate-300 text-xs">{task.description}</p>
+              )}
+              {task.client_id && clientMap[task.client_id] && (
+                <p className="text-xs text-slate-400">
+                  Cliente:{' '}
+                  <a
+                    href={`/clients/${task.client_id}`}
+                    className="text-indigo-400 hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {clientMap[task.client_id]}
+                  </a>
+                </p>
+              )}
+              {task.due_date && (
+                <p className="text-xs text-slate-400">
+                  Vencimento: <span className={overdue ? 'text-red-400' : 'text-slate-300'}>{formatDate(task.due_date)}</span>
+                </p>
+              )}
+              <p className="text-xs text-slate-400">
+                Prioridade: <span className="text-slate-300">{PRIORITY_BADGE[task.priority].label}</span>
+              </p>
+              <p className="text-xs text-slate-400">
+                Status: <span className="text-slate-300">{STATUS_LABEL[task.status]}</span>
+              </p>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Badge variant={priority.variant}>{priority.label}</Badge>
+          <Badge variant={STATUS_VARIANT[task.status]}>{STATUS_LABEL[task.status]}</Badge>
+          <button
+            onClick={(e) => { e.stopPropagation(); deleteTask(task.id) }}
+            className="text-slate-600 hover:text-red-400 transition-colors ml-1"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="flex items-center justify-between mb-4">
@@ -112,13 +266,28 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
             </button>
           ))}
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          <Plus size={14} />
-          Nova Tarefa
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            value={groupBy}
+            onChange={(e) => {
+              setGroupBy(e.target.value as GroupBy)
+              setCollapsedGroups(new Set())
+            }}
+            className="bg-[#1e293b] border border-slate-700 text-slate-400 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
+          >
+            <option value="none">Sem agrupamento</option>
+            <option value="status">Por status</option>
+            <option value="priority">Por prioridade</option>
+            <option value="client">Por cliente</option>
+          </select>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            <Plus size={14} />
+            Nova Tarefa
+          </button>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -135,95 +304,37 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
               Nenhuma tarefa "{STATUS_LABEL[filter as TaskStatus]}".
             </div>
           )
-        ) : (
-          filtered.map((task) => {
-            const overdue = isOverdue(task.due_date, task.status)
-            const priority = PRIORITY_BADGE[task.priority]
-
+        ) : groupBy !== 'none' ? (
+          groups.map((group) => {
+            const isCollapsed = collapsedGroups.has(group.key)
             return (
-              <div
-                key={task.id}
-                className={`flex items-start gap-3 bg-[#1e293b] border rounded-lg px-4 py-3 ${
-                  overdue ? 'border-red-800' : 'border-slate-700'
-                }`}
-              >
+              <div key={group.key}>
                 <button
-                  onClick={(e) => { e.stopPropagation(); advanceStatus(task) }}
-                  title={task.status === 'done' ? 'Reabrir tarefa' : `Avançar para ${STATUS_NEXT[task.status] === 'done' ? 'Concluída' : STATUS_LABEL[STATUS_NEXT[task.status]]}`}
-                  className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 transition-colors ${
-                    task.status === 'done'
-                      ? 'bg-emerald-600 border-emerald-600 hover:bg-red-600 hover:border-red-600'
-                      : task.status === 'in_progress'
-                      ? 'border-blue-500 bg-blue-500/20'
-                      : 'border-slate-600 hover:border-indigo-500'
-                  }`}
-                />
-                <div className="flex-1 min-w-0">
-                  <button
-                    onClick={() => setExpandedId((prev) => (prev === task.id ? null : task.id))}
-                    className={`text-left text-sm font-medium w-full ${
-                      task.status === 'done' ? 'line-through text-slate-500' : 'text-white hover:text-indigo-300'
-                    } transition-colors`}
-                  >
-                    {task.title}
-                  </button>
-                  {task.description && expandedId !== task.id && (
-                    <p className="text-slate-400 text-xs mt-0.5 truncate">{task.description}</p>
-                  )}
-                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    {task.due_date && (
-                      <span className={`text-xs ${overdue ? 'text-red-400' : 'text-slate-500'}`}>
-                        {overdue ? '⚠ ' : ''}Vence: {formatDate(task.due_date)}
-                      </span>
-                    )}
-                    {task.client_id && clientMap[task.client_id] && (
-                      <span className="text-xs text-slate-500">• {clientMap[task.client_id]}</span>
-                    )}
+                  onClick={() => toggleGroup(group.key)}
+                  className="w-full flex items-center gap-2 py-2 text-left"
+                >
+                  <ChevronRight
+                    size={14}
+                    className={`text-slate-500 transition-transform flex-shrink-0 ${isCollapsed ? '' : 'rotate-90'}`}
+                  />
+                  <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                    {group.label}
+                  </span>
+                  <span className="text-slate-600 text-xs bg-slate-800 px-2 py-0.5 rounded-full">
+                    {group.tasks.length}
+                  </span>
+                  <div className="flex-1 h-px bg-slate-800 ml-1" />
+                </button>
+                {!isCollapsed && (
+                  <div className="space-y-2">
+                    {group.tasks.map((task) => renderTask(task))}
                   </div>
-                  {expandedId === task.id && (
-                    <div className="mt-2 space-y-1.5 border-t border-slate-700 pt-2">
-                      {task.description && (
-                        <p className="text-slate-300 text-xs">{task.description}</p>
-                      )}
-                      {task.client_id && clientMap[task.client_id] && (
-                        <p className="text-xs text-slate-400">
-                          Cliente:{' '}
-                          <a
-                            href={`/clients/${task.client_id}`}
-                            className="text-indigo-400 hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {clientMap[task.client_id]}
-                          </a>
-                        </p>
-                      )}
-                      {task.due_date && (
-                        <p className="text-xs text-slate-400">
-                          Vencimento: <span className={overdue ? 'text-red-400' : 'text-slate-300'}>{formatDate(task.due_date)}</span>
-                        </p>
-                      )}
-                      <p className="text-xs text-slate-400">
-                        Prioridade: <span className="text-slate-300">{PRIORITY_BADGE[task.priority].label}</span>
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        Status: <span className="text-slate-300">{STATUS_LABEL[task.status]}</span>
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Badge variant={priority.variant}>{priority.label}</Badge>
-                  <Badge variant={STATUS_VARIANT[task.status]}>{STATUS_LABEL[task.status]}</Badge>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); deleteTask(task.id) }}
-                    className="text-slate-600 hover:text-red-400 transition-colors ml-1"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
+                )}
               </div>
             )
           })
+        ) : (
+          filtered.map((task) => renderTask(task))
         )}
       </div>
 
