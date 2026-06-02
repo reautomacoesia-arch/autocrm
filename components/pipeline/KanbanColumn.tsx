@@ -22,13 +22,17 @@ export default function KanbanColumn({ stage, leads, onCardEdit, onCardDelete }:
           <h3 className={`text-xs font-semibold uppercase tracking-wider ${STAGE_COLORS[stage]}`}>
             {STAGE_LABELS[stage]}
           </h3>
-          <span className="text-slate-500 text-xs bg-slate-800 px-2 py-0.5 rounded-full">
-            {leads.length}
-          </span>
+          <div className="flex items-center gap-1.5">
+            {totalValue > 0 && (
+              <span className="text-emerald-400 text-xs font-semibold">
+                {formatCurrency(totalValue)}
+              </span>
+            )}
+            <span className="text-slate-500 text-xs bg-slate-800 px-2 py-0.5 rounded-full">
+              {leads.length}
+            </span>
+          </div>
         </div>
-        {totalValue > 0 && (
-          <p className="text-slate-500 text-xs">{formatCurrency(totalValue)}</p>
-        )}
       </div>
 
       <Droppable droppableId={stage}>
