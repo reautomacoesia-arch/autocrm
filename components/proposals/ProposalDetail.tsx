@@ -63,6 +63,7 @@ export default function ProposalDetail({ proposal: initial }: ProposalDetailProp
 
   async function handleEditSave(e: React.FormEvent) {
     e.preventDefault()
+    if (editSaving) return
     setEditSaving(true)
     const res = await fetch(`/api/proposals/${proposal.id}`, {
       method: 'PATCH',
