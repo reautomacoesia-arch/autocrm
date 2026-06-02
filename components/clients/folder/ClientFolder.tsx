@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import type { Client } from '@/lib/types'
 import DataTab from './DataTab'
@@ -17,13 +17,13 @@ import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 
 const TABS = [
-  { id: 'data', label: '📊 Dados' },
-  { id: 'onboarding', label: '📋 Onboarding' },
-  { id: 'projects', label: '🚀 Projetos' },
-  { id: 'proposals', label: '📄 Propostas' },
-  { id: 'financial', label: '💰 Financeiro' },
-  { id: 'history', label: '💬 Histórico' },
-  { id: 'tasks', label: '✅ Tarefas' },
+  { id: 'data',       label: '📊 Dados',      countKey: null,            greenIfPositive: false },
+  { id: 'onboarding', label: '📋 Onboarding', countKey: null,            greenIfPositive: false },
+  { id: 'projects',   label: '🚀 Projetos',   countKey: 'projects',      greenIfPositive: false },
+  { id: 'proposals',  label: '📄 Propostas',  countKey: 'proposals',     greenIfPositive: false },
+  { id: 'financial',  label: '💰 Financeiro', countKey: 'transactions',  greenIfPositive: false },
+  { id: 'history',    label: '💬 Histórico',  countKey: 'interactions',  greenIfPositive: false },
+  { id: 'tasks',      label: '✅ Tarefas',    countKey: 'tasks_pending', greenIfPositive: true  },
 ]
 
 interface ClientFolderProps {
@@ -33,10 +33,18 @@ interface ClientFolderProps {
 
 export default function ClientFolder({ client: initialClient, activeTab }: ClientFolderProps) {
   const [client, setClient] = useState(initialClient)
+  const [counts, setCounts] = useState<Record<string, number>>({})
   const router = useRouter()
   const pathname = usePathname()
   const { toast } = useToast()
   const confirm = useConfirm()
+
+  useEffect(() => {
+    fetch(`/api/clients/${client.id}/counts`)
+      .then((r) => r.json())
+      .then(setCounts)
+      .catch(() => {})
+  }, [client.id])
 
   function setTab(tab: string) {
     router.push(`${pathname}?tab=${tab}`)
@@ -166,19 +174,31 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
 
       {/* Tabs */}
       <div className="flex gap-0 border-b border-slate-700 mb-6 overflow-x-auto">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setTab(tab.id)}
-            className={`px-4 py-3 text-sm whitespace-nowrap transition-colors border-b-2 -mb-px ${
-              activeTab === tab.id
-                ? 'text-indigo-400 border-indigo-500 font-medium'
-                : 'text-slate-400 border-transparent hover:text-slate-200'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+        {TABS.map((tab) => {
+          const count = tab.countKey ? (counts[tab.countKey] ?? 0) : 0
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setTab(tab.id)}
+              className={`px-4 py-3 text-sm whitespace-nowrap transition-colors border-b-2 -mb-px ${
+                activeTab === tab.id
+                  ? 'text-indigo-400 border-indigo-500 font-medium'
+                  : 'text-slate-400 border-transparent hover:text-slate-200'
+              }`}
+            >
+              {tab.label}
+              {tab.countKey && count > 0 && (
+                <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
+                  tab.greenIfPositive
+                    ? 'bg-green-900/50 text-green-400'
+                    : 'bg-slate-800 text-slate-500'
+                }`}>
+                  {count}
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
 
       {/* Content */}
