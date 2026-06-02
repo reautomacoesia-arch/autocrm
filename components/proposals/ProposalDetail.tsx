@@ -5,6 +5,7 @@ import type { Proposal, ProposalItem, ProposalStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
 import { useRouter } from 'next/navigation'
+import { Pencil } from 'lucide-react'
 
 const STATUS_BADGE: Record<
   ProposalStatus,
@@ -36,6 +37,13 @@ interface ProposalDetailProps {
 export default function ProposalDetail({ proposal: initial }: ProposalDetailProps) {
   const [proposal, setProposal] = useState(initial)
   const [updating, setUpdating] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useState({
+    value: String(initial.value),
+    valid_until: initial.valid_until ?? '',
+    notes: initial.notes ?? '',
+  })
+  const [editSaving, setEditSaving] = useState(false)
   const router = useRouter()
 
   const contact = proposal.clients ?? proposal.leads
@@ -51,6 +59,31 @@ export default function ProposalDetail({ proposal: initial }: ProposalDetailProp
     const updated = await res.json()
     setProposal((prev) => ({ ...prev, status: updated.status }))
     setUpdating(false)
+  }
+
+  async function handleEditSave(e: React.FormEvent) {
+    e.preventDefault()
+    setEditSaving(true)
+    const res = await fetch(`/api/proposals/${proposal.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        value: parseFloat(editForm.value),
+        valid_until: editForm.valid_until || null,
+        notes: editForm.notes || null,
+      }),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      setProposal((prev) => ({
+        ...prev,
+        value: updated.value,
+        valid_until: updated.valid_until,
+        notes: updated.notes,
+      }))
+      setIsEditing(false)
+    }
+    setEditSaving(false)
   }
 
   async function deleteProposal() {
@@ -82,12 +115,28 @@ export default function ProposalDetail({ proposal: initial }: ProposalDetailProp
               {proposal.valid_until && ` · Válida até ${formatDate(proposal.valid_until)}`}
             </p>
           </div>
-          <Badge variant={STATUS_BADGE[proposal.status].variant}>
-            {STATUS_BADGE[proposal.status].label}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant={STATUS_BADGE[proposal.status].variant}>
+              {STATUS_BADGE[proposal.status].label}
+            </Badge>
+            <button
+              onClick={() => {
+                setEditForm({
+                  value: String(proposal.value),
+                  valid_until: proposal.valid_until ?? '',
+                  notes: proposal.notes ?? '',
+                })
+                setIsEditing(true)
+              }}
+              className="text-slate-400 hover:text-indigo-400 transition-colors p-1"
+              title="Editar proposta"
+            >
+              <Pencil size={14} />
+            </button>
+          </div>
         </div>
 
-        {transitions.length > 0 && (
+        {transitions.length > 0 && !isEditing && (
           <div className="flex gap-2 mt-4 pt-4 border-t border-slate-700">
             {transitions.map((status) => (
               <button
@@ -110,6 +159,62 @@ export default function ProposalDetail({ proposal: initial }: ProposalDetailProp
               </button>
             ))}
           </div>
+        )}
+
+        {isEditing && (
+          <form
+            onSubmit={handleEditSave}
+            className="mt-4 pt-4 border-t border-slate-700 space-y-3"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1.5">Valor total (R$) *</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  value={editForm.value}
+                  onChange={(e) => setEditForm((p) => ({ ...p, value: e.target.value }))}
+                  className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1.5">Válida até</label>
+                <input
+                  type="date"
+                  value={editForm.valid_until}
+                  onChange={(e) => setEditForm((p) => ({ ...p, valid_until: e.target.value }))}
+                  className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1.5">Observações</label>
+              <textarea
+                value={editForm.notes}
+                onChange={(e) => setEditForm((p) => ({ ...p, notes: e.target.value }))}
+                rows={2}
+                className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="flex-1 text-slate-400 border border-slate-700 rounded-lg py-2 text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={editSaving}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium"
+              >
+                {editSaving ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </form>
         )}
       </div>
 
@@ -147,7 +252,7 @@ export default function ProposalDetail({ proposal: initial }: ProposalDetailProp
       </div>
 
       {/* Notes */}
-      {proposal.notes && (
+      {proposal.notes && !isEditing && (
         <div className="mb-6">
           <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
             Observações

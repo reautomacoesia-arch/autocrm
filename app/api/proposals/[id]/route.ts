@@ -31,9 +31,17 @@ export async function PATCH(
   const { id } = await params
   const body = await request.json()
 
+  const updates: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  }
+  if (body.status !== undefined) updates.status = body.status
+  if (body.value !== undefined) updates.value = body.value
+  if (body.valid_until !== undefined) updates.valid_until = body.valid_until ?? null
+  if (body.notes !== undefined) updates.notes = body.notes ?? null
+
   const { data, error } = await supabase
     .from('proposals')
-    .update({ ...body, updated_at: new Date().toISOString() })
+    .update(updates)
     .eq('id', id)
     .select()
     .single()
