@@ -42,12 +42,27 @@ export default function ClientList({ clients: initialClients, lastInteractions =
   const [clients, setClients] = useState<Client[]>(initialClients)
   const [search, setSearch] = useState('')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'churned'>('all')
+  const [sortBy, setSortBy] = useState<'default' | 'name' | 'mrr' | 'lastContact'>('default')
 
-  const filtered = clients.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      (c.company ?? '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = clients
+    .filter(
+      (c) =>
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        (c.company ?? '').toLowerCase().includes(search.toLowerCase())
+    )
+    .filter((c) => filterStatus === 'all' || c.status === filterStatus)
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === 'name') return a.name.localeCompare(b.name, 'pt-BR')
+    if (sortBy === 'mrr') return b.monthly_value - a.monthly_value
+    if (sortBy === 'lastContact') {
+      const aDate = lastInteractions[a.id] ?? ''
+      const bDate = lastInteractions[b.id] ?? ''
+      return bDate.localeCompare(aDate)
+    }
+    return 0
+  })
 
   function handleClientAdded(client: Client) {
     setClients((prev) => [client, ...prev])
@@ -79,9 +94,38 @@ export default function ClientList({ clients: initialClients, lastInteractions =
         </button>
       </div>
 
+      {/* C1+C2 — Filtro de status + ordenação */}
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="flex gap-1.5 flex-wrap">
+          {(['all', 'active', 'inactive', 'churned'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setFilterStatus(s)}
+              className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
+                filterStatus === s
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {s === 'all' ? `Todos (${clients.length})` : STATUS_BADGE[s as ClientStatus].label}
+            </button>
+          ))}
+        </div>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+          className="bg-[#1e293b] border border-slate-700 text-slate-400 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
+        >
+          <option value="default">Padrão (mais recente)</option>
+          <option value="name">Nome A→Z</option>
+          <option value="mrr">MRR (maior)</option>
+          <option value="lastContact">Último contato</option>
+        </select>
+      </div>
+
       <div className="space-y-2">
-        {filtered.length === 0 ? (
-          search ? (
+        {sorted.length === 0 ? (
+          search || filterStatus !== 'all' ? (
             <div className="text-center py-12 text-slate-500 text-sm">
               Nenhum cliente encontrado.
             </div>
@@ -94,7 +138,7 @@ export default function ClientList({ clients: initialClients, lastInteractions =
             />
           )
         ) : (
-          filtered.map((client) => {
+          sorted.map((client) => {
             const badge = STATUS_BADGE[client.status]
             const { text: contactText, alert: contactAlert } = lastContactLabel(lastInteractions[client.id])
             return (
