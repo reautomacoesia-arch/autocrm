@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useCallback, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 
 type ToastType = 'success' | 'error' | 'info'
@@ -36,23 +36,31 @@ const COLORS: Record<ToastType, { bg: string; border: string; text: string; clos
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const toast = useCallback((message: string, type: ToastType = 'success') => {
     const id = crypto.randomUUID()
     setToasts((prev) => [...prev, { id, type, message }])
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id))
     }, 3000)
+    timersRef.current.push(timer)
   }, [])
 
-  function dismiss(id: string) {
+  const dismiss = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id))
-  }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach(clearTimeout)
+    }
+  }, [])
 
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none" role="status" aria-live="polite" aria-atomic="false">
         {toasts.map((t) => {
           const c = COLORS[t.type]
           return (
@@ -62,7 +70,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             >
               <span className="text-sm flex-shrink-0">{ICONS[t.type]}</span>
               <span className={`text-sm font-medium flex-1 ${c.text}`}>{t.message}</span>
-              <button onClick={() => dismiss(t.id)} className={`flex-shrink-0 ${c.close} hover:opacity-70`}>
+              <button onClick={() => dismiss(t.id)} className={`flex-shrink-0 ${c.close} hover:opacity-70`} aria-label="Fechar notificação">
                 <X size={14} />
               </button>
             </div>
