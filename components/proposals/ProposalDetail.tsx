@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/pipeline'
 import { useRouter } from 'next/navigation'
 import { Pencil } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 
 const STATUS_BADGE: Record<
   ProposalStatus,
@@ -47,6 +48,7 @@ export default function ProposalDetail({ proposal: initial }: ProposalDetailProp
   const [editSaving, setEditSaving] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
+  const confirm = useConfirm()
 
   const contact = proposal.clients ?? proposal.leads
   const transitions = STATUS_TRANSITIONS[proposal.status]
@@ -91,7 +93,13 @@ export default function ProposalDetail({ proposal: initial }: ProposalDetailProp
   }
 
   async function deleteProposal() {
-    if (!confirm('Excluir esta proposta?')) return
+    const ok = await confirm({
+      title: 'Excluir esta proposta?',
+      description: 'Esta ação não pode ser desfeita.',
+      destructive: true,
+      confirmLabel: 'Excluir',
+    })
+    if (!ok) return
     await fetch(`/api/proposals/${proposal.id}`, { method: 'DELETE' })
     router.push('/proposals')
   }
