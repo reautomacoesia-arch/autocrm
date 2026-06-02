@@ -13,6 +13,8 @@ import FinancialTab from './FinancialTab'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
 import { Building2, DollarSign, Mail, Pause, Phone, Play, Trash2 } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 
 const TABS = [
   { id: 'data', label: '📊 Dados' },
@@ -33,6 +35,8 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
   const [client, setClient] = useState(initialClient)
   const router = useRouter()
   const pathname = usePathname()
+  const { toast } = useToast()
+  const confirm = useConfirm()
 
   function setTab(tab: string) {
     router.push(`${pathname}?tab=${tab}`)
@@ -41,7 +45,11 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
   async function handleToggleStatus() {
     const newStatus = client.status === 'active' ? 'inactive' : 'active'
     const label = newStatus === 'inactive' ? 'pausar' : 'reativar'
-    if (!window.confirm(`Deseja ${label} este cliente?`)) return
+    const ok = await confirm({
+      title: `Deseja ${label} este cliente?`,
+      confirmLabel: newStatus === 'inactive' ? 'Pausar' : 'Reativar',
+    })
+    if (!ok) return
     const res = await fetch(`/api/clients/${client.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -50,13 +58,21 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
     if (res.ok) {
       const updated = await res.json()
       setClient(updated)
+      toast(newStatus === 'inactive' ? 'Cliente pausado' : 'Cliente reativado')
     }
   }
 
   async function handleDelete() {
-    if (!window.confirm('Remover este cliente permanentemente?')) return
+    const ok = await confirm({
+      title: 'Remover este cliente permanentemente?',
+      description: 'Esta ação não pode ser desfeita. Todos os dados vinculados serão removidos.',
+      destructive: true,
+      confirmLabel: 'Remover',
+    })
+    if (!ok) return
     const res = await fetch(`/api/clients/${client.id}`, { method: 'DELETE' })
     if (res.ok) {
+      toast('Cliente removido')
       router.push('/clients')
     }
   }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { Client } from '@/lib/types'
 import { ExternalLink } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
 
 interface DataTabProps {
   client: Client
@@ -22,6 +23,7 @@ export default function DataTab({ client, onClientUpdated }: DataTabProps) {
   })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     setForm({
@@ -48,6 +50,7 @@ export default function DataTab({ client, onClientUpdated }: DataTabProps) {
     if (res.ok) {
       const updated = await res.json()
       onClientUpdated(updated)
+      toast('Dados salvos')
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     }
