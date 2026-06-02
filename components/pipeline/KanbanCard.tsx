@@ -4,6 +4,7 @@ import { Draggable } from '@hello-pangea/dnd'
 import type { Lead } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
 import { Building2, DollarSign, X, MessageCircle } from 'lucide-react'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 
 interface KanbanCardProps {
   lead: Lead
@@ -17,9 +18,17 @@ function cleanPhone(phone: string): string {
 }
 
 export default function KanbanCard({ lead, index, onEdit, onDelete }: KanbanCardProps) {
-  function handleDelete(e: React.MouseEvent) {
+  const confirm = useConfirm()
+
+  async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation()
-    if (window.confirm(`Remover o lead "${lead.name}"?`)) {
+    const ok = await confirm({
+      title: `Remover o lead "${lead.name}"?`,
+      description: 'Esta ação não pode ser desfeita.',
+      destructive: true,
+      confirmLabel: 'Remover',
+    })
+    if (ok) {
       onDelete(lead.id)
     }
   }

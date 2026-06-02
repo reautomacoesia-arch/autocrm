@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import type { Project, ProjectStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import { Plus, Trash2 } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 
 const STATUS_BADGE: Record<
   ProjectStatus,
@@ -20,6 +22,9 @@ interface ProjectsTabProps {
 }
 
 export default function ProjectsTab({ clientId }: ProjectsTabProps) {
+  const { toast } = useToast()
+  const confirm = useConfirm()
+
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -92,15 +97,23 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
       const updated = await res.json()
       setProjects((prev) => prev.map((p) => (p.id === projectId ? updated : p)))
       setEditingId(null)
+      toast('Projeto atualizado')
     }
     setEditSaving(false)
   }
 
   async function handleDelete(e: React.MouseEvent, projectId: string) {
     e.stopPropagation()
-    if (!window.confirm('Remover este projeto?')) return
+    const ok = await confirm({
+      title: 'Remover este projeto?',
+      description: 'Esta ação não pode ser desfeita.',
+      destructive: true,
+      confirmLabel: 'Remover',
+    })
+    if (!ok) return
     setProjects((prev) => prev.filter((p) => p.id !== projectId))
     await fetch(`/api/clients/${clientId}/projects/${projectId}`, { method: 'DELETE' })
+    toast('Projeto removido')
   }
 
   if (loading) {
