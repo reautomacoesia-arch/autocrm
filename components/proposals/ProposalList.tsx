@@ -78,7 +78,7 @@ export default function ProposalList({ proposals: initial, clients, services }: 
 
       <div className="space-y-2">
         {filtered.length === 0 ? (
-          {filter === 'all' ? (
+          filter === 'all' ? (
             <EmptyState
               icon="📄"
               title="Nenhuma proposta ainda"
@@ -89,7 +89,7 @@ export default function ProposalList({ proposals: initial, clients, services }: 
             <div className="text-center py-12 text-slate-500 text-sm">
               Nenhuma proposta "{STATUS_BADGE[filter as ProposalStatus].label}".
             </div>
-          )}
+          )
         ) : (
           filtered.map((proposal) => {
             const badge = STATUS_BADGE[proposal.status]

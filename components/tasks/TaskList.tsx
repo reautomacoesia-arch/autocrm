@@ -123,7 +123,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
 
       <div className="space-y-2">
         {filtered.length === 0 ? (
-          {filter === 'all' ? (
+          filter === 'all' ? (
             <EmptyState
               icon="✅"
               title="Nenhuma tarefa ainda"
@@ -134,7 +134,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
             <div className="text-center py-12 text-slate-500 text-sm">
               Nenhuma tarefa "{STATUS_LABEL[filter as TaskStatus]}".
             </div>
-          )}
+          )
         ) : (
           filtered.map((task) => {
             const overdue = isOverdue(task.due_date, task.status)
