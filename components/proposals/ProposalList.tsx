@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { Client, Proposal, ProposalStatus, Service } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import CreateProposalModal from './CreateProposalModal'
+import EmptyState from '@/components/ui/EmptyState'
 import { formatCurrency } from '@/lib/pipeline'
 import { Plus, ChevronRight } from 'lucide-react'
 
@@ -77,11 +78,18 @@ export default function ProposalList({ proposals: initial, clients, services }: 
 
       <div className="space-y-2">
         {filtered.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 text-sm">
-            {filter === 'all'
-              ? 'Nenhuma proposta criada ainda.'
-              : `Nenhuma proposta "${STATUS_BADGE[filter as ProposalStatus].label}".`}
-          </div>
+          {filter === 'all' ? (
+            <EmptyState
+              icon="📄"
+              title="Nenhuma proposta ainda"
+              description="Crie uma proposta para um cliente ou lead."
+              action={{ label: '+ Nova Proposta', onClick: () => setIsModalOpen(true) }}
+            />
+          ) : (
+            <div className="text-center py-12 text-slate-500 text-sm">
+              Nenhuma proposta "{STATUS_BADGE[filter as ProposalStatus].label}".
+            </div>
+          )}
         ) : (
           filtered.map((proposal) => {
             const badge = STATUS_BADGE[proposal.status]

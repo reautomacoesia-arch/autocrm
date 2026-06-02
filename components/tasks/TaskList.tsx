@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { Client, Task, TaskPriority, TaskStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import CreateTaskModal from './CreateTaskModal'
+import EmptyState from '@/components/ui/EmptyState'
 import { Plus, Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
@@ -122,11 +123,18 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
 
       <div className="space-y-2">
         {filtered.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 text-sm">
-            {filter === 'all'
-              ? 'Nenhuma tarefa pendente.'
-              : `Nenhuma tarefa "${STATUS_LABEL[filter as TaskStatus]}".`}
-          </div>
+          {filter === 'all' ? (
+            <EmptyState
+              icon="✅"
+              title="Nenhuma tarefa ainda"
+              description="Crie tarefas para acompanhar o que precisa ser feito."
+              action={{ label: '+ Nova Tarefa', onClick: () => setIsModalOpen(true) }}
+            />
+          ) : (
+            <div className="text-center py-12 text-slate-500 text-sm">
+              Nenhuma tarefa "{STATUS_LABEL[filter as TaskStatus]}".
+            </div>
+          )}
         ) : (
           filtered.map((task) => {
             const overdue = isOverdue(task.due_date, task.status)

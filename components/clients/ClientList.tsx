@@ -7,6 +7,7 @@ import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
 import { Search, ChevronRight, Plus } from 'lucide-react'
 import AddClientModal from './AddClientModal'
+import EmptyState from '@/components/ui/EmptyState'
 
 const STATUS_BADGE: Record<
   ClientStatus,
@@ -64,9 +65,18 @@ export default function ClientList({ clients: initialClients }: ClientListProps)
 
       <div className="space-y-2">
         {filtered.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 text-sm">
-            {search ? 'Nenhum cliente encontrado.' : 'Nenhum cliente cadastrado ainda.'}
-          </div>
+          {search ? (
+            <div className="text-center py-12 text-slate-500 text-sm">
+              Nenhum cliente encontrado.
+            </div>
+          ) : (
+            <EmptyState
+              icon="👥"
+              title="Nenhum cliente ainda"
+              description="Adicione seu primeiro cliente para organizar projetos e receitas."
+              action={{ label: '+ Novo Cliente', onClick: () => setIsAddModalOpen(true) }}
+            />
+          )}
         ) : (
           filtered.map((client) => {
             const badge = STATUS_BADGE[client.status]

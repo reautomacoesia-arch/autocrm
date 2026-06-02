@@ -7,6 +7,7 @@ import Badge from '@/components/ui/Badge'
 import { Plus, Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
+import EmptyState from '@/components/ui/EmptyState'
 
 interface TransactionWithClient {
   id: string
@@ -312,9 +313,12 @@ export default function TransactionManager({
         )}
 
         {transactions.length === 0 && !showAddForm && (
-          <div className="text-center py-16 text-slate-500 text-sm">
-            Nenhuma transação registrada ainda. Registre pagamentos nas pastas dos clientes ou clique em "Registrar transação".
-          </div>
+          <EmptyState
+            icon="💰"
+            title="Nenhuma transação ainda"
+            description="Registre o primeiro pagamento para acompanhar o fluxo de caixa."
+            action={{ label: 'Registrar transação', onClick: () => setShowAddForm(true) }}
+          />
         )}
 
         <div className="space-y-2">
