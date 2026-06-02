@@ -1,4 +1,5 @@
 import Sidebar from '@/components/layout/Sidebar'
+import Providers from '@/components/layout/Providers'
 
 export default function DashboardLayout({
   children,
@@ -9,7 +10,7 @@ export default function DashboardLayout({
     <div className="flex min-h-screen bg-[#0f172a]">
       <Sidebar />
       <main className="flex-1 ml-52 p-8">
-        {children}
+        <Providers>{children}</Providers>
       </main>
     </div>
   )
