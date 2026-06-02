@@ -90,7 +90,7 @@ export default function TransactionManager({
         client_id: addForm.client_id,
         amount: parseFloat(addForm.amount),
         type: addForm.type,
-        date: addForm.date || new Date().toISOString().split('T')[0],
+        date: addForm.date || (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` })(),
         description: addForm.description || null,
       }),
     })
@@ -133,7 +133,7 @@ export default function TransactionManager({
     if (res.ok) {
       const updated = await res.json()
       setTransactions((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, ...updated } : t))
+        prev.map((t) => (t.id === id ? { ...t, ...updated, clients: t.clients } : t))
       )
       setEditingId(null)
     }
