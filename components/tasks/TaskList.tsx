@@ -12,10 +12,10 @@ const PRIORITY_BADGE: Record<TaskPriority, { label: string; variant: 'red' | 'ye
   low: { label: 'Baixa', variant: 'gray' },
 }
 
-const STATUS_NEXT: Record<TaskStatus, TaskStatus | null> = {
+const STATUS_NEXT: Record<TaskStatus, TaskStatus> = {
   pending: 'in_progress',
   in_progress: 'done',
-  done: null,
+  done: 'pending',
 }
 
 const STATUS_LABEL: Record<TaskStatus, string> = {
@@ -32,12 +32,17 @@ const STATUS_VARIANT: Record<TaskStatus, 'gray' | 'blue' | 'green'> = {
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('pt-BR')
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('pt-BR')
 }
 
 function isOverdue(dateStr: string | null, status: TaskStatus): boolean {
   if (!dateStr || status === 'done') return false
-  return new Date(dateStr) < new Date()
+  const [year, month, day] = dateStr.split('-').map(Number)
+  const taskDate = new Date(year, month - 1, day)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return taskDate < today
 }
 
 interface TaskListProps {
@@ -50,14 +55,13 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [filter, setFilter] = useState<TaskStatus | 'all'>('all')
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const filtered = filter === 'all' ? tasks : tasks.filter((t) => t.status === filter)
   const clientMap = Object.fromEntries(clients.map((c) => [c.id, c.name]))
 
   async function advanceStatus(task: Task) {
     const next = STATUS_NEXT[task.status]
-    if (!next) return
-
     setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: next } : t)))
     await fetch(`/api/tasks/${task.id}`, {
       method: 'PATCH',
@@ -115,7 +119,6 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
           filtered.map((task) => {
             const overdue = isOverdue(task.due_date, task.status)
             const priority = PRIORITY_BADGE[task.priority]
-            const nextStatus = STATUS_NEXT[task.status]
 
             return (
               <div
@@ -125,26 +128,26 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
                 }`}
               >
                 <button
-                  onClick={() => advanceStatus(task)}
-                  disabled={!nextStatus}
-                  title={nextStatus ? `Avançar para ${STATUS_LABEL[nextStatus]}` : 'Concluída'}
+                  onClick={(e) => { e.stopPropagation(); advanceStatus(task) }}
+                  title={task.status === 'done' ? 'Reabrir tarefa' : `Avançar para ${STATUS_NEXT[task.status] === 'done' ? 'Concluída' : STATUS_LABEL[STATUS_NEXT[task.status]]}`}
                   className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 transition-colors ${
                     task.status === 'done'
-                      ? 'bg-emerald-600 border-emerald-600'
+                      ? 'bg-emerald-600 border-emerald-600 hover:bg-red-600 hover:border-red-600'
                       : task.status === 'in_progress'
                       ? 'border-blue-500 bg-blue-500/20'
                       : 'border-slate-600 hover:border-indigo-500'
                   }`}
                 />
                 <div className="flex-1 min-w-0">
-                  <p
-                    className={`text-sm font-medium ${
-                      task.status === 'done' ? 'line-through text-slate-500' : 'text-white'
-                    }`}
+                  <button
+                    onClick={() => setExpandedId((prev) => (prev === task.id ? null : task.id))}
+                    className={`text-left text-sm font-medium w-full ${
+                      task.status === 'done' ? 'line-through text-slate-500' : 'text-white hover:text-indigo-300'
+                    } transition-colors`}
                   >
                     {task.title}
-                  </p>
-                  {task.description && (
+                  </button>
+                  {task.description && expandedId !== task.id && (
                     <p className="text-slate-400 text-xs mt-0.5 truncate">{task.description}</p>
                   )}
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -157,12 +160,42 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
                       <span className="text-xs text-slate-500">• {clientMap[task.client_id]}</span>
                     )}
                   </div>
+                  {expandedId === task.id && (
+                    <div className="mt-2 space-y-1.5 border-t border-slate-700 pt-2">
+                      {task.description && (
+                        <p className="text-slate-300 text-xs">{task.description}</p>
+                      )}
+                      {task.client_id && clientMap[task.client_id] && (
+                        <p className="text-xs text-slate-400">
+                          Cliente:{' '}
+                          <a
+                            href={`/clients/${task.client_id}`}
+                            className="text-indigo-400 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {clientMap[task.client_id]}
+                          </a>
+                        </p>
+                      )}
+                      {task.due_date && (
+                        <p className="text-xs text-slate-400">
+                          Vencimento: <span className={overdue ? 'text-red-400' : 'text-slate-300'}>{formatDate(task.due_date)}</span>
+                        </p>
+                      )}
+                      <p className="text-xs text-slate-400">
+                        Prioridade: <span className="text-slate-300">{PRIORITY_BADGE[task.priority].label}</span>
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        Status: <span className="text-slate-300">{STATUS_LABEL[task.status]}</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <Badge variant={priority.variant}>{priority.label}</Badge>
                   <Badge variant={STATUS_VARIANT[task.status]}>{STATUS_LABEL[task.status]}</Badge>
                   <button
-                    onClick={() => deleteTask(task.id)}
+                    onClick={(e) => { e.stopPropagation(); deleteTask(task.id) }}
                     className="text-slate-600 hover:text-red-400 transition-colors ml-1"
                   >
                     <Trash2 size={13} />
