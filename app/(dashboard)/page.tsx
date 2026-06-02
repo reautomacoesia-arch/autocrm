@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { formatCurrency } from '@/lib/pipeline'
 import MetricCard from '@/components/dashboard/MetricCard'
 import Link from 'next/link'
+import DashboardCalendar from '@/components/dashboard/DashboardCalendar'
 
 const PRIORITY_COLOR: Record<string, string> = {
   high: 'text-red-400',
@@ -131,6 +132,8 @@ export default async function DashboardPage() {
         />
       </div>
 
+      <DashboardCalendar />
+
       <div className="grid grid-cols-2 gap-6">
         {/* Tasks due today / overdue */}
         <div>
@@ -191,6 +194,12 @@ export default async function DashboardPage() {
             <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
               Atividade recente
             </h2>
+            <Link
+              href="/activity"
+              className="text-indigo-400 hover:text-indigo-300 text-xs transition-colors"
+            >
+              Ver todos →
+            </Link>
           </div>
           {recentInteractions.length === 0 ? (
             <div className="bg-[#1e293b] border border-slate-700 rounded-xl p-6 text-center text-slate-500 text-sm">
