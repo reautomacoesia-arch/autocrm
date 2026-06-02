@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import type { Task, TaskPriority, TaskStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import { Trash2 } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 
 const PRIORITY_BADGE: Record<
   TaskPriority,
@@ -36,6 +38,8 @@ interface TasksTabProps {
 export default function TasksTab({ clientId }: TasksTabProps) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
+  const confirm = useConfirm()
 
   // Inline editing state
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -90,15 +94,23 @@ export default function TasksTab({ clientId }: TasksTabProps) {
       const updated = await res.json()
       setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)))
       setEditingId(null)
+      toast('Tarefa atualizada')
     }
     setEditSaving(false)
   }
 
   async function handleDelete(e: React.MouseEvent, taskId: string) {
     e.stopPropagation()
-    if (!window.confirm('Remover esta tarefa?')) return
+    const ok = await confirm({
+      title: 'Remover esta tarefa?',
+      description: 'Esta ação não pode ser desfeita.',
+      destructive: true,
+      confirmLabel: 'Remover',
+    })
+    if (!ok) return
     setTasks((prev) => prev.filter((t) => t.id !== taskId))
     await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
+    toast('Tarefa removida')
   }
 
   if (loading) {

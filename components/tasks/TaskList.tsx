@@ -5,6 +5,8 @@ import type { Client, Task, TaskPriority, TaskStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import CreateTaskModal from './CreateTaskModal'
 import { Plus, Trash2 } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 
 const PRIORITY_BADGE: Record<TaskPriority, { label: string; variant: 'red' | 'yellow' | 'gray' }> = {
   high: { label: 'Alta', variant: 'red' },
@@ -56,6 +58,8 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [filter, setFilter] = useState<TaskStatus | 'all'>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const { toast } = useToast()
+  const confirm = useConfirm()
 
   const filtered = filter === 'all' ? tasks : tasks.filter((t) => t.status === filter)
   const clientMap = Object.fromEntries(clients.map((c) => [c.id, c.name]))
@@ -71,8 +75,16 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
   }
 
   async function deleteTask(id: string) {
+    const ok = await confirm({
+      title: 'Remover esta tarefa?',
+      description: 'Esta ação não pode ser desfeita.',
+      destructive: true,
+      confirmLabel: 'Remover',
+    })
+    if (!ok) return
     setTasks((prev) => prev.filter((t) => t.id !== id))
     await fetch(`/api/tasks/${id}`, { method: 'DELETE' })
+    toast('Tarefa removida')
   }
 
   function handleTaskCreated(task: Task) {
