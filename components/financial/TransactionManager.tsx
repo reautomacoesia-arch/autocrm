@@ -5,6 +5,8 @@ import type { TransactionType } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
 import Badge from '@/components/ui/Badge'
 import { Plus, Trash2 } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 
 interface TransactionWithClient {
   id: string
@@ -48,6 +50,8 @@ export default function TransactionManager({
   clients,
   mrr,
 }: TransactionManagerProps) {
+  const { toast } = useToast()
+  const confirm = useConfirm()
   const [transactions, setTransactions] = useState<TransactionWithClient[]>(initialTransactions)
   const [showAddForm, setShowAddForm] = useState(false)
   const [addForm, setAddForm] = useState({
@@ -102,6 +106,7 @@ export default function TransactionManager({
       ])
       setAddForm({ client_id: '', amount: '', type: 'received', date: '', description: '' })
       setShowAddForm(false)
+      toast('Transação registrada')
     }
     setAddSaving(false)
   }
@@ -136,15 +141,22 @@ export default function TransactionManager({
         prev.map((t) => (t.id === id ? { ...t, ...updated, clients: t.clients } : t))
       )
       setEditingId(null)
+      toast('Transação atualizada')
     }
     setEditSaving(false)
   }
 
-  async function handleDelete(e: React.MouseEvent, id: string) {
-    e.stopPropagation()
-    if (!window.confirm('Remover esta transação?')) return
+  async function handleDelete(id: string) {
+    const ok = await confirm({
+      title: 'Remover esta transação?',
+      description: 'Esta ação não pode ser desfeita.',
+      destructive: true,
+      confirmLabel: 'Remover',
+    })
+    if (!ok) return
     setTransactions((prev) => prev.filter((t) => t.id !== id))
     await fetch(`/api/transactions/${id}`, { method: 'DELETE' })
+    toast('Transação removida')
   }
 
   return (
@@ -406,7 +418,7 @@ export default function TransactionManager({
                   <Badge variant={badge.variant}>{badge.label}</Badge>
                   {isOverdue && <Badge variant="red">Atrasado</Badge>}
                   <button
-                    onClick={(e) => handleDelete(e, t.id)}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(t.id) }}
                     className="text-slate-600 hover:text-red-400 transition-colors ml-1"
                   >
                     <Trash2 size={13} />

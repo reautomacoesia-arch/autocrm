@@ -5,6 +5,8 @@ import type { Transaction, TransactionType } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
 import { Plus, Trash2 } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 
 const TYPE_BADGE: Record<TransactionType, { label: string; variant: 'green' | 'yellow' }> = {
   received: { label: 'Recebido', variant: 'green' },
@@ -26,6 +28,8 @@ interface FinancialTabProps {
 }
 
 export default function FinancialTab({ clientId, monthlyValue }: FinancialTabProps) {
+  const { toast } = useToast()
+  const confirm = useConfirm()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -91,8 +95,16 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
   }
 
   async function handleDelete(id: string) {
+    const ok = await confirm({
+      title: 'Remover esta transação?',
+      description: 'Esta ação não pode ser desfeita.',
+      destructive: true,
+      confirmLabel: 'Remover',
+    })
+    if (!ok) return
     setTransactions((prev) => prev.filter((t) => t.id !== id))
     await fetch(`/api/transactions/${id}`, { method: 'DELETE' })
+    toast('Transação removida')
   }
 
   function startEdit(t: Transaction) {
@@ -126,6 +138,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
       const updated = await res.json()
       setTransactions((prev) => prev.map((t) => (t.id === id ? updated : t)))
       setEditingId(null)
+      toast('Transação atualizada')
     }
     setEditSaving(false)
   }
