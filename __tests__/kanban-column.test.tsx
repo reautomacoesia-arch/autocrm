@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import KanbanColumn from '@/components/pipeline/KanbanColumn'
+import { ConfirmProvider } from '@/components/ui/ConfirmModal'
 import type { Lead } from '@/lib/types'
 
 // Mock @hello-pangea/dnd
@@ -17,6 +18,8 @@ const mockLead: Lead = {
   company: 'Empresa Teste',
   email: 'joao@teste.com',
   phone: null,
+  instagram: null,
+  website: null,
   stage: 'lead',
   estimated_value: 5000,
   notes: null,
@@ -24,19 +27,29 @@ const mockLead: Lead = {
   updated_at: '2026-01-01T00:00:00Z',
 }
 
+function renderWithProviders(ui: React.ReactElement) {
+  return render(<ConfirmProvider>{ui}</ConfirmProvider>)
+}
+
 describe('KanbanColumn', () => {
   it('renderiza o título da coluna', () => {
-    render(<KanbanColumn stage="lead" leads={[mockLead]} onCardClick={vi.fn()} />)
+    renderWithProviders(
+      <KanbanColumn stage="lead" leads={[mockLead]} onCardEdit={vi.fn()} onCardDelete={vi.fn()} />
+    )
     expect(screen.getByText('Lead')).toBeInTheDocument()
   })
 
   it('mostra a contagem de leads', () => {
-    render(<KanbanColumn stage="lead" leads={[mockLead]} onCardClick={vi.fn()} />)
+    renderWithProviders(
+      <KanbanColumn stage="lead" leads={[mockLead]} onCardEdit={vi.fn()} onCardDelete={vi.fn()} />
+    )
     expect(screen.getByText('1')).toBeInTheDocument()
   })
 
   it('renderiza o nome do lead', () => {
-    render(<KanbanColumn stage="lead" leads={[mockLead]} onCardClick={vi.fn()} />)
+    renderWithProviders(
+      <KanbanColumn stage="lead" leads={[mockLead]} onCardEdit={vi.fn()} onCardDelete={vi.fn()} />
+    )
     expect(screen.getByText('João Silva')).toBeInTheDocument()
   })
 })

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import ServiceList from '@/components/services/ServiceList'
+import { ToastProvider } from '@/components/ui/ToastProvider'
+import { ConfirmProvider } from '@/components/ui/ConfirmModal'
 import type { Service } from '@/lib/types'
 
 const mockServices: Service[] = [
@@ -14,14 +16,22 @@ const mockServices: Service[] = [
   },
 ]
 
+function renderWithProviders(ui: React.ReactElement) {
+  return render(
+    <ToastProvider>
+      <ConfirmProvider>{ui}</ConfirmProvider>
+    </ToastProvider>
+  )
+}
+
 describe('ServiceList', () => {
   it('renderiza nome do serviço', () => {
-    render(<ServiceList initialServices={mockServices} />)
+    renderWithProviders(<ServiceList initialServices={mockServices} />)
     expect(screen.getByText('Chatbot WhatsApp')).toBeInTheDocument()
   })
 
   it('mostra mensagem quando lista está vazia', () => {
-    render(<ServiceList initialServices={[]} />)
-    expect(screen.getByText('Nenhum serviço cadastrado ainda.')).toBeInTheDocument()
+    renderWithProviders(<ServiceList initialServices={[]} />)
+    expect(screen.getByText('Nenhum serviço cadastrado')).toBeInTheDocument()
   })
 })
