@@ -11,6 +11,18 @@ export default async function ClientsPage() {
 
   const activeCount = (clients ?? []).filter((c) => c.status === 'active').length
 
+  const { data: lastInteractionsRaw } = await supabase
+    .from('interactions')
+    .select('client_id, happened_at')
+    .order('happened_at', { ascending: false })
+
+  const lastInteractionMap: Record<string, string> = {}
+  for (const row of (lastInteractionsRaw ?? [])) {
+    if (!lastInteractionMap[row.client_id]) {
+      lastInteractionMap[row.client_id] = row.happened_at
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -19,7 +31,7 @@ export default async function ClientsPage() {
           <p className="text-slate-400 text-sm mt-1">{activeCount} ativo(s)</p>
         </div>
       </div>
-      <ClientList clients={(clients as Client[]) ?? []} />
+      <ClientList clients={(clients as Client[]) ?? []} lastInteractions={lastInteractionMap} />
     </div>
   )
 }

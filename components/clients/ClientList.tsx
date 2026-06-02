@@ -18,11 +18,27 @@ const STATUS_BADGE: Record<
   churned: { label: 'Churned', variant: 'red' },
 }
 
-interface ClientListProps {
-  clients: Client[]
+function daysAgo(isoStr: string): number {
+  const then = new Date(isoStr).setHours(0, 0, 0, 0)
+  const now = new Date().setHours(0, 0, 0, 0)
+  return Math.floor((now - then) / 86_400_000)
 }
 
-export default function ClientList({ clients: initialClients }: ClientListProps) {
+function lastContactLabel(isoStr: string | undefined): { text: string; alert: boolean } {
+  if (!isoStr) return { text: 'sem contato registrado', alert: false }
+  const days = daysAgo(isoStr)
+  if (days === 0) return { text: 'contato hoje', alert: false }
+  if (days === 1) return { text: 'último contato ontem', alert: false }
+  const alert = days > 30
+  return { text: `último contato há ${days} dias`, alert }
+}
+
+interface ClientListProps {
+  clients: Client[]
+  lastInteractions?: Record<string, string>
+}
+
+export default function ClientList({ clients: initialClients, lastInteractions = {} }: ClientListProps) {
   const [clients, setClients] = useState<Client[]>(initialClients)
   const [search, setSearch] = useState('')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -80,11 +96,16 @@ export default function ClientList({ clients: initialClients }: ClientListProps)
         ) : (
           filtered.map((client) => {
             const badge = STATUS_BADGE[client.status]
+            const { text: contactText, alert: contactAlert } = lastContactLabel(lastInteractions[client.id])
             return (
               <Link
                 key={client.id}
                 href={`/clients/${client.id}`}
-                className="flex items-center justify-between bg-[#1e293b] hover:bg-slate-700/50 border border-slate-700 hover:border-slate-600 rounded-lg px-4 py-3 transition-colors group"
+                className={`flex items-center justify-between bg-[#1e293b] hover:bg-slate-700/50 border rounded-lg px-4 py-3 transition-colors group ${
+                  contactAlert
+                    ? 'border-red-800 hover:border-red-700'
+                    : 'border-slate-700 hover:border-slate-600'
+                }`}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 bg-indigo-600/20 rounded-full flex items-center justify-center text-indigo-400 font-semibold text-sm flex-shrink-0">
@@ -92,9 +113,13 @@ export default function ClientList({ clients: initialClients }: ClientListProps)
                   </div>
                   <div>
                     <p className="text-white text-sm font-medium">{client.name}</p>
-                    {client.company && (
-                      <p className="text-slate-400 text-xs">{client.company}</p>
-                    )}
+                    <p className="text-slate-400 text-xs">
+                      {client.company && <span>{client.company}</span>}
+                      {client.company && ' · '}
+                      <span className={contactAlert ? 'text-red-400' : 'text-slate-500'}>
+                        {contactText}
+                      </span>
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
