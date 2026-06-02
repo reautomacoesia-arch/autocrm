@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { Task, TaskPriority, TaskStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
+import EmptyState from '@/components/ui/EmptyState'
 import { Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
@@ -122,9 +123,11 @@ export default function TasksTab({ clientId }: TasksTabProps) {
       <p className="text-slate-400 text-sm mb-4">{tasks.length} tarefa(s) vinculada(s)</p>
       <div className="space-y-2">
         {tasks.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 text-sm">
-            Nenhuma tarefa vinculada. Crie tarefas no módulo de Tarefas.
-          </div>
+          <EmptyState
+            icon="✅"
+            title="Nenhuma tarefa vinculada"
+            description="Crie tarefas no módulo de Tarefas para vinculá-las a este cliente."
+          />
         ) : (
           tasks.map((task) => {
             if (editingId === task.id) {

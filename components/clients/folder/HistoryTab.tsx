@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { Interaction, InteractionType } from '@/lib/types'
+import EmptyState from '@/components/ui/EmptyState'
 import { MessageSquare, Phone, Mail, Plus, Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
@@ -146,9 +147,11 @@ export default function HistoryTab({ clientId }: HistoryTabProps) {
 
       <div className="space-y-3">
         {interactions.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 text-sm">
-            Nenhuma interação registrada ainda.
-          </div>
+          <EmptyState
+            icon="💬"
+            title="Nenhuma interação registrada"
+            description="Registre notas, reuniões e emails para acompanhar o relacionamento."
+          />
         ) : (
           interactions.map((interaction) => (
             <div key={interaction.id} className="flex gap-3">

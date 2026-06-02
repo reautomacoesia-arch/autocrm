@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { Project, ProjectStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
+import EmptyState from '@/components/ui/EmptyState'
 import { Plus, Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
@@ -179,9 +180,11 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
 
       <div className="space-y-2">
         {projects.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 text-sm">
-            Nenhum projeto cadastrado ainda.
-          </div>
+          <EmptyState
+            icon="🚀"
+            title="Nenhum projeto ainda"
+            description="Crie projetos para organizar as entregas deste cliente."
+          />
         ) : (
           projects.map((project) => {
             if (editingId === project.id) {

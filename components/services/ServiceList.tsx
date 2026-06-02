@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { Service } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
+import EmptyState from '@/components/ui/EmptyState'
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
@@ -153,9 +154,11 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
 
       <div className="space-y-2">
         {services.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 text-sm">
-            Nenhum serviço cadastrado ainda.
-          </div>
+          <EmptyState
+            icon="⚙️"
+            title="Nenhum serviço cadastrado"
+            description="Cadastre seus serviços para usá-los nas propostas."
+          />
         ) : (
           services.map((service) =>
             editingId === service.id ? (
