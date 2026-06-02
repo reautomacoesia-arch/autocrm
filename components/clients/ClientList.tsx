@@ -81,7 +81,7 @@ export default function ClientList({ clients: initialClients, lastInteractions =
 
       <div className="space-y-2">
         {filtered.length === 0 ? (
-          {search ? (
+          search ? (
             <div className="text-center py-12 text-slate-500 text-sm">
               Nenhum cliente encontrado.
             </div>
@@ -92,7 +92,7 @@ export default function ClientList({ clients: initialClients, lastInteractions =
               description="Adicione seu primeiro cliente para organizar projetos e receitas."
               action={{ label: '+ Novo Cliente', onClick: () => setIsAddModalOpen(true) }}
             />
-          )}
+          )
         ) : (
           filtered.map((client) => {
             const badge = STATUS_BADGE[client.status]
