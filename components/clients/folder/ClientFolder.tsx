@@ -59,6 +59,8 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
       const updated = await res.json()
       setClient(updated)
       toast(newStatus === 'inactive' ? 'Cliente pausado' : 'Cliente reativado')
+    } else {
+      toast('Erro ao atualizar status do cliente', 'error')
     }
   }
 
@@ -74,6 +76,8 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
     if (res.ok) {
       toast('Cliente removido')
       router.push('/clients')
+    } else {
+      toast('Erro ao remover cliente', 'error')
     }
   }
 
