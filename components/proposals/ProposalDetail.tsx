@@ -6,6 +6,7 @@ import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
 import { useRouter } from 'next/navigation'
 import { Pencil } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
 
 const STATUS_BADGE: Record<
   ProposalStatus,
@@ -45,6 +46,7 @@ export default function ProposalDetail({ proposal: initial }: ProposalDetailProp
   })
   const [editSaving, setEditSaving] = useState(false)
   const router = useRouter()
+  const { toast } = useToast()
 
   const contact = proposal.clients ?? proposal.leads
   const transitions = STATUS_TRANSITIONS[proposal.status]
@@ -83,6 +85,7 @@ export default function ProposalDetail({ proposal: initial }: ProposalDetailProp
         notes: updated.notes,
       }))
       setIsEditing(false)
+      toast('Proposta atualizada')
     }
     setEditSaving(false)
   }

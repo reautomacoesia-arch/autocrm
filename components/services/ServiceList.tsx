@@ -4,6 +4,8 @@ import { useState } from 'react'
 import type { Service } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 
 interface ServiceListProps {
   initialServices: Service[]
@@ -16,6 +18,8 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
   const [form, setForm] = useState({ name: '', description: '', default_price: '' })
   const [editForm, setEditForm] = useState({ name: '', description: '', default_price: '' })
   const [saving, setSaving] = useState(false)
+  const { toast } = useToast()
+  const confirm = useConfirm()
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -54,9 +58,16 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Remover este serviço?')) return
+    const ok = await confirm({
+      title: 'Remover este serviço?',
+      description: 'Esta ação não pode ser desfeita.',
+      destructive: true,
+      confirmLabel: 'Remover',
+    })
+    if (!ok) return
     await fetch(`/api/services/${id}`, { method: 'DELETE' })
     setServices((prev) => prev.filter((s) => s.id !== id))
+    toast('Serviço removido')
   }
 
   function startEdit(service: Service) {

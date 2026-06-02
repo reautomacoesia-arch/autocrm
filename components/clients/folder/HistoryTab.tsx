@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import type { Interaction, InteractionType } from '@/lib/types'
 import { MessageSquare, Phone, Mail, Plus, Trash2 } from 'lucide-react'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 
 const TYPE_ICONS: Record<InteractionType, React.ReactNode> = {
   note: <MessageSquare size={13} />,
@@ -36,6 +38,8 @@ export default function HistoryTab({ clientId }: HistoryTabProps) {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ type: 'note' as InteractionType, description: '' })
   const [saving, setSaving] = useState(false)
+  const { toast } = useToast()
+  const confirm = useConfirm()
 
   useEffect(() => {
     fetch(`/api/clients/${clientId}/interactions`)
@@ -47,8 +51,16 @@ export default function HistoryTab({ clientId }: HistoryTabProps) {
   }, [clientId])
 
   async function handleDelete(id: string) {
+    const ok = await confirm({
+      title: 'Remover esta interação?',
+      description: 'Esta ação não pode ser desfeita.',
+      destructive: true,
+      confirmLabel: 'Remover',
+    })
+    if (!ok) return
     setInteractions((prev) => prev.filter((i) => i.id !== id))
     await fetch(`/api/clients/${clientId}/interactions/${id}`, { method: 'DELETE' })
+    toast('Interação removida')
   }
 
   async function handleAdd(e: React.FormEvent) {
