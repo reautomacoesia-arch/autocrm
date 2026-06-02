@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useCallback, useContext, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 interface ConfirmOptions {
   title: string
@@ -31,27 +31,37 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
     })
   }, [])
 
-  function handleConfirm() {
+  const handleConfirm = useCallback(() => {
     resolveRef.current?.(true)
     setOptions(null)
-  }
+  }, [])
 
-  function handleCancel() {
+  const handleCancel = useCallback(() => {
     resolveRef.current?.(false)
     setOptions(null)
-  }
+  }, [])
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') handleCancel()
+    }
+    if (options) {
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [options, handleCancel])
 
   return (
     <ConfirmContext.Provider value={{ confirm }}>
       {children}
       {options && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60" onClick={handleCancel} />
-          <div className="relative bg-[#1e293b] border border-slate-700 rounded-xl p-6 w-full max-w-sm shadow-2xl mx-4">
+          <div className="absolute inset-0 bg-black/60" onClick={handleCancel} role="presentation" />
+          <div className="relative bg-[#1e293b] border border-slate-700 rounded-xl p-6 w-full max-w-sm shadow-2xl mx-4" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 text-xl ${options.destructive ? 'bg-red-950' : 'bg-amber-950'}`}>
               {options.destructive ? '🗑️' : '⚠️'}
             </div>
-            <h2 className="text-white text-base font-semibold mb-2">{options.title}</h2>
+            <h2 id="confirm-modal-title" className="text-white text-base font-semibold mb-2">{options.title}</h2>
             {options.description && (
               <p className="text-slate-400 text-sm mb-5">{options.description}</p>
             )}
