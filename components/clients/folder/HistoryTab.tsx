@@ -41,6 +41,11 @@ export default function HistoryTab({ clientId }: HistoryTabProps) {
   const [saving, setSaving] = useState(false)
   const { toast } = useToast()
   const confirm = useConfirm()
+  const [filterType, setFilterType] = useState<'all' | 'note' | 'meeting' | 'email'>('all')
+
+  const filteredInteractions = filterType === 'all'
+    ? interactions
+    : interactions.filter((i) => i.type === filterType)
 
   useEffect(() => {
     fetch(`/api/clients/${clientId}/interactions`)
@@ -145,40 +150,67 @@ export default function HistoryTab({ clientId }: HistoryTabProps) {
         </form>
       )}
 
+      {/* A1 — Filtro por tipo */}
+      <div className="flex gap-2 flex-wrap mb-3">
+        {(['all', 'note', 'meeting', 'email'] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilterType(f)}
+            className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
+              filterType === f
+                ? 'bg-indigo-600 text-white'
+                : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            {f === 'all'
+              ? `Todas (${interactions.length})`
+              : TYPE_LABELS[f as InteractionType]}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-3">
-        {interactions.length === 0 ? (
-          <EmptyState
-            icon="💬"
-            title="Nenhuma interação registrada"
-            description="Registre notas, reuniões e emails para acompanhar o relacionamento."
-          />
-        ) : (
-          interactions.map((interaction) => (
-            <div key={interaction.id} className="flex gap-3">
-              <div className="flex-shrink-0 w-7 h-7 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mt-0.5">
-                {TYPE_ICONS[interaction.type]}
-              </div>
-              <div className="flex-1 bg-[#1e293b] border border-slate-700 rounded-lg p-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">
-                    {TYPE_LABELS[interaction.type]}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-500">
-                      {formatDate(interaction.happened_at)}
-                    </span>
-                    <button
-                      onClick={() => handleDelete(interaction.id)}
-                      className="text-slate-600 hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                </div>
-                <p className="text-slate-300 text-sm">{interaction.description}</p>
-              </div>
+        {filteredInteractions.length === 0 ? (
+          interactions.length === 0 ? (
+            <EmptyState
+              icon="💬"
+              title="Nenhuma interação registrada"
+              description="Registre notas, reuniões e emails para acompanhar o relacionamento."
+            />
+          ) : (
+            <div className="text-center py-8 text-slate-500 text-sm">
+              Nenhuma interação do tipo selecionado.
             </div>
-          ))
+          )
+        ) : (
+          <div className="space-y-3">
+            {filteredInteractions.map((interaction) => (
+              <div key={interaction.id} className="flex gap-3">
+                <div className="flex-shrink-0 w-7 h-7 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mt-0.5">
+                  {TYPE_ICONS[interaction.type]}
+                </div>
+                <div className="flex-1 bg-[#1e293b] border border-slate-700 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                      {TYPE_LABELS[interaction.type]}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500">
+                        {formatDate(interaction.happened_at)}
+                      </span>
+                      <button
+                        onClick={() => handleDelete(interaction.id)}
+                        className="text-slate-600 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-slate-300 text-sm">{interaction.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
