@@ -21,6 +21,8 @@ export async function PATCH(
       notes: body.notes ?? null,
       instagram: body.instagram ?? null,
       website: body.website ?? null,
+      source: body.source ?? null,
+      next_step: body.next_step ?? null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)

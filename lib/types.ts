@@ -18,8 +18,19 @@ export interface Lead {
   notes: string | null
   instagram: string | null
   website: string | null
+  source: string | null
+  next_step: string | null
   created_at: string
   updated_at: string
+}
+
+export const SOURCE_LABELS: Record<string, string> = {
+  instagram: 'Instagram',
+  indicacao: 'Indicação',
+  site: 'Site',
+  linkedin: 'LinkedIn',
+  whatsapp: 'WhatsApp',
+  outro: 'Outro',
 }
 
 export interface Client {

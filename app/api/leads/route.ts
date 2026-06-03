@@ -26,6 +26,8 @@ export async function POST(request: Request) {
       stage: body.stage ?? 'lead',
       estimated_value: body.estimated_value ?? 0,
       notes: body.notes ?? null,
+      source: body.source ?? null,
+      next_step: body.next_step ?? null,
     })
     .select()
     .single()
