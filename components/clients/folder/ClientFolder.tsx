@@ -12,7 +12,7 @@ import ProposalsTab from './ProposalsTab'
 import FinancialTab from './FinancialTab'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
-import { Building2, DollarSign, Mail, Pause, Phone, Play, Trash2 } from 'lucide-react'
+import { Building2, DollarSign, Mail, Pause, Pencil, Phone, Play, Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 
@@ -36,6 +36,9 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
   const [counts, setCounts] = useState<Record<string, number>>({})
   const router = useRouter()
   const pathname = usePathname()
+  const [isEditingHeader, setIsEditingHeader] = useState(false)
+  const [headerForm, setHeaderForm] = useState({ name: '', company: '' })
+  const [headerSaving, setHeaderSaving] = useState(false)
   const { toast } = useToast()
   const confirm = useConfirm()
 
@@ -72,6 +75,28 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
     }
   }
 
+  async function handleHeaderSave(e: React.FormEvent) {
+    e.preventDefault()
+    setHeaderSaving(true)
+    const res = await fetch(`/api/clients/${client.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: headerForm.name,
+        company: headerForm.company || null,
+      }),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      setClient(updated)
+      setIsEditingHeader(false)
+      toast('Dados atualizados')
+    } else {
+      toast('Erro ao salvar', 'error')
+    }
+    setHeaderSaving(false)
+  }
+
   async function handleDelete() {
     const ok = await confirm({
       title: 'Remover este cliente permanentemente?',
@@ -99,27 +124,76 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
               {client.name.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h1 className="text-white text-xl font-bold">{client.name}</h1>
-              <div className="flex items-center gap-3 mt-1 flex-wrap">
-                {client.company && (
-                  <span className="flex items-center gap-1 text-slate-400 text-sm">
-                    <Building2 size={13} />
-                    {client.company}
-                  </span>
-                )}
-                {client.email && (
-                  <span className="flex items-center gap-1 text-slate-400 text-sm">
-                    <Mail size={13} />
-                    {client.email}
-                  </span>
-                )}
-                {client.phone && (
-                  <span className="flex items-center gap-1 text-slate-400 text-sm">
-                    <Phone size={13} />
-                    {client.phone}
-                  </span>
-                )}
-              </div>
+              {isEditingHeader ? (
+                <form onSubmit={handleHeaderSave} className="flex flex-col gap-2 min-w-[260px]">
+                  <input
+                    value={headerForm.name}
+                    onChange={(e) => setHeaderForm((p) => ({ ...p, name: e.target.value }))}
+                    required
+                    autoFocus
+                    className="bg-[#0f172a] border border-indigo-500 text-white rounded-lg px-3 py-1.5 text-lg font-bold focus:outline-none w-full"
+                    placeholder="Nome do cliente *"
+                  />
+                  <input
+                    value={headerForm.company}
+                    onChange={(e) => setHeaderForm((p) => ({ ...p, company: e.target.value }))}
+                    className="bg-[#0f172a] border border-slate-600 text-slate-400 rounded-lg px-3 py-1.5 text-sm focus:outline-none w-full focus:border-indigo-500"
+                    placeholder="Empresa"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingHeader(false)}
+                      className="text-slate-400 border border-slate-700 rounded-lg px-3 py-1 text-xs hover:border-slate-500 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={headerSaving}
+                      className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-3 py-1 text-xs font-medium disabled:opacity-50 transition-colors"
+                    >
+                      {headerSaving ? 'Salvando...' : 'Salvar'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="group">
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-white text-xl font-bold">{client.name}</h1>
+                    <button
+                      onClick={() => {
+                        setHeaderForm({ name: client.name, company: client.company ?? '' })
+                        setIsEditingHeader(true)
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-indigo-400 p-1"
+                      title="Editar nome e empresa"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1 flex-wrap">
+                    {client.company && (
+                      <span className="flex items-center gap-1 text-slate-400 text-sm">
+                        <Building2 size={13} />
+                        {client.company}
+                      </span>
+                    )}
+                    {client.email && (
+                      <span className="flex items-center gap-1 text-slate-400 text-sm">
+                        <Mail size={13} />
+                        {client.email}
+                      </span>
+                    )}
+                    {client.phone && (
+                      <span className="flex items-center gap-1 text-slate-400 text-sm">
+                        <Phone size={13} />
+                        {client.phone}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
