@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Draggable } from '@hello-pangea/dnd'
 import type { Lead } from '@/lib/types'
+import { SOURCE_LABELS } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
 import { Building2, DollarSign, X, MessageCircle } from 'lucide-react'
 import { useConfirm } from '@/components/ui/ConfirmModal'
@@ -27,6 +28,8 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
     company: lead.company ?? '',
     estimated_value: String(lead.estimated_value),
     phone: lead.phone ?? '',
+    source: lead.source ?? '',
+    next_step: lead.next_step ?? '',
   })
   const [saving, setSaving] = useState(false)
 
@@ -60,6 +63,8 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
         company: lead.company ?? '',
         estimated_value: String(lead.estimated_value),
         phone: lead.phone ?? '',
+        source: lead.source ?? '',
+        next_step: lead.next_step ?? '',
       })
       setIsEditing(true)
     }
@@ -83,6 +88,8 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
         notes: lead.notes,
         instagram: lead.instagram,
         website: lead.website,
+        source: editForm.source || null,
+        next_step: editForm.next_step || null,
       }),
     })
     if (res.ok) {
@@ -142,6 +149,25 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
                   placeholder="Telefone"
                 />
               </div>
+              <select
+                value={editForm.source}
+                onChange={(e) => setEditForm((p) => ({ ...p, source: e.target.value }))}
+                className="bg-[#1e293b] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500 mb-1.5"
+              >
+                <option value="">Origem...</option>
+                <option value="instagram">Instagram</option>
+                <option value="indicacao">Indicação</option>
+                <option value="site">Site</option>
+                <option value="linkedin">LinkedIn</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="outro">Outro</option>
+              </select>
+              <input
+                value={editForm.next_step}
+                onChange={(e) => setEditForm((p) => ({ ...p, next_step: e.target.value }))}
+                className="bg-[#1e293b] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500 mb-2"
+                placeholder="Próximo passo..."
+              />
               <div className="flex gap-1.5">
                 <button
                   type="button"
@@ -194,6 +220,19 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
                     <MessageCircle size={13} />
                     <span className="text-xs">WhatsApp</span>
                   </button>
+                </div>
+              )}
+              {lead.source && (
+                <div className="mt-2">
+                  <span className="text-[10px] bg-indigo-900/40 text-indigo-300 border border-indigo-800/50 px-2 py-0.5 rounded-full">
+                    📥 {SOURCE_LABELS[lead.source] ?? lead.source}
+                  </span>
+                </div>
+              )}
+              {lead.next_step && (
+                <div className="mt-2 border-l-2 border-amber-500 pl-2 bg-amber-950/20 rounded-r py-1">
+                  <p className="text-amber-400 text-[10px] font-semibold uppercase tracking-wide mb-0.5">Próximo passo</p>
+                  <p className="text-amber-100 text-xs leading-tight">{lead.next_step}</p>
                 </div>
               )}
             </>

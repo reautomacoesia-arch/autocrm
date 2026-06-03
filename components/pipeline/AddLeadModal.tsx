@@ -20,6 +20,8 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
     instagram: '',
     website: '',
     notes: '',
+    source: '',
+    next_step: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -45,6 +47,8 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
         instagram: form.instagram || null,
         website: form.website || null,
         notes: form.notes || null,
+        source: form.source || null,
+        next_step: form.next_step || null,
       }),
     })
 
@@ -56,7 +60,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
 
     const lead = await res.json()
     onLeadAdded(lead)
-    setForm({ name: '', company: '', email: '', phone: '', estimated_value: '', instagram: '', website: '', notes: '' })
+    setForm({ name: '', company: '', email: '', phone: '', estimated_value: '', instagram: '', website: '', notes: '', source: '', next_step: '' })
     setLoading(false)
   }
 
@@ -149,6 +153,34 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
             rows={2}
             placeholder="Observações sobre o lead..."
           />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">Origem</label>
+            <select
+              value={form.source}
+              onChange={(e) => handleChange('source', e.target.value)}
+              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            >
+              <option value="">Selecionar...</option>
+              <option value="instagram">Instagram</option>
+              <option value="indicacao">Indicação</option>
+              <option value="site">Site</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">Próximo passo</label>
+            <input
+              type="text"
+              value={form.next_step}
+              onChange={(e) => handleChange('next_step', e.target.value)}
+              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              placeholder="Ex: Enviar proposta..."
+            />
+          </div>
         </div>
         {error && (
           <p className="text-red-400 text-xs bg-red-900/20 border border-red-800 rounded-lg px-3 py-2">
