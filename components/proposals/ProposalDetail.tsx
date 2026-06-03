@@ -5,7 +5,7 @@ import type { Proposal, ProposalItem, ProposalStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
 import { useRouter } from 'next/navigation'
-import { Pencil } from 'lucide-react'
+import { Pencil, X } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 
@@ -32,11 +32,18 @@ type ProposalWithRelations = Proposal & {
   proposal_items: (ProposalItem & { services: { name: string } | null })[]
 }
 
-interface ProposalDetailProps {
-  proposal: ProposalWithRelations
+interface Service {
+  id: string
+  name: string
+  default_price: number
 }
 
-export default function ProposalDetail({ proposal: initial }: ProposalDetailProps) {
+interface ProposalDetailProps {
+  proposal: ProposalWithRelations
+  services: Service[]
+}
+
+export default function ProposalDetail({ proposal: initial, services }: ProposalDetailProps) {
   const [proposal, setProposal] = useState(initial)
   const [updating, setUpdating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -46,6 +53,8 @@ export default function ProposalDetail({ proposal: initial }: ProposalDetailProp
     notes: initial.notes ?? '',
   })
   const [editSaving, setEditSaving] = useState(false)
+  const [addForm, setAddForm] = useState({ serviceId: '', price: '' })
+  const [addSaving, setAddSaving] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
   const confirm = useConfirm()
@@ -102,6 +111,45 @@ export default function ProposalDetail({ proposal: initial }: ProposalDetailProp
     if (!ok) return
     await fetch(`/api/proposals/${proposal.id}`, { method: 'DELETE' })
     router.push('/proposals')
+  }
+
+  async function handleAddItem(e: React.FormEvent) {
+    e.preventDefault()
+    if (!addForm.serviceId || !addForm.price || addSaving) return
+    setAddSaving(true)
+    const res = await fetch(`/api/proposals/${proposal.id}/items`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id: addForm.serviceId,
+        price: parseFloat(addForm.price),
+      }),
+    })
+    if (res.ok) {
+      const newItem = await res.json()
+      setProposal((prev) => ({
+        ...prev,
+        proposal_items: [...prev.proposal_items, newItem],
+      }))
+      setAddForm({ serviceId: '', price: '' })
+      toast('Item adicionado')
+    } else {
+      toast('Erro ao adicionar item', 'error')
+    }
+    setAddSaving(false)
+  }
+
+  async function handleRemoveItem(itemId: string) {
+    setProposal((prev) => ({
+      ...prev,
+      proposal_items: prev.proposal_items.filter((i) => i.id !== itemId),
+    }))
+    await fetch(`/api/proposals/${proposal.id}/items`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item_id: itemId }),
+    })
+    toast('Item removido')
   }
 
   function formatDate(dateStr: string | null): string {
@@ -249,12 +297,66 @@ export default function ProposalDetail({ proposal: initial }: ProposalDetailProp
                   <p className="text-slate-500 text-xs">{item.services.name}</p>
                 )}
               </div>
-              <p className="text-emerald-400 text-sm font-semibold flex-shrink-0 ml-4">
-                {formatCurrency(item.price)}
-              </p>
+              <div className="flex items-center gap-3 ml-4 flex-shrink-0">
+                <p className="text-emerald-400 text-sm font-semibold">
+                  {formatCurrency(item.price)}
+                </p>
+                {proposal.status === 'draft' && (
+                  <button
+                    onClick={() => handleRemoveItem(item.id)}
+                    className="text-slate-600 hover:text-red-400 transition-colors"
+                    title="Remover item"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
+
+        {proposal.status === 'draft' && (
+          <form onSubmit={handleAddItem} className="flex gap-2 mt-3">
+            <select
+              value={addForm.serviceId}
+              onChange={(e) => {
+                const svc = services.find((s) => s.id === e.target.value)
+                setAddForm((p) => ({
+                  ...p,
+                  serviceId: e.target.value,
+                  price: svc && svc.default_price > 0 ? String(svc.default_price) : p.price,
+                }))
+              }}
+              required
+              className="flex-1 bg-[#1e293b] border border-slate-700 text-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            >
+              <option value="">Selecionar serviço...</option>
+              {services.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              required
+              value={addForm.price}
+              onChange={(e) => setAddForm((p) => ({ ...p, price: e.target.value }))}
+              className="w-28 bg-[#1e293b] border border-slate-700 text-emerald-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              placeholder="R$"
+            />
+            <button
+              type="submit"
+              disabled={addSaving}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 transition-colors"
+            >
+              {addSaving ? '...' : '+ Adicionar'}
+            </button>
+          </form>
+        )}
+
         <div className="flex justify-end mt-3 pt-3 border-t border-slate-700">
           <p className="text-white font-bold">
             Total:{' '}

@@ -11,16 +11,22 @@ export default async function ProposalPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: proposal } = await supabase
-    .from('proposals')
-    .select(`
-      *,
-      clients(id, name, company, email),
-      leads(id, name, company, email),
-      proposal_items(*, services(name))
-    `)
-    .eq('id', id)
-    .single()
+  const [{ data: proposal }, { data: services }] = await Promise.all([
+    supabase
+      .from('proposals')
+      .select(`
+        *,
+        clients(id, name, company, email),
+        leads(id, name, company, email),
+        proposal_items(*, services(name))
+      `)
+      .eq('id', id)
+      .single(),
+    supabase
+      .from('services')
+      .select('id, name, default_price')
+      .order('name'),
+  ])
 
   if (!proposal) notFound()
 
@@ -31,7 +37,7 @@ export default async function ProposalPage({ params }: Props) {
           ← Propostas
         </Link>
       </div>
-      <ProposalDetail proposal={proposal as any} />
+      <ProposalDetail proposal={proposal as any} services={services ?? []} />
     </div>
   )
 }
