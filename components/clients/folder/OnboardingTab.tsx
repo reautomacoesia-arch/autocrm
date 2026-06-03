@@ -27,6 +27,12 @@ export default function OnboardingTab({ clientId }: OnboardingTabProps) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
+  const filledCount = FIELDS.filter((f) => {
+    const val = data[f.key]
+    return val !== null && val !== undefined && String(val).trim() !== ''
+  }).length
+  const pct = Math.round((filledCount / FIELDS.length) * 100)
+
   useEffect(() => {
     fetch(`/api/clients/${clientId}/onboarding`)
       .then((res) => res.json())
@@ -59,6 +65,30 @@ export default function OnboardingTab({ clientId }: OnboardingTabProps) {
 
   return (
     <form onSubmit={handleSave} className="max-w-2xl space-y-4">
+      {/* F8 — Progresso do Onboarding */}
+      <div className="mb-4 p-3 bg-[#1e293b] border border-slate-700 rounded-lg">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
+            Progresso do Onboarding
+          </span>
+          <span className={`text-xs font-bold ${
+            pct === 100 ? 'text-emerald-400' : pct >= 50 ? 'text-indigo-400' : 'text-amber-400'
+          }`}>
+            {pct}%
+          </span>
+        </div>
+        <div className="bg-slate-800 rounded-full h-1.5 overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all ${
+              pct === 100 ? 'bg-emerald-500' : pct >= 50 ? 'bg-indigo-500' : 'bg-amber-500'
+            }`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <p className="text-slate-500 text-xs mt-1">
+          {filledCount} de {FIELDS.length} campos preenchidos
+        </p>
+      </div>
       {FIELDS.map(({ key, label, placeholder, rows }) => (
         <div key={key}>
           <label className="block text-xs text-slate-400 mb-1.5 uppercase tracking-wider">
