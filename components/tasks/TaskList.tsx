@@ -72,6 +72,8 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
 
   const [groupBy, setGroupBy] = useState<GroupBy>('none')
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+  const [editingTitleId, setEditingTitleId] = useState<string | null>(null)
+  const [editingTitle, setEditingTitle] = useState('')
 
   function toggleGroup(key: string) {
     setCollapsedGroups((prev) => {
@@ -158,6 +160,23 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
     setIsModalOpen(false)
   }
 
+  async function handleSaveTitle(taskId: string) {
+    if (!editingTitle.trim()) {
+      setEditingTitleId(null)
+      return
+    }
+    const newTitle = editingTitle.trim()
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, title: newTitle } : t))
+    )
+    setEditingTitleId(null)
+    await fetch(`/api/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: newTitle }),
+    })
+  }
+
   function renderTask(task: Task) {
     const isExpanded = expandedId === task.id
     const overdue = isOverdue(task.due_date, task.status)
@@ -182,14 +201,35 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
           }`}
         />
         <div className="flex-1 min-w-0">
-          <button
-            onClick={() => setExpandedId((prev) => (prev === task.id ? null : task.id))}
-            className={`text-left text-sm font-medium w-full ${
-              task.status === 'done' ? 'line-through text-slate-500' : 'text-white hover:text-indigo-300'
-            } transition-colors`}
-          >
-            {task.title}
-          </button>
+          {editingTitleId === task.id ? (
+            <input
+              autoFocus
+              value={editingTitle}
+              onChange={(e) => setEditingTitle(e.target.value)}
+              onBlur={() => handleSaveTitle(task.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); handleSaveTitle(task.id) }
+                if (e.key === 'Escape') { setEditingTitleId(null) }
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#0f172a] border border-indigo-500 text-white rounded px-2 py-0.5 text-sm font-medium w-full focus:outline-none"
+            />
+          ) : (
+            <button
+              onClick={() => setExpandedId((prev) => (prev === task.id ? null : task.id))}
+              onDoubleClick={(e) => {
+                e.stopPropagation()
+                setEditingTitleId(task.id)
+                setEditingTitle(task.title)
+              }}
+              className={`text-left text-sm font-medium w-full ${
+                task.status === 'done' ? 'line-through text-slate-500' : 'text-white hover:text-indigo-300'
+              } transition-colors`}
+              title="Duplo-clique para editar o título"
+            >
+              {task.title}
+            </button>
+          )}
           {task.description && !isExpanded && (
             <p className="text-slate-400 text-xs mt-0.5 truncate">{task.description}</p>
           )}
