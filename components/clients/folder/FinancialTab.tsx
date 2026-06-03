@@ -69,6 +69,11 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
     .filter((t) => t.type === 'pending')
     .reduce((sum, t) => sum + t.amount, 0)
 
+  // F5 — LTV: total histórico recebido (não filtrado)
+  const ltv = transactions
+    .filter((t) => t.type === 'received')
+    .reduce((sum, t) => sum + t.amount, 0)
+
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -153,7 +158,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
   return (
     <div className="max-w-2xl">
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-4 gap-3 mb-6">
         <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
           <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Mensalidade</p>
           <p className="text-white text-lg font-bold">{formatCurrency(monthlyValue)}</p>
@@ -165,6 +170,11 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
         <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
           <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Pendente</p>
           <p className="text-amber-400 text-lg font-bold">{formatCurrency(totalPending)}</p>
+        </div>
+        <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
+          <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">LTV Total</p>
+          <p className="text-emerald-400 text-lg font-bold">{formatCurrency(ltv)}</p>
+          <p className="text-slate-500 text-xs mt-1">total histórico recebido</p>
         </div>
       </div>
 
