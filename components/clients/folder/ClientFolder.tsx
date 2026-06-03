@@ -31,6 +31,20 @@ interface ClientFolderProps {
   activeTab: string
 }
 
+function tenureLabel(started_at: string | null): string | null {
+  if (!started_at) return null
+  const months = Math.floor(
+    (Date.now() - new Date(started_at).getTime()) / (1000 * 60 * 60 * 24 * 30.44)
+  )
+  if (months < 1) return 'menos de 1 mês'
+  if (months < 12) return `${months} ${months === 1 ? 'mês' : 'meses'}`
+  const years = Math.floor(months / 12)
+  const rem = months % 12
+  return rem === 0
+    ? `${years} ${years === 1 ? 'ano' : 'anos'}`
+    : `${years}a ${rem}m`
+}
+
 export default function ClientFolder({ client: initialClient, activeTab }: ClientFolderProps) {
   const [client, setClient] = useState(initialClient)
   const [counts, setCounts] = useState<Record<string, number>>({})
@@ -201,6 +215,11 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
               <span className="flex items-center gap-1.5 bg-emerald-900/20 text-emerald-400 border border-emerald-800 text-sm px-3 py-1 rounded-full">
                 <DollarSign size={13} />
                 {formatCurrency(client.monthly_value)}/mês
+              </span>
+            )}
+            {tenureLabel(client.started_at) && (
+              <span className="flex items-center gap-1 text-slate-400 text-xs">
+                🏠 {tenureLabel(client.started_at)}
               </span>
             )}
             <Badge
