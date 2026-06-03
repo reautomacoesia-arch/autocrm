@@ -35,6 +35,21 @@ export default function ProposalList({ proposals: initial, clients, services }: 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [filter, setFilter] = useState<ProposalStatus | 'all'>('all')
 
+  // PR1 — totais calculados sobre TODAS as propostas
+  const totalApproved = proposals
+    .filter((p) => p.status === 'approved')
+    .reduce((s, p) => s + p.value, 0)
+  const totalSent = proposals
+    .filter((p) => p.status === 'sent')
+    .reduce((s, p) => s + p.value, 0)
+  const nApproved = proposals.filter((p) => p.status === 'approved').length
+  const nSent = proposals.filter((p) => p.status === 'sent').length
+  const nRejected = proposals.filter((p) => p.status === 'rejected').length
+  const convRate =
+    nApproved + nRejected > 0
+      ? Math.round((nApproved / (nApproved + nRejected)) * 100)
+      : null
+
   const filtered = filter === 'all' ? proposals : proposals.filter((p) => p.status === filter)
 
   function getContactName(p: ProposalWithRelations): string {
@@ -49,6 +64,28 @@ export default function ProposalList({ proposals: initial, clients, services }: 
 
   return (
     <>
+      {/* PR1 — Cards de resumo */}
+      {proposals.length > 0 && (
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
+            <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Total Aprovado</p>
+            <p className="text-emerald-400 text-lg font-bold">{formatCurrency(totalApproved)}</p>
+            <p className="text-slate-500 text-xs mt-1">{nApproved} proposta(s)</p>
+          </div>
+          <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
+            <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Em Negociação</p>
+            <p className="text-amber-400 text-lg font-bold">{formatCurrency(totalSent)}</p>
+            <p className="text-slate-500 text-xs mt-1">{nSent} proposta(s)</p>
+          </div>
+          <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
+            <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Taxa de Conversão</p>
+            <p className="text-white text-lg font-bold">
+              {convRate !== null ? `${convRate}%` : '—'}
+            </p>
+            <p className="text-slate-500 text-xs mt-1">aprovadas / (apr + rec)</p>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-4">
         <div className="flex gap-2 flex-wrap">
           {(['all', 'draft', 'sent', 'approved', 'rejected'] as const).map((f) => (
