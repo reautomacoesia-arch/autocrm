@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Draggable } from '@hello-pangea/dnd'
 import type { Lead } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
@@ -11,14 +12,23 @@ interface KanbanCardProps {
   index: number
   onEdit: (lead: Lead) => void
   onDelete: (leadId: string) => void
+  onLeadUpdated: (updated: Lead) => void
 }
 
 function cleanPhone(phone: string): string {
   return phone.replace(/\D/g, '')
 }
 
-export default function KanbanCard({ lead, index, onEdit, onDelete }: KanbanCardProps) {
+export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdated }: KanbanCardProps) {
   const confirm = useConfirm()
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useState({
+    name: lead.name,
+    company: lead.company ?? '',
+    estimated_value: String(lead.estimated_value),
+    phone: lead.phone ?? '',
+  })
+  const [saving, setSaving] = useState(false)
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation()
@@ -41,6 +51,48 @@ export default function KanbanCard({ lead, index, onEdit, onDelete }: KanbanCard
     }
   }
 
+  function handleCardClick() {
+    if (lead.stage === 'won') {
+      onEdit(lead)
+    } else {
+      setEditForm({
+        name: lead.name,
+        company: lead.company ?? '',
+        estimated_value: String(lead.estimated_value),
+        phone: lead.phone ?? '',
+      })
+      setIsEditing(true)
+    }
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (saving) return
+    setSaving(true)
+    const res = await fetch(`/api/leads/${lead.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: editForm.name,
+        company: editForm.company || null,
+        estimated_value: parseFloat(editForm.estimated_value) || 0,
+        phone: editForm.phone || null,
+        email: lead.email,
+        stage: lead.stage,
+        notes: lead.notes,
+        instagram: lead.instagram,
+        website: lead.website,
+      }),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      onLeadUpdated(updated)
+      setIsEditing(false)
+    }
+    setSaving(false)
+  }
+
   return (
     <Draggable draggableId={lead.id} index={index}>
       {(provided, snapshot) => (
@@ -48,48 +100,103 @@ export default function KanbanCard({ lead, index, onEdit, onDelete }: KanbanCard
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          onClick={() => onEdit(lead)}
-          className={`bg-[#0f172a] border rounded-lg p-3 cursor-pointer select-none transition-shadow relative ${
-            snapshot.isDragging
-              ? 'border-indigo-500 shadow-lg shadow-indigo-900/20'
-              : 'border-slate-700 hover:border-slate-600'
+          onClick={isEditing ? undefined : handleCardClick}
+          className={`bg-[#0f172a] border rounded-lg p-3 select-none transition-shadow relative ${
+            isEditing
+              ? 'border-indigo-500 cursor-default'
+              : snapshot.isDragging
+              ? 'border-indigo-500 shadow-lg shadow-indigo-900/20 cursor-pointer'
+              : 'border-slate-700 hover:border-slate-600 cursor-pointer'
           }`}
         >
-          <button
-            onClick={handleDelete}
-            className="absolute top-2 right-2 text-slate-600 hover:text-red-400 transition-colors"
-            title="Remover lead"
-          >
-            <X size={13} />
-          </button>
-
-          <p className="text-white text-sm font-medium truncate pr-5">{lead.name}</p>
-          {lead.company && (
-            <div className="flex items-center gap-1 mt-1">
-              <Building2 size={11} className="text-slate-500 flex-shrink-0" />
-              <p className="text-slate-400 text-xs truncate">{lead.company}</p>
-            </div>
-          )}
-          {lead.estimated_value > 0 && (
-            <div className="flex items-center gap-1 mt-2">
-              <DollarSign size={11} className="text-emerald-500 flex-shrink-0" />
-              <p className="text-emerald-400 text-xs font-medium">
-                {formatCurrency(lead.estimated_value)}
-              </p>
-            </div>
-          )}
-
-          {lead.phone && (
-            <div className="mt-2 flex justify-end">
+          {isEditing ? (
+            <form onSubmit={handleSave} onClick={(e) => e.stopPropagation()}>
+              <input
+                value={editForm.name}
+                onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                required
+                autoFocus
+                className="w-full bg-[#1e293b] border border-slate-600 text-white rounded px-2 py-1 text-sm mb-2 focus:outline-none focus:border-indigo-500"
+                placeholder="Nome *"
+              />
+              <input
+                value={editForm.company}
+                onChange={(e) => setEditForm((p) => ({ ...p, company: e.target.value }))}
+                className="w-full bg-[#1e293b] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs mb-2 focus:outline-none focus:border-indigo-500"
+                placeholder="Empresa"
+              />
+              <div className="grid grid-cols-2 gap-1.5 mb-2">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editForm.estimated_value}
+                  onChange={(e) => setEditForm((p) => ({ ...p, estimated_value: e.target.value }))}
+                  className="bg-[#1e293b] border border-slate-600 text-emerald-400 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500"
+                  placeholder="Valor (R$)"
+                />
+                <input
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
+                  className="bg-[#1e293b] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500"
+                  placeholder="Telefone"
+                />
+              </div>
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setIsEditing(false) }}
+                  className="flex-1 text-slate-500 border border-slate-700 rounded py-1 text-xs hover:border-slate-500 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded py-1 text-xs font-medium transition-colors"
+                >
+                  {saving ? '...' : 'Salvar'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
               <button
-                onClick={handleWhatsApp}
-                className="flex items-center gap-1 text-emerald-600 hover:text-emerald-400 transition-colors"
-                title={`WhatsApp: ${lead.phone}`}
+                onClick={handleDelete}
+                className="absolute top-2 right-2 text-slate-600 hover:text-red-400 transition-colors"
+                title="Remover lead"
               >
-                <MessageCircle size={13} />
-                <span className="text-xs">WhatsApp</span>
+                <X size={13} />
               </button>
-            </div>
+
+              <p className="text-white text-sm font-medium truncate pr-5">{lead.name}</p>
+              {lead.company && (
+                <div className="flex items-center gap-1 mt-1">
+                  <Building2 size={11} className="text-slate-500 flex-shrink-0" />
+                  <p className="text-slate-400 text-xs truncate">{lead.company}</p>
+                </div>
+              )}
+              {lead.estimated_value > 0 && (
+                <div className="flex items-center gap-1 mt-2">
+                  <DollarSign size={11} className="text-emerald-500 flex-shrink-0" />
+                  <p className="text-emerald-400 text-xs font-medium">
+                    {formatCurrency(lead.estimated_value)}
+                  </p>
+                </div>
+              )}
+              {lead.phone && (
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={handleWhatsApp}
+                    className="flex items-center gap-1 text-emerald-600 hover:text-emerald-400 transition-colors"
+                    title={`WhatsApp: ${lead.phone}`}
+                  >
+                    <MessageCircle size={13} />
+                    <span className="text-xs">WhatsApp</span>
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

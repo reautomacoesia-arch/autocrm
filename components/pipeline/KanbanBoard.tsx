@@ -110,6 +110,7 @@ export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
               leads={leadsByStage[stage]}
               onCardEdit={handleCardEdit}
               onCardDelete={handleLeadDeleted}
+              onCardUpdated={handleLeadUpdated}
             />
           ))}
         </div>

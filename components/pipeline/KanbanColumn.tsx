@@ -10,9 +10,10 @@ interface KanbanColumnProps {
   leads: Lead[]
   onCardEdit: (lead: Lead) => void
   onCardDelete: (leadId: string) => void
+  onCardUpdated: (updated: Lead) => void
 }
 
-export default function KanbanColumn({ stage, leads, onCardEdit, onCardDelete }: KanbanColumnProps) {
+export default function KanbanColumn({ stage, leads, onCardEdit, onCardDelete, onCardUpdated }: KanbanColumnProps) {
   const totalValue = leads.reduce((sum, lead) => sum + lead.estimated_value, 0)
 
   return (
@@ -51,6 +52,7 @@ export default function KanbanColumn({ stage, leads, onCardEdit, onCardDelete }:
                 index={index}
                 onEdit={onCardEdit}
                 onDelete={onCardDelete}
+                onLeadUpdated={onCardUpdated}
               />
             ))}
             {provided.placeholder}
