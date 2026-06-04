@@ -12,6 +12,7 @@ import {
   Settings,
   Zap,
 } from 'lucide-react'
+import NotificationBell from '@/components/automations/NotificationBell'
 
 const navItems = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -61,6 +62,11 @@ export default function Sidebar() {
           )
         })}
       </nav>
+
+      {/* Notifications */}
+      <div className="px-3 py-3 border-t border-slate-700">
+        <NotificationBell />
+      </div>
     </aside>
   )
 }
