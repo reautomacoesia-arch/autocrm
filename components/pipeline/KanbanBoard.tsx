@@ -6,6 +6,7 @@ import type { Lead, LeadStage } from '@/lib/types'
 import { STAGES } from '@/lib/pipeline'
 import KanbanColumn from './KanbanColumn'
 import AddLeadModal from './AddLeadModal'
+import ManageLeadFieldsModal from './ManageLeadFieldsModal'
 import EditLeadModal from './EditLeadModal'
 import ConvertToClientModal from './ConvertToClientModal'
 import { Plus } from 'lucide-react'
@@ -17,6 +18,7 @@ interface KanbanBoardProps {
 export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isLeadFieldsOpen, setIsLeadFieldsOpen] = useState(false)
   const [editLead, setEditLead] = useState<Lead | null>(null)
   const [convertLead, setConvertLead] = useState<Lead | null>(null)
 
@@ -92,13 +94,21 @@ export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
           <h1 className="text-white text-2xl font-bold">Pipeline</h1>
           <p className="text-slate-400 text-sm mt-1">{activeCount} leads ativos</p>
         </div>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          <Plus size={15} />
-          Novo Lead
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsLeadFieldsOpen(true)}
+            className="flex items-center gap-1.5 text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-600 text-sm px-3 py-2 rounded-lg transition-colors"
+          >
+            ⚙️ Campos
+          </button>
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            <Plus size={15} />
+            Novo Lead
+          </button>
+        </div>
       </div>
 
       <DragDropContext onDragEnd={handleDragEnd}>
@@ -138,6 +148,11 @@ export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
           }}
         />
       )}
+
+      <ManageLeadFieldsModal
+        isOpen={isLeadFieldsOpen}
+        onClose={() => setIsLeadFieldsOpen(false)}
+      />
     </>
   )
 }
