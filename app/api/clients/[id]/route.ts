@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { runAutomation } from '@/lib/automation-engine'
 
 export async function GET(
   _request: Request,
@@ -8,12 +9,7 @@ export async function GET(
   const supabase = await createClient()
   const { id } = await params
 
-  const { data, error } = await supabase
-    .from('clients')
-    .select('*')
-    .eq('id', id)
-    .single()
-
+  const { data, error } = await supabase.from('clients').select('*').eq('id', id).single()
   if (error) return NextResponse.json({ error: error.message }, { status: 404 })
   return NextResponse.json(data)
 }
@@ -25,6 +21,13 @@ export async function PATCH(
   const supabase = await createClient()
   const { id } = await params
   const body = await request.json()
+
+  // Read previous status
+  const { data: prev } = await supabase
+    .from('clients')
+    .select('status, name')
+    .eq('id', id)
+    .single()
 
   const { data, error } = await supabase
     .from('clients')
@@ -45,6 +48,15 @@ export async function PATCH(
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Fire automation when client becomes inactive/churned
+  if (body.status && ['inactive', 'churned'].includes(body.status) && prev?.status === 'active') {
+    void runAutomation(supabase, 'client_churned', {
+      clientId: id,
+      clientName: data?.name ?? prev?.name,
+    })
+  }
+
   return NextResponse.json(data)
 }
 

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { runAutomation } from '@/lib/automation-engine'
 
 export async function PATCH(
   request: Request,
@@ -8,6 +9,13 @@ export async function PATCH(
   const supabase = await createClient()
   const { id } = await params
   const body = await request.json()
+
+  // Read previous state to detect stage change
+  const { data: prev } = await supabase
+    .from('leads')
+    .select('stage, name')
+    .eq('id', id)
+    .single()
 
   const { data, error } = await supabase
     .from('leads')
@@ -30,6 +38,17 @@ export async function PATCH(
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Fire automations on stage change (fire-and-forget)
+  if (body.stage && prev?.stage !== body.stage) {
+    const context = { leadId: id, leadName: data?.name ?? prev?.name }
+    if (body.stage === 'won') {
+      void runAutomation(supabase, 'lead_won', { ...context, clientId: body.clientId })
+    } else if (body.stage === 'lost') {
+      void runAutomation(supabase, 'lead_lost', context)
+    }
+  }
+
   return NextResponse.json(data)
 }
 

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { runAutomation } from '@/lib/automation-engine'
 
 export async function GET(
   _request: Request,
@@ -10,12 +11,7 @@ export async function GET(
 
   const { data, error } = await supabase
     .from('proposals')
-    .select(`
-      *,
-      clients(id, name, company, email),
-      leads(id, name, company, email),
-      proposal_items(*, services(name))
-    `)
+    .select(`*, clients(id, name, company, email), leads(id, name, company, email), proposal_items(*, services(name))`)
     .eq('id', id)
     .single()
 
@@ -31,9 +27,14 @@ export async function PATCH(
   const { id } = await params
   const body = await request.json()
 
-  const updates: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
-  }
+  // Read previous status
+  const { data: prev } = await supabase
+    .from('proposals')
+    .select('status, client_id')
+    .eq('id', id)
+    .single()
+
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
   if (body.status !== undefined) updates.status = body.status
   if (body.value !== undefined) updates.value = body.value
   if (body.valid_until !== undefined) updates.valid_until = body.valid_until ?? null
@@ -47,6 +48,15 @@ export async function PATCH(
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Fire automation on approval
+  if (body.status === 'approved' && prev?.status !== 'approved') {
+    void runAutomation(supabase, 'proposal_approved', {
+      proposalId: id,
+      clientId: data?.client_id ?? prev?.client_id ?? undefined,
+    })
+  }
+
   return NextResponse.json(data)
 }
 
