@@ -165,3 +165,21 @@ export interface FieldWithValue {
   definition: CustomFieldDefinition
   value: string | null
 }
+
+export interface AutomationConfig {
+  id: string
+  automation_key: string
+  enabled: boolean
+  config: Record<string, unknown> | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Notification {
+  id: string
+  title: string
+  body: string | null
+  link: string | null
+  read: boolean
+  created_at: string
+}
