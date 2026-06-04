@@ -19,13 +19,13 @@ export async function GET(req: NextRequest) {
   const [tasksRes, transactionsRes] = await Promise.all([
     supabase
       .from('tasks')
-      .select('id, title, due_date, status')
+      .select('id, title, due_date, status, client_id')
       .gte('due_date', startDate)
       .lte('due_date', endDate)
       .neq('status', 'done'),
     supabase
       .from('transactions')
-      .select('id, amount, date, type, clients(name)')
+      .select('id, amount, date, type, client_id, clients(name)')
       .gte('date', startDate)
       .lte('date', endDate)
       .eq('type', 'pending'),
