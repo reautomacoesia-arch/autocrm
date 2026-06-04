@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Draggable } from '@hello-pangea/dnd'
 import type { Lead } from '@/lib/types'
+import type { FieldWithValue } from '@/lib/types'
 import { SOURCE_LABELS } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
-import { Building2, DollarSign, X, MessageCircle } from 'lucide-react'
+import { Building2, DollarSign, X, MessageCircle, ChevronRight } from 'lucide-react'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 
 interface KanbanCardProps {
@@ -32,6 +33,10 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
     next_step: lead.next_step ?? '',
   })
   const [saving, setSaving] = useState(false)
+  const [showCustomFields, setShowCustomFields] = useState(false)
+  const [leadCustomFields, setLeadCustomFields] = useState<FieldWithValue[]>([])
+  const [customValues, setCustomValues] = useState<Record<string, string>>({})
+  const [savingCustom, setSavingCustom] = useState(false)
 
   async function handleDelete(e: React.MouseEvent) {
     e.stopPropagation()
@@ -98,6 +103,74 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
       setIsEditing(false)
     }
     setSaving(false)
+  }
+
+  useEffect(() => {
+    if (!isEditing) return
+    fetch(`/api/custom-fields/values?entity_type=lead&entity_id=${lead.id}`)
+      .then((r) => r.json())
+      .then((data: FieldWithValue[]) => {
+        setLeadCustomFields(data)
+        const vals: Record<string, string> = {}
+        for (const item of data) {
+          vals[item.definition.id] = item.value ?? ''
+        }
+        setCustomValues(vals)
+      })
+      .catch(() => {})
+  }, [isEditing, lead.id])
+
+  async function handleSaveCustomFields() {
+    setSavingCustom(true)
+    const values = Object.entries(customValues).map(([definition_id, value]) => ({
+      definition_id,
+      value: value || null,
+    }))
+    await fetch('/api/custom-fields/values', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity_id: lead.id, values }),
+    })
+    setSavingCustom(false)
+  }
+
+  function renderInputKanban(
+    def: import('@/lib/types').CustomFieldDefinition,
+    value: string,
+    onChange: (v: string) => void
+  ) {
+    const cls = 'w-full bg-[#0f172a] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500'
+    switch (def.field_type) {
+      case 'number':
+        return <input type="number" value={value} onChange={(e) => onChange(e.target.value)} className={cls} />
+      case 'date':
+        return <input type="date" value={value} onChange={(e) => onChange(e.target.value)} className={cls} />
+      case 'url':
+        return <input type="url" value={value} onChange={(e) => onChange(e.target.value)} placeholder="https://" className={cls} />
+      case 'checkbox':
+        return (
+          <div className="flex items-center gap-1.5 py-0.5">
+            <input
+              type="checkbox"
+              checked={value === 'true'}
+              onChange={(e) => onChange(e.target.checked ? 'true' : 'false')}
+              className="w-3 h-3 accent-indigo-500"
+            />
+            <span className="text-slate-500 text-[10px]">{value === 'true' ? 'Sim' : 'Não'}</span>
+          </div>
+        )
+      case 'select':
+        return (
+          <select value={value} onChange={(e) => onChange(e.target.value)} className={cls}>
+            <option value="">Selecionar...</option>
+            {(def.options ?? []).map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        )
+      default:
+        return <input type="text" value={value} onChange={(e) => onChange(e.target.value)} className={cls} />
+    }
   }
 
   return (
@@ -168,6 +241,43 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
                 className="bg-[#1e293b] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500 mb-2"
                 placeholder="Próximo passo..."
               />
+              {leadCustomFields.length > 0 && (
+                <div className="mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomFields((p) => !p)}
+                    className="flex items-center gap-1 text-slate-500 hover:text-slate-300 text-xs transition-colors w-full text-left py-1"
+                  >
+                    <ChevronRight
+                      size={11}
+                      className={`transition-transform flex-shrink-0 ${showCustomFields ? 'rotate-90' : ''}`}
+                    />
+                    Campos extras ({leadCustomFields.length})
+                  </button>
+                  {showCustomFields && (
+                    <div className="mt-1.5 space-y-2 pl-1">
+                      {leadCustomFields.map(({ definition: def }) => (
+                        <div key={def.id}>
+                          <p className="text-[10px] text-slate-500 mb-0.5">{def.name}</p>
+                          {renderInputKanban(
+                            def,
+                            customValues[def.id] ?? '',
+                            (v) => setCustomValues((prev) => ({ ...prev, [def.id]: v }))
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={handleSaveCustomFields}
+                        disabled={savingCustom}
+                        className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded px-3 py-1 transition-colors disabled:opacity-50"
+                      >
+                        {savingCustom ? '...' : 'Salvar extras'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="flex gap-1.5">
                 <button
                   type="button"
