@@ -1,0 +1,92 @@
+import { createClient } from '@/lib/supabase/server'
+import { AUTOMATION_DEFINITIONS, AUTOMATION_DEFAULTS } from '@/lib/automations'
+import type { AutomationConfig } from '@/lib/types'
+import AutomationCard from '@/components/automations/AutomationCard'
+import { Zap } from 'lucide-react'
+
+async function runScheduledAutomations() {
+  'use server'
+  const { POST } = await import('@/app/api/automations/run-scheduled/route')
+  await POST()
+}
+
+export default async function AutomationsPage() {
+  const supabase = await createClient()
+
+  // Seed + fetch configs
+  const { data: existing } = await supabase.from('automation_configs').select('*')
+  const existingKeys = new Set((existing ?? []).map((c: AutomationConfig) => c.automation_key))
+  const toInsert = AUTOMATION_DEFINITIONS
+    .filter((def) => !existingKeys.has(def.key))
+    .map((def) => ({ automation_key: def.key, enabled: false, config: AUTOMATION_DEFAULTS[def.key] ?? null }))
+  if (toInsert.length > 0) {
+    await supabase.from('automation_configs').insert(toInsert)
+  }
+
+  const { data: configs } = await supabase.from('automation_configs').select('*')
+  const configMap: Record<string, AutomationConfig> = {}
+  for (const c of configs ?? []) {
+    configMap[(c as AutomationConfig).automation_key] = c as AutomationConfig
+  }
+
+  const eventBased = AUTOMATION_DEFINITIONS.filter((d) =>
+    ['lead_won', 'proposal_approved', 'lead_lost', 'client_churned'].includes(d.key)
+  )
+  const timeBased = AUTOMATION_DEFINITIONS.filter((d) =>
+    ['proposal_no_response', 'client_no_contact', 'task_overdue'].includes(d.key)
+  )
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-white text-2xl font-bold">Automações</h1>
+          <p className="text-slate-400 text-sm mt-1">
+            Configure o que acontece automaticamente quando eventos ocorrem
+          </p>
+        </div>
+        <form action={runScheduledAutomations}>
+          <button
+            type="submit"
+            className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            <Zap size={14} />
+            Executar agendadas agora
+          </button>
+        </form>
+      </div>
+
+      {/* Event-based */}
+      <div className="mb-8">
+        <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+          Baseadas em eventos
+        </h2>
+        <div className="grid grid-cols-1 gap-3 max-w-2xl">
+          {eventBased.map((def) => (
+            <AutomationCard
+              key={def.key}
+              definition={def}
+              config={configMap[def.key] ?? null}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Time-based */}
+      <div>
+        <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+          Baseadas em tempo
+        </h2>
+        <div className="grid grid-cols-1 gap-3 max-w-2xl">
+          {timeBased.map((def) => (
+            <AutomationCard
+              key={def.key}
+              definition={def}
+              config={configMap[def.key] ?? null}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}

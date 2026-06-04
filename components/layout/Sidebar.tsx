@@ -20,6 +20,7 @@ const navItems = [
   { href: '/proposals', icon: FileText, label: 'Propostas' },
   { href: '/financial', icon: DollarSign, label: 'Financeiro' },
   { href: '/tasks', icon: CheckSquare, label: 'Tarefas' },
+  { href: '/automations', icon: Zap, label: 'Automações' },
   { href: '/services', icon: Settings, label: 'Serviços' },
 ]
 
