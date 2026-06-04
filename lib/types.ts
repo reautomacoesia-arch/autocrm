@@ -138,3 +138,30 @@ export interface Interaction {
   happened_at: string
   created_at: string
 }
+
+export type CustomFieldType = 'text' | 'number' | 'date' | 'select' | 'checkbox' | 'url'
+export type CustomFieldEntityType = 'client' | 'lead'
+
+export interface CustomFieldDefinition {
+  id: string
+  entity_type: CustomFieldEntityType
+  name: string
+  field_type: CustomFieldType
+  options: string[] | null
+  sort_order: number
+  created_at: string
+}
+
+export interface CustomFieldValue {
+  id: string
+  definition_id: string
+  entity_id: string
+  value: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface FieldWithValue {
+  definition: CustomFieldDefinition
+  value: string | null
+}
