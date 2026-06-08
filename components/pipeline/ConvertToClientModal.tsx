@@ -68,7 +68,7 @@ export default function ConvertToClientModal({
             step="0.01"
             value={monthlyValue}
             onChange={(e) => setMonthlyValue(e.target.value)}
-            className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             placeholder="0"
           />
         </div>

@@ -28,7 +28,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div
-        className={`relative bg-[#1e293b] rounded-xl border border-slate-700 w-full ${sizeClasses[size]} mx-4 shadow-xl`}
+        className={`relative bg-[#1a1a1d] rounded-xl border border-slate-700 w-full ${sizeClasses[size]} mx-4 shadow-xl`}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
           <h2 className="text-white font-semibold text-sm">{title}</h2>

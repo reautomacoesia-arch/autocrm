@@ -31,6 +31,6 @@ describe('Sidebar', () => {
 
   it('exibe o nome do sistema', () => {
     render(<Sidebar />)
-    expect(screen.getByText('AutoCRM')).toBeInTheDocument()
+    expect(screen.getByText('Korvus')).toBeInTheDocument()
   })
 })

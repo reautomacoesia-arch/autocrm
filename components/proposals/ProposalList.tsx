@@ -67,17 +67,17 @@ export default function ProposalList({ proposals: initial, clients, services }: 
       {/* PR1 — Cards de resumo */}
       {proposals.length > 0 && (
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
+          <div className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4">
             <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Total Aprovado</p>
             <p className="text-emerald-400 text-lg font-bold">{formatCurrency(totalApproved)}</p>
             <p className="text-slate-500 text-xs mt-1">{nApproved} proposta(s)</p>
           </div>
-          <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
+          <div className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4">
             <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Em Negociação</p>
             <p className="text-amber-400 text-lg font-bold">{formatCurrency(totalSent)}</p>
             <p className="text-slate-500 text-xs mt-1">{nSent} proposta(s)</p>
           </div>
-          <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
+          <div className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4">
             <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Taxa de Conversão</p>
             <p className="text-white text-lg font-bold">
               {convRate !== null ? `${convRate}%` : '—'}
@@ -94,7 +94,7 @@ export default function ProposalList({ proposals: initial, clients, services }: 
               onClick={() => setFilter(f)}
               className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
                 filter === f
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-indigo-600 text-[#050505]'
                   : 'bg-slate-800 text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -106,7 +106,7 @@ export default function ProposalList({ proposals: initial, clients, services }: 
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-[#050505] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           <Plus size={14} />
           Nova Proposta
@@ -134,7 +134,7 @@ export default function ProposalList({ proposals: initial, clients, services }: 
               <Link
                 key={proposal.id}
                 href={`/proposals/${proposal.id}`}
-                className="flex items-center justify-between bg-[#1e293b] hover:bg-slate-700/50 border border-slate-700 hover:border-slate-600 rounded-lg px-4 py-3 transition-colors group"
+                className="flex items-center justify-between bg-[#1a1a1d] hover:bg-slate-700/50 border border-slate-700 hover:border-slate-600 rounded-lg px-4 py-3 transition-colors group"
               >
                 <div>
                   <p className="text-white text-sm font-medium">{getContactName(proposal)}</p>

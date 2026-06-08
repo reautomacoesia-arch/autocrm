@@ -185,7 +185,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
     return (
       <div
         key={task.id}
-        className={`flex items-start gap-3 bg-[#1e293b] border rounded-lg px-4 py-3 ${
+        className={`flex items-start gap-3 bg-[#1a1a1d] border rounded-lg px-4 py-3 ${
           overdue ? 'border-red-800' : 'border-slate-700'
         }`}
       >
@@ -212,7 +212,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
                 if (e.key === 'Escape') { setEditingTitleId(null) }
               }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-[#0f172a] border border-indigo-500 text-white rounded px-2 py-0.5 text-sm font-medium w-full focus:outline-none"
+              className="bg-[#050505] border border-indigo-500 text-white rounded px-2 py-0.5 text-sm font-medium w-full focus:outline-none"
             />
           ) : (
             <button
@@ -298,7 +298,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
               onClick={() => setFilter(f)}
               className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
                 filter === f
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-indigo-600 text-[#050505]'
                   : 'bg-slate-800 text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -313,7 +313,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
               setGroupBy(e.target.value as GroupBy)
               setCollapsedGroups(new Set())
             }}
-            className="bg-[#1e293b] border border-slate-700 text-slate-400 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
+            className="bg-[#1a1a1d] border border-slate-700 text-slate-400 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
           >
             <option value="none">Sem agrupamento</option>
             <option value="status">Por status</option>
@@ -322,7 +322,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
           </select>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-[#050505] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
             <Plus size={14} />
             Nova Tarefa

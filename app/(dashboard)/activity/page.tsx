@@ -60,7 +60,7 @@ export default async function ActivityPage({
       </div>
 
       {interactions.length === 0 ? (
-        <div className="bg-[#1e293b] border border-slate-700 rounded-xl p-12 text-center text-slate-500 text-sm">
+        <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl p-12 text-center text-slate-500 text-sm">
           Nenhuma interação registrada ainda.
         </div>
       ) : (
@@ -68,7 +68,7 @@ export default async function ActivityPage({
           {interactions.map((interaction: any) => (
             <div
               key={interaction.id}
-              className="bg-[#1e293b] border border-slate-700 rounded-lg px-4 py-3"
+              className="bg-[#1a1a1d] border border-slate-700 rounded-lg px-4 py-3"
             >
               <div className="flex items-start gap-3">
                 <span className="text-lg flex-shrink-0 mt-0.5">

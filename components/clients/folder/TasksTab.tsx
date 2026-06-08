@@ -135,7 +135,7 @@ export default function TasksTab({ clientId }: TasksTabProps) {
                 <form
                   key={task.id}
                   onSubmit={(e) => handleEdit(e, task.id)}
-                  className="bg-[#1e293b] border border-indigo-500 rounded-lg p-4 space-y-3"
+                  className="bg-[#1a1a1d] border border-indigo-500 rounded-lg p-4 space-y-3"
                 >
                   <div>
                     <label className="block text-xs text-slate-400 mb-1.5">Título *</label>
@@ -144,7 +144,7 @@ export default function TasksTab({ clientId }: TasksTabProps) {
                       required
                       value={editForm.title}
                       onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))}
-                      className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                   <div>
@@ -152,7 +152,7 @@ export default function TasksTab({ clientId }: TasksTabProps) {
                     <textarea
                       value={editForm.description}
                       onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
-                      className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
+                      className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
                       rows={2}
                     />
                   </div>
@@ -164,7 +164,7 @@ export default function TasksTab({ clientId }: TasksTabProps) {
                         onChange={(e) =>
                           setEditForm((p) => ({ ...p, status: e.target.value as TaskStatus }))
                         }
-                        className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                        className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                       >
                         <option value="pending">Pendente</option>
                         <option value="in_progress">Em andamento</option>
@@ -178,7 +178,7 @@ export default function TasksTab({ clientId }: TasksTabProps) {
                         onChange={(e) =>
                           setEditForm((p) => ({ ...p, priority: e.target.value as TaskPriority }))
                         }
-                        className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                        className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                       >
                         <option value="high">Alta</option>
                         <option value="medium">Média</option>
@@ -191,7 +191,7 @@ export default function TasksTab({ clientId }: TasksTabProps) {
                         type="date"
                         value={editForm.due_date}
                         onChange={(e) => setEditForm((p) => ({ ...p, due_date: e.target.value }))}
-                        className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                        className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                       />
                     </div>
                   </div>
@@ -206,7 +206,7 @@ export default function TasksTab({ clientId }: TasksTabProps) {
                     <button
                       type="submit"
                       disabled={editSaving}
-                      className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium"
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium"
                     >
                       {editSaving ? 'Salvando...' : 'Salvar'}
                     </button>
@@ -221,7 +221,7 @@ export default function TasksTab({ clientId }: TasksTabProps) {
               <div
                 key={task.id}
                 onClick={() => startEdit(task)}
-                className="bg-[#1e293b] border border-slate-700 rounded-lg p-4 cursor-pointer hover:border-slate-500 transition-colors"
+                className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4 cursor-pointer hover:border-slate-500 transition-colors"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">

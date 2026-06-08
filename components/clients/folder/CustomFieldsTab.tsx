@@ -66,7 +66,7 @@ export default function CustomFieldsTab({ entityType, entityId }: CustomFieldsTa
   }>({ name: '', field_type: 'text', options: '' })
   const [addSaving, setAddSaving] = useState(false)
 
-  const inputCls = 'w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500'
+  const inputCls = 'w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500'
 
   useEffect(() => {
     fetch(`/api/custom-fields/values?entity_type=${entityType}&entity_id=${entityId}`)
@@ -171,7 +171,7 @@ export default function CustomFieldsTab({ entityType, entityId }: CustomFieldsTa
             fields.map(({ definition: def }) => (
               <div
                 key={def.id}
-                className="flex items-center justify-between bg-[#1e293b] border border-slate-700 rounded-lg px-4 py-2.5"
+                className="flex items-center justify-between bg-[#1a1a1d] border border-slate-700 rounded-lg px-4 py-2.5"
               >
                 <div className="flex items-center gap-2">
                   <span className="text-white text-sm">{def.name}</span>
@@ -204,7 +204,7 @@ export default function CustomFieldsTab({ entityType, entityId }: CustomFieldsTa
               value={newField.name}
               onChange={(e) => setNewField((p) => ({ ...p, name: e.target.value }))}
               placeholder="Nome do campo *"
-              className="w-full bg-[#1e293b] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#1a1a1d] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             />
           </div>
           <select
@@ -212,7 +212,7 @@ export default function CustomFieldsTab({ entityType, entityId }: CustomFieldsTa
             onChange={(e) =>
               setNewField((p) => ({ ...p, field_type: e.target.value as CustomFieldType }))
             }
-            className="bg-[#1e293b] border border-slate-700 text-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            className="bg-[#1a1a1d] border border-slate-700 text-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
           >
             <option value="text">Texto</option>
             <option value="number">Número</option>
@@ -228,14 +228,14 @@ export default function CustomFieldsTab({ entityType, entityId }: CustomFieldsTa
                 value={newField.options}
                 onChange={(e) => setNewField((p) => ({ ...p, options: e.target.value }))}
                 placeholder="Opções: A, B, C"
-                className="w-full bg-[#1e293b] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[#1a1a1d] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               />
             </div>
           )}
           <button
             type="submit"
             disabled={addSaving}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap"
+            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap"
           >
             {addSaving ? '...' : '+ Adicionar'}
           </button>
@@ -264,7 +264,7 @@ export default function CustomFieldsTab({ entityType, entityId }: CustomFieldsTa
           <button
             type="submit"
             disabled={saving}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-6 py-2.5 rounded-lg transition-colors"
+            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] text-sm font-medium px-6 py-2.5 rounded-lg transition-colors"
           >
             {saving ? 'Salvando...' : 'Salvar campos'}
           </button>

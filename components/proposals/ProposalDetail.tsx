@@ -160,7 +160,7 @@ export default function ProposalDetail({ proposal: initial, services }: Proposal
   return (
     <div className="max-w-2xl">
       {/* Header */}
-      <div className="bg-[#1e293b] rounded-xl border border-slate-700 p-5 mb-6">
+      <div className="bg-[#1a1a1d] rounded-xl border border-slate-700 p-5 mb-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             {contact && (
@@ -236,7 +236,7 @@ export default function ProposalDetail({ proposal: initial, services }: Proposal
                   required
                   value={editForm.value}
                   onChange={(e) => setEditForm((p) => ({ ...p, value: e.target.value }))}
-                  className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                 />
               </div>
               <div>
@@ -245,7 +245,7 @@ export default function ProposalDetail({ proposal: initial, services }: Proposal
                   type="date"
                   value={editForm.valid_until}
                   onChange={(e) => setEditForm((p) => ({ ...p, valid_until: e.target.value }))}
-                  className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -255,7 +255,7 @@ export default function ProposalDetail({ proposal: initial, services }: Proposal
                 value={editForm.notes}
                 onChange={(e) => setEditForm((p) => ({ ...p, notes: e.target.value }))}
                 rows={2}
-                className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
+                className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
               />
             </div>
             <div className="flex gap-2">
@@ -269,7 +269,7 @@ export default function ProposalDetail({ proposal: initial, services }: Proposal
               <button
                 type="submit"
                 disabled={editSaving}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium"
+                className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium"
               >
                 {editSaving ? 'Salvando...' : 'Salvar'}
               </button>
@@ -287,7 +287,7 @@ export default function ProposalDetail({ proposal: initial, services }: Proposal
           {proposal.proposal_items.map((item) => (
             <div
               key={item.id}
-              className="flex items-center justify-between bg-[#1e293b] border border-slate-700 rounded-lg px-4 py-3"
+              className="flex items-center justify-between bg-[#1a1a1d] border border-slate-700 rounded-lg px-4 py-3"
             >
               <div>
                 <p className="text-white text-sm">
@@ -328,7 +328,7 @@ export default function ProposalDetail({ proposal: initial, services }: Proposal
                 }))
               }}
               required
-              className="flex-1 bg-[#1e293b] border border-slate-700 text-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="flex-1 bg-[#1a1a1d] border border-slate-700 text-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             >
               <option value="">Selecionar serviço...</option>
               {services.map((s) => (
@@ -344,13 +344,13 @@ export default function ProposalDetail({ proposal: initial, services }: Proposal
               required
               value={addForm.price}
               onChange={(e) => setAddForm((p) => ({ ...p, price: e.target.value }))}
-              className="w-28 bg-[#1e293b] border border-slate-700 text-emerald-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-28 bg-[#1a1a1d] border border-slate-700 text-emerald-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="R$"
             />
             <button
               type="submit"
               disabled={addSaving}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 transition-colors"
+              className="bg-indigo-600 hover:bg-indigo-500 text-[#050505] rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 transition-colors"
             >
               {addSaving ? '...' : '+ Adicionar'}
             </button>
@@ -371,7 +371,7 @@ export default function ProposalDetail({ proposal: initial, services }: Proposal
           <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
             Observações
           </h2>
-          <p className="text-slate-300 text-sm bg-[#1e293b] border border-slate-700 rounded-lg px-4 py-3">
+          <p className="text-slate-300 text-sm bg-[#1a1a1d] border border-slate-700 rounded-lg px-4 py-3">
             {proposal.notes}
           </p>
         </div>

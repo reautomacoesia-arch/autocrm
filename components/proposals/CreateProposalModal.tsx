@@ -124,7 +124,7 @@ export default function CreateProposalModal({
             <select
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             >
               <option value="">Selecione um cliente...</option>
               {clients.map((c) => (
@@ -154,7 +154,7 @@ export default function CreateProposalModal({
                   <select
                     value={item.service_id ?? ''}
                     onChange={(e) => updateItem(index, 'service_id', e.target.value)}
-                    className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
                   >
                     <option value="">Serviço personalizado</option>
                     {services.map((s) => (
@@ -168,7 +168,7 @@ export default function CreateProposalModal({
                     value={item.custom_description}
                     onChange={(e) => updateItem(index, 'custom_description', e.target.value)}
                     placeholder="Descrição do item"
-                    className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
                   />
                 </div>
                 <div className="w-28 flex-shrink-0">
@@ -180,7 +180,7 @@ export default function CreateProposalModal({
                     value={item.price}
                     onChange={(e) => updateItem(index, 'price', e.target.value)}
                     placeholder="R$ 0"
-                    className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
                   />
                 </div>
                 {items.length > 1 && (
@@ -210,7 +210,7 @@ export default function CreateProposalModal({
             type="date"
             value={validUntil}
             onChange={(e) => setValidUntil(e.target.value)}
-            className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
           />
         </div>
 
@@ -219,7 +219,7 @@ export default function CreateProposalModal({
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
+            className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
             rows={2}
           />
         </div>
@@ -241,7 +241,7 @@ export default function CreateProposalModal({
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium"
+            className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium"
           >
             {loading ? 'Criando...' : 'Criar Proposta'}
           </button>

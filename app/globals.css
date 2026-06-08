@@ -1,26 +1,54 @@
 @import "tailwindcss";
 
+/* ── Paleta Korvus (brandbook §05) ───────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --korvus-black: #050505;
+  --obsidian: #1a1a1d;
+  --neural-gold: #d4af37;
+  --phantom-white: #f8f9fa;
+
+  --background: var(--korvus-black);
+  --foreground: var(--phantom-white);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Fontes */
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-montserrat);
+  --font-mono: var(--font-roboto-mono);
+
+  /* ── Destaque: escala indigo → Neural Gold ──────────────────────── */
+  --color-indigo-300: #e9d9a6;
+  --color-indigo-400: #dfc367;
+  --color-indigo-500: #d4af37;  /* Neural Gold */
+  --color-indigo-600: #cba62f;
+  --color-indigo-700: #a8852a;
+  --color-indigo-800: #3d3214;
+  --color-indigo-900: #2a2310;
+
+  /* ── Neutros: escala slate → tons Korvus ────────────────────────── */
+  --color-slate-100: #f8f9fa;  /* Phantom White */
+  --color-slate-200: #e5e5e7;
+  --color-slate-300: #c9c9ce;
+  --color-slate-400: #8a8a93;
+  --color-slate-500: #6e6e77;
+  --color-slate-600: #4a4a52;
+  --color-slate-700: #2a2a2f;
+  --color-slate-800: #1f1f23;
+  --color-slate-900: #0a0a0c;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+/* Títulos em Montserrat (uppercase fica só no wordmark e labels já-uppercase,
+   pois nomes de clientes/títulos dinâmicos não devem virar caixa alta) */
+h1, h2, h3, h4 {
+  font-family: var(--font-montserrat), system-ui, sans-serif;
 }

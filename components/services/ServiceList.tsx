@@ -86,7 +86,7 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
         <p className="text-slate-400 text-sm">{services.length} serviço(s)</p>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-[#050505] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           <Plus size={14} />
           Novo Serviço
@@ -96,7 +96,7 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
       {showForm && (
         <form
           onSubmit={handleAdd}
-          className="bg-[#1e293b] border border-slate-700 rounded-lg p-4 mb-4 space-y-3"
+          className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4 mb-4 space-y-3"
         >
           <div>
             <label className="block text-xs text-slate-400 mb-1.5">Nome *</label>
@@ -105,7 +105,7 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
               required
               value={form.name}
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="Ex: Chatbot WhatsApp"
             />
           </div>
@@ -118,7 +118,7 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
                 step="0.01"
                 value={form.default_price}
                 onChange={(e) => setForm((p) => ({ ...p, default_price: e.target.value }))}
-                className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                 placeholder="0"
               />
             </div>
@@ -128,7 +128,7 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
                 type="text"
                 value={form.description}
                 onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                 placeholder="Breve descrição"
               />
             </div>
@@ -144,7 +144,7 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium"
+              className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium"
             >
               {saving ? 'Salvando...' : 'Adicionar'}
             </button>
@@ -162,14 +162,14 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
         ) : (
           services.map((service) =>
             editingId === service.id ? (
-              <div key={service.id} className="bg-[#1e293b] border border-indigo-700 rounded-lg p-4 space-y-3">
+              <div key={service.id} className="bg-[#1a1a1d] border border-indigo-700 rounded-lg p-4 space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2">
                     <input
                       type="text"
                       value={editForm.name}
                       onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
-                      className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                   <div>
@@ -179,7 +179,7 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
                       step="0.01"
                       value={editForm.default_price}
                       onChange={(e) => setEditForm((p) => ({ ...p, default_price: e.target.value }))}
-                      className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                       placeholder="Preço padrão"
                     />
                   </div>
@@ -188,7 +188,7 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
                       type="text"
                       value={editForm.description}
                       onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
-                      className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                       placeholder="Descrição"
                     />
                   </div>
@@ -212,7 +212,7 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
             ) : (
               <div
                 key={service.id}
-                className="flex items-start justify-between bg-[#1e293b] border border-slate-700 rounded-lg px-4 py-3"
+                className="flex items-start justify-between bg-[#1a1a1d] border border-slate-700 rounded-lg px-4 py-3"
               >
                 <div>
                   <p className="text-white text-sm font-medium">{service.name}</p>

@@ -39,10 +39,10 @@ export default function AutomationCard({ definition, config }: AutomationCardPro
     setValues((prev) => ({ ...prev, [key]: value }))
   }
 
-  const inputCls = 'w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500'
+  const inputCls = 'w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500'
 
   return (
-    <div className={`bg-[#1e293b] border rounded-xl p-4 transition-colors ${enabled ? 'border-indigo-700' : 'border-slate-700'}`}>
+    <div className={`bg-[#1a1a1d] border rounded-xl p-4 transition-colors ${enabled ? 'border-indigo-700' : 'border-slate-700'}`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2.5">
@@ -131,7 +131,7 @@ export default function AutomationCard({ definition, config }: AutomationCardPro
           <button
             onClick={handleSave}
             disabled={saving}
-            className="mt-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            className="mt-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
             {saving ? 'Salvando...' : 'Salvar'}
           </button>

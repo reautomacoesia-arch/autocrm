@@ -104,7 +104,7 @@ export default function HistoryTab({ clientId }: HistoryTabProps) {
       {showForm && (
         <form
           onSubmit={handleAdd}
-          className="bg-[#1e293b] border border-slate-700 rounded-lg p-4 mb-4 space-y-3"
+          className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4 mb-4 space-y-3"
         >
           <div>
             <label className="block text-xs text-slate-400 mb-1.5">Tipo</label>
@@ -113,7 +113,7 @@ export default function HistoryTab({ clientId }: HistoryTabProps) {
               onChange={(e) =>
                 setForm((p) => ({ ...p, type: e.target.value as InteractionType }))
               }
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             >
               <option value="note">Nota</option>
               <option value="meeting">Reunião</option>
@@ -126,7 +126,7 @@ export default function HistoryTab({ clientId }: HistoryTabProps) {
               required
               value={form.description}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
               rows={3}
               placeholder="O que aconteceu?"
             />
@@ -142,7 +142,7 @@ export default function HistoryTab({ clientId }: HistoryTabProps) {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium"
+              className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium"
             >
               {saving ? 'Salvando...' : 'Registrar'}
             </button>
@@ -158,7 +158,7 @@ export default function HistoryTab({ clientId }: HistoryTabProps) {
             onClick={() => setFilterType(f)}
             className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
               filterType === f
-                ? 'bg-indigo-600 text-white'
+                ? 'bg-indigo-600 text-[#050505]'
                 : 'bg-slate-800 text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -189,7 +189,7 @@ export default function HistoryTab({ clientId }: HistoryTabProps) {
                 <div className="flex-shrink-0 w-7 h-7 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mt-0.5">
                   {TYPE_ICONS[interaction.type]}
                 </div>
-                <div className="flex-1 bg-[#1e293b] border border-slate-700 rounded-lg p-3">
+                <div className="flex-1 bg-[#1a1a1d] border border-slate-700 rounded-lg p-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">
                       {TYPE_LABELS[interaction.type]}

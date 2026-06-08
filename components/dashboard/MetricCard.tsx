@@ -15,9 +15,9 @@ const colorClasses = {
 
 export default function MetricCard({ label, value, sub, color = 'white' }: MetricCardProps) {
   return (
-    <div className="bg-[#1e293b] border border-slate-700 rounded-xl p-5">
+    <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl p-5">
       <p className="text-slate-400 text-xs uppercase tracking-wider mb-2">{label}</p>
-      <p className={`text-2xl font-bold ${colorClasses[color]}`}>{value}</p>
+      <p className={`text-2xl font-bold font-mono ${colorClasses[color]}`}>{value}</p>
       {sub && <p className="text-slate-500 text-xs mt-1">{sub}</p>}
     </div>
   )

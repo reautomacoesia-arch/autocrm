@@ -97,7 +97,7 @@ export default function EditLeadModal({ lead, onClose, onLeadUpdated }: EditLead
             required
             value={form.name}
             onChange={(e) => handleChange('name', e.target.value)}
-            className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
           />
         </div>
         <div>
@@ -106,7 +106,7 @@ export default function EditLeadModal({ lead, onClose, onLeadUpdated }: EditLead
             type="text"
             value={form.company}
             onChange={(e) => handleChange('company', e.target.value)}
-            className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -116,7 +116,7 @@ export default function EditLeadModal({ lead, onClose, onLeadUpdated }: EditLead
               type="email"
               value={form.email}
               onChange={(e) => handleChange('email', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             />
           </div>
           <div>
@@ -125,7 +125,7 @@ export default function EditLeadModal({ lead, onClose, onLeadUpdated }: EditLead
               type="text"
               value={form.phone}
               onChange={(e) => handleChange('phone', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="(11) 99999-0000"
             />
           </div>
@@ -137,7 +137,7 @@ export default function EditLeadModal({ lead, onClose, onLeadUpdated }: EditLead
               type="text"
               value={form.instagram}
               onChange={(e) => handleChange('instagram', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="@empresa"
             />
           </div>
@@ -147,7 +147,7 @@ export default function EditLeadModal({ lead, onClose, onLeadUpdated }: EditLead
               type="text"
               value={form.website}
               onChange={(e) => handleChange('website', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="https://empresa.com.br"
             />
           </div>
@@ -161,7 +161,7 @@ export default function EditLeadModal({ lead, onClose, onLeadUpdated }: EditLead
               step="0.01"
               value={form.estimated_value}
               onChange={(e) => handleChange('estimated_value', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="0"
             />
           </div>
@@ -170,7 +170,7 @@ export default function EditLeadModal({ lead, onClose, onLeadUpdated }: EditLead
             <select
               value={form.stage}
               onChange={(e) => handleChange('stage', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             >
               {STAGE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
@@ -183,7 +183,7 @@ export default function EditLeadModal({ lead, onClose, onLeadUpdated }: EditLead
           <textarea
             value={form.notes}
             onChange={(e) => handleChange('notes', e.target.value)}
-            className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
+            className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
             rows={3}
             placeholder="Observações sobre o lead..."
           />
@@ -204,7 +204,7 @@ export default function EditLeadModal({ lead, onClose, onLeadUpdated }: EditLead
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
+            className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium transition-colors"
           >
             {loading ? 'Salvando...' : 'Salvar'}
           </button>

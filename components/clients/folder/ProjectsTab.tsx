@@ -137,7 +137,7 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
       {showForm && (
         <form
           onSubmit={handleAdd}
-          className="bg-[#1e293b] border border-slate-700 rounded-lg p-4 mb-4 space-y-3"
+          className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4 mb-4 space-y-3"
         >
           <div>
             <label className="block text-xs text-slate-400 mb-1.5">Nome *</label>
@@ -146,7 +146,7 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
               required
               value={form.name}
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="Ex: Chatbot WhatsApp"
             />
           </div>
@@ -155,7 +155,7 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
             <textarea
               value={form.description}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
               rows={2}
             />
           </div>
@@ -170,7 +170,7 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium"
+              className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium"
             >
               {saving ? 'Salvando...' : 'Adicionar'}
             </button>
@@ -192,7 +192,7 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
                 <form
                   key={project.id}
                   onSubmit={(e) => handleEdit(e, project.id)}
-                  className="bg-[#1e293b] border border-indigo-500 rounded-lg p-4 space-y-3"
+                  className="bg-[#1a1a1d] border border-indigo-500 rounded-lg p-4 space-y-3"
                 >
                   <div>
                     <label className="block text-xs text-slate-400 mb-1.5">Nome *</label>
@@ -201,7 +201,7 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
                       required
                       value={editForm.name}
                       onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
-                      className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                   <div>
@@ -209,7 +209,7 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
                     <textarea
                       value={editForm.description}
                       onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
-                      className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
+                      className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
                       rows={2}
                     />
                   </div>
@@ -220,7 +220,7 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
                       onChange={(e) =>
                         setEditForm((p) => ({ ...p, status: e.target.value as ProjectStatus }))
                       }
-                      className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                     >
                       <option value="in_progress">Em andamento</option>
                       <option value="completed">Concluído</option>
@@ -239,7 +239,7 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
                     <button
                       type="submit"
                       disabled={editSaving}
-                      className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium"
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium"
                     >
                       {editSaving ? 'Salvando...' : 'Salvar'}
                     </button>
@@ -253,7 +253,7 @@ export default function ProjectsTab({ clientId }: ProjectsTabProps) {
               <div
                 key={project.id}
                 onClick={() => startEdit(project)}
-                className="flex items-start justify-between bg-[#1e293b] border border-slate-700 rounded-lg p-4 cursor-pointer hover:border-slate-500 transition-colors"
+                className="flex items-start justify-between bg-[#1a1a1d] border border-slate-700 rounded-lg p-4 cursor-pointer hover:border-slate-500 transition-colors"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-white text-sm font-medium">{project.name}</p>

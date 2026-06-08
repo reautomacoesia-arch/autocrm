@@ -139,7 +139,7 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
     value: string,
     onChange: (v: string) => void
   ) {
-    const cls = 'w-full bg-[#0f172a] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500'
+    const cls = 'w-full bg-[#050505] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500'
     switch (def.field_type) {
       case 'number':
         return <input type="number" value={value} onChange={(e) => onChange(e.target.value)} className={cls} />
@@ -181,7 +181,7 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           onClick={isEditing ? undefined : handleCardClick}
-          className={`bg-[#0f172a] border rounded-lg p-3 select-none transition-shadow relative ${
+          className={`bg-[#050505] border rounded-lg p-3 select-none transition-shadow relative ${
             isEditing
               ? 'border-indigo-500 cursor-default'
               : snapshot.isDragging
@@ -196,13 +196,13 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
                 onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
                 required
                 autoFocus
-                className="w-full bg-[#1e293b] border border-slate-600 text-white rounded px-2 py-1 text-sm mb-2 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[#1a1a1d] border border-slate-600 text-white rounded px-2 py-1 text-sm mb-2 focus:outline-none focus:border-indigo-500"
                 placeholder="Nome *"
               />
               <input
                 value={editForm.company}
                 onChange={(e) => setEditForm((p) => ({ ...p, company: e.target.value }))}
-                className="w-full bg-[#1e293b] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs mb-2 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[#1a1a1d] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs mb-2 focus:outline-none focus:border-indigo-500"
                 placeholder="Empresa"
               />
               <div className="grid grid-cols-2 gap-1.5 mb-2">
@@ -212,20 +212,20 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
                   step="0.01"
                   value={editForm.estimated_value}
                   onChange={(e) => setEditForm((p) => ({ ...p, estimated_value: e.target.value }))}
-                  className="bg-[#1e293b] border border-slate-600 text-emerald-400 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500"
+                  className="bg-[#1a1a1d] border border-slate-600 text-emerald-400 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500"
                   placeholder="Valor (R$)"
                 />
                 <input
                   value={editForm.phone}
                   onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
-                  className="bg-[#1e293b] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500"
+                  className="bg-[#1a1a1d] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500"
                   placeholder="Telefone"
                 />
               </div>
               <select
                 value={editForm.source}
                 onChange={(e) => setEditForm((p) => ({ ...p, source: e.target.value }))}
-                className="bg-[#1e293b] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500 mb-1.5"
+                className="bg-[#1a1a1d] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500 mb-1.5"
               >
                 <option value="">Origem...</option>
                 <option value="instagram">Instagram</option>
@@ -238,7 +238,7 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
               <input
                 value={editForm.next_step}
                 onChange={(e) => setEditForm((p) => ({ ...p, next_step: e.target.value }))}
-                className="bg-[#1e293b] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500 mb-2"
+                className="bg-[#1a1a1d] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500 mb-2"
                 placeholder="Próximo passo..."
               />
               {leadCustomFields.length > 0 && (
@@ -289,7 +289,7 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded py-1 text-xs font-medium transition-colors"
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded py-1 text-xs font-medium transition-colors"
                 >
                   {saving ? '...' : 'Salvar'}
                 </button>

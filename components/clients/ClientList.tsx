@@ -82,12 +82,12 @@ export default function ClientList({ clients: initialClients, lastInteractions =
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar cliente ou empresa..."
-            className="w-full bg-[#1e293b] border border-slate-700 text-white rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500"
+            className="w-full bg-[#1a1a1d] border border-slate-700 text-white rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500"
           />
         </div>
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-[#050505] text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
         >
           <Plus size={15} />
           Novo Cliente
@@ -103,7 +103,7 @@ export default function ClientList({ clients: initialClients, lastInteractions =
               onClick={() => setFilterStatus(s)}
               className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
                 filterStatus === s
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-indigo-600 text-[#050505]'
                   : 'bg-slate-800 text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -114,7 +114,7 @@ export default function ClientList({ clients: initialClients, lastInteractions =
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-          className="bg-[#1e293b] border border-slate-700 text-slate-400 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
+          className="bg-[#1a1a1d] border border-slate-700 text-slate-400 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
         >
           <option value="default">Padrão (mais recente)</option>
           <option value="name">Nome A→Z</option>
@@ -145,7 +145,7 @@ export default function ClientList({ clients: initialClients, lastInteractions =
               <Link
                 key={client.id}
                 href={`/clients/${client.id}`}
-                className={`flex items-center justify-between bg-[#1e293b] hover:bg-slate-700/50 border rounded-lg px-4 py-3 transition-colors group ${
+                className={`flex items-center justify-between bg-[#1a1a1d] hover:bg-slate-700/50 border rounded-lg px-4 py-3 transition-colors group ${
                   contactAlert
                     ? 'border-red-800 hover:border-red-700'
                     : 'border-slate-700 hover:border-slate-600'

@@ -214,19 +214,19 @@ export default function TransactionManager({
 
       {/* Metric cards */}
       <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="bg-[#1e293b] border border-slate-700 rounded-xl p-5">
+        <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl p-5">
           <p className="text-slate-400 text-xs uppercase tracking-wider mb-2">MRR</p>
           <p className="text-white text-2xl font-bold">{formatCurrency(mrr)}</p>
           <p className="text-slate-500 text-xs mt-1">{clients.length} cliente(s) ativo(s)</p>
         </div>
-        <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
+        <div className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4">
           <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Recebido</p>
           <p className="text-emerald-400 text-lg font-bold">{formatCurrency(totalReceived)}</p>
           <p className="text-slate-500 text-xs mt-1">
             {filteredTransactions.filter((t) => t.type === 'received').length} transação(ões)
           </p>
         </div>
-        <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
+        <div className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4">
           <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Pendente</p>
           <p className="text-amber-400 text-lg font-bold">{formatCurrency(totalPending)}</p>
           <p className="text-slate-500 text-xs mt-1">
@@ -240,7 +240,7 @@ export default function TransactionManager({
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value as 'all' | 'received' | 'pending')}
-          className="bg-[#1e293b] border border-slate-700 text-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500"
+          className="bg-[#1a1a1d] border border-slate-700 text-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500"
         >
           <option value="all">Todos os tipos</option>
           <option value="received">Recebido</option>
@@ -249,7 +249,7 @@ export default function TransactionManager({
         <select
           value={filterClientId}
           onChange={(e) => setFilterClientId(e.target.value)}
-          className="bg-[#1e293b] border border-slate-700 text-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500"
+          className="bg-[#1a1a1d] border border-slate-700 text-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500"
         >
           <option value="">Todos os clientes</option>
           {clients.map((c) => (
@@ -261,7 +261,7 @@ export default function TransactionManager({
         <select
           value={filterMonth}
           onChange={(e) => setFilterMonth(e.target.value)}
-          className="bg-[#1e293b] border border-slate-700 text-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500"
+          className="bg-[#1a1a1d] border border-slate-700 text-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500"
         >
           <option value="">Todos os períodos</option>
           {monthOptions.map((m) => (
@@ -288,7 +288,7 @@ export default function TransactionManager({
             {clients.map((client) => (
               <div
                 key={client.id}
-                className="flex items-center justify-between bg-[#1e293b] border border-slate-700 rounded-lg px-4 py-3"
+                className="flex items-center justify-between bg-[#1a1a1d] border border-slate-700 rounded-lg px-4 py-3"
               >
                 <div>
                   <p className="text-white text-sm font-medium">{client.name}</p>
@@ -337,7 +337,7 @@ export default function TransactionManager({
               )
             }
             return sorted.map((c, i) => (
-              <div key={i} className="flex items-center justify-between bg-[#1e293b] border border-slate-700 rounded-lg px-4 py-3">
+              <div key={i} className="flex items-center justify-between bg-[#1a1a1d] border border-slate-700 rounded-lg px-4 py-3">
                 <div>
                   <p className="text-white text-sm font-medium">{c.name}</p>
                   {c.company && <p className="text-slate-400 text-xs">{c.company}</p>}
@@ -371,7 +371,7 @@ export default function TransactionManager({
           {showAddForm && (
             <form
               onSubmit={handleAdd}
-              className="bg-[#1e293b] border border-slate-700 rounded-lg p-4 mb-4 space-y-3"
+              className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4 mb-4 space-y-3"
             >
               <div>
                 <label className="block text-xs text-slate-400 mb-1.5">Cliente *</label>
@@ -379,7 +379,7 @@ export default function TransactionManager({
                   required
                   value={addForm.client_id}
                   onChange={(e) => setAddForm((p) => ({ ...p, client_id: e.target.value }))}
-                  className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                 >
                   <option value="">Selecionar cliente...</option>
                   {clients.map((c) => (
@@ -399,7 +399,7 @@ export default function TransactionManager({
                     required
                     value={addForm.amount}
                     onChange={(e) => setAddForm((p) => ({ ...p, amount: e.target.value }))}
-                    className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                     placeholder="0"
                   />
                 </div>
@@ -408,7 +408,7 @@ export default function TransactionManager({
                   <select
                     value={addForm.type}
                     onChange={(e) => setAddForm((p) => ({ ...p, type: e.target.value as TransactionType }))}
-                    className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                   >
                     <option value="received">Recebido</option>
                     <option value="pending">Pendente</option>
@@ -420,7 +420,7 @@ export default function TransactionManager({
                     type="date"
                     value={addForm.date}
                     onChange={(e) => setAddForm((p) => ({ ...p, date: e.target.value }))}
-                    className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                   />
                 </div>
                 <div>
@@ -429,7 +429,7 @@ export default function TransactionManager({
                     type="text"
                     value={addForm.description}
                     onChange={(e) => setAddForm((p) => ({ ...p, description: e.target.value }))}
-                    className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                     placeholder="Ex: Mensalidade junho"
                   />
                 </div>
@@ -445,7 +445,7 @@ export default function TransactionManager({
                 <button
                   type="submit"
                   disabled={addSaving}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium"
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium"
                 >
                   {addSaving ? 'Salvando...' : 'Registrar'}
                 </button>
@@ -469,7 +469,7 @@ export default function TransactionManager({
                   <form
                     key={t.id}
                     onSubmit={(e) => handleEdit(e, t.id)}
-                    className="bg-[#1e293b] border border-indigo-500 rounded-lg p-4 space-y-3"
+                    className="bg-[#1a1a1d] border border-indigo-500 rounded-lg p-4 space-y-3"
                   >
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -481,7 +481,7 @@ export default function TransactionManager({
                           required
                           value={editForm.amount}
                           onChange={(e) => setEditForm((p) => ({ ...p, amount: e.target.value }))}
-                          className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                          className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                         />
                       </div>
                       <div>
@@ -489,7 +489,7 @@ export default function TransactionManager({
                         <select
                           value={editForm.type}
                           onChange={(e) => setEditForm((p) => ({ ...p, type: e.target.value as TransactionType }))}
-                          className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                          className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                         >
                           <option value="received">Recebido</option>
                           <option value="pending">Pendente</option>
@@ -502,7 +502,7 @@ export default function TransactionManager({
                           required
                           value={editForm.date}
                           onChange={(e) => setEditForm((p) => ({ ...p, date: e.target.value }))}
-                          className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                          className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                         />
                       </div>
                       <div>
@@ -511,7 +511,7 @@ export default function TransactionManager({
                           type="text"
                           value={editForm.description}
                           onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
-                          className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                          className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                         />
                       </div>
                     </div>
@@ -526,7 +526,7 @@ export default function TransactionManager({
                       <button
                         type="submit"
                         disabled={editSaving}
-                        className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium"
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium"
                       >
                         {editSaving ? 'Salvando...' : 'Salvar'}
                       </button>
@@ -542,7 +542,7 @@ export default function TransactionManager({
                 <div
                   key={t.id}
                   onClick={() => startEdit(t)}
-                  className="flex items-center justify-between bg-[#1e293b] border border-slate-700 rounded-lg px-4 py-3 cursor-pointer hover:border-slate-500 transition-colors"
+                  className="flex items-center justify-between bg-[#1a1a1d] border border-slate-700 rounded-lg px-4 py-3 cursor-pointer hover:border-slate-500 transition-colors"
                 >
                   <div>
                     <p className="text-white text-sm font-medium">{formatCurrency(t.amount)}</p>

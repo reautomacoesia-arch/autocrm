@@ -43,3 +43,9 @@ next-env.d.ts
 
 # superpowers
 .superpowers/
+
+# Subprojeto separado (PandaDoc-style)
+gerador_propostas/
+
+# Config local do Claude Code
+.claude/

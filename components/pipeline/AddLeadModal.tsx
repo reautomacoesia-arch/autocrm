@@ -74,7 +74,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
             required
             value={form.name}
             onChange={(e) => handleChange('name', e.target.value)}
-            className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             placeholder="Nome do contato"
           />
         </div>
@@ -84,7 +84,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
             type="text"
             value={form.company}
             onChange={(e) => handleChange('company', e.target.value)}
-            className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             placeholder="Nome da empresa"
           />
         </div>
@@ -95,7 +95,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
               type="email"
               value={form.email}
               onChange={(e) => handleChange('email', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="email@empresa.com"
             />
           </div>
@@ -105,7 +105,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
               type="text"
               value={form.phone}
               onChange={(e) => handleChange('phone', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="(11) 99999-0000"
             />
           </div>
@@ -117,7 +117,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
               type="text"
               value={form.instagram}
               onChange={(e) => handleChange('instagram', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="@empresa"
             />
           </div>
@@ -127,7 +127,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
               type="text"
               value={form.website}
               onChange={(e) => handleChange('website', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="https://empresa.com.br"
             />
           </div>
@@ -140,7 +140,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
             step="0.01"
             value={form.estimated_value}
             onChange={(e) => handleChange('estimated_value', e.target.value)}
-            className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             placeholder="0"
           />
         </div>
@@ -149,7 +149,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
           <textarea
             value={form.notes}
             onChange={(e) => handleChange('notes', e.target.value)}
-            className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
+            className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
             rows={2}
             placeholder="Observações sobre o lead..."
           />
@@ -160,7 +160,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
             <select
               value={form.source}
               onChange={(e) => handleChange('source', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             >
               <option value="">Selecionar...</option>
               <option value="instagram">Instagram</option>
@@ -177,7 +177,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
               type="text"
               value={form.next_step}
               onChange={(e) => handleChange('next_step', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="Ex: Enviar proposta..."
             />
           </div>
@@ -198,7 +198,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
+            className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium transition-colors"
           >
             {loading ? 'Criando...' : 'Criar Lead'}
           </button>

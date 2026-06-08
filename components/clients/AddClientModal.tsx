@@ -66,7 +66,7 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }: AddCl
             required
             value={form.name}
             onChange={(e) => handleChange('name', e.target.value)}
-            className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             placeholder="Nome do contato"
           />
         </div>
@@ -76,7 +76,7 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }: AddCl
             type="text"
             value={form.company}
             onChange={(e) => handleChange('company', e.target.value)}
-            className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             placeholder="Nome da empresa"
           />
         </div>
@@ -87,7 +87,7 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }: AddCl
               type="email"
               value={form.email}
               onChange={(e) => handleChange('email', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="email@empresa.com"
             />
           </div>
@@ -97,7 +97,7 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }: AddCl
               type="text"
               value={form.phone}
               onChange={(e) => handleChange('phone', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="(11) 99999-0000"
             />
           </div>
@@ -111,7 +111,7 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }: AddCl
               step="0.01"
               value={form.monthly_value}
               onChange={(e) => handleChange('monthly_value', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="0"
             />
           </div>
@@ -120,7 +120,7 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }: AddCl
             <select
               value={form.status}
               onChange={(e) => handleChange('status', e.target.value)}
-              className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             >
               <option value="active">Ativo</option>
               <option value="inactive">Inativo</option>
@@ -143,7 +143,7 @@ export default function AddClientModal({ isOpen, onClose, onClientAdded }: AddCl
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
+            className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium transition-colors"
           >
             {loading ? 'Criando...' : 'Criar Cliente'}
           </button>

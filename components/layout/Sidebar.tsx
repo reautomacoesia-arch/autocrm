@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
@@ -29,14 +30,27 @@ export default function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="w-52 min-h-screen bg-[#1e293b] flex flex-col fixed left-0 top-0">
+    <aside className="w-52 min-h-screen bg-[#1a1a1d] flex flex-col fixed left-0 top-0">
       {/* Logo */}
       <div className="px-4 py-5 border-b border-slate-700">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-indigo-600 rounded-md flex items-center justify-center">
-            <Zap size={14} className="text-white" />
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-md overflow-hidden bg-black flex-shrink-0">
+            <Image
+              src="/korvus-icon.png"
+              alt="Korvus"
+              width={32}
+              height={32}
+              className="w-full h-full object-cover"
+            />
           </div>
-          <span className="text-white font-bold text-sm">AutoCRM</span>
+          <div className="leading-none">
+            <span className="block text-white font-display font-extrabold text-sm tracking-wider uppercase">
+              Korvus
+            </span>
+            <span className="block text-[#d4af37] text-[10px] font-medium tracking-[0.2em] uppercase mt-0.5">
+              CRM
+            </span>
+          </div>
         </div>
       </div>
 

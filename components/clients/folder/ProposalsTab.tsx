@@ -73,7 +73,7 @@ export default function ProposalsTab({ clientId, clientName }: ProposalsTabProps
               <Link
                 key={proposal.id}
                 href={`/proposals/${proposal.id}`}
-                className="flex items-center justify-between bg-[#1e293b] hover:bg-slate-700/50 border border-slate-700 hover:border-slate-600 rounded-lg px-4 py-3 transition-colors group"
+                className="flex items-center justify-between bg-[#1a1a1d] hover:bg-slate-700/50 border border-slate-700 hover:border-slate-600 rounded-lg px-4 py-3 transition-colors group"
               >
                 <div>
                   <p className="text-white text-sm font-medium">

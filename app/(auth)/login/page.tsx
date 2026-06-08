@@ -39,7 +39,7 @@ export default function LoginPage() {
         <div className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 rounded-xl mb-4">
           <span className="text-white text-xl font-bold">⚡</span>
         </div>
-        <h1 className="text-white text-2xl font-bold">AutoCRM</h1>
+        <h1 className="text-white text-2xl font-bold">KORVUS CRM</h1>
         <p className="text-slate-400 text-sm mt-1">Entre na sua conta</p>
       </div>
 
@@ -54,7 +54,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full bg-[#1e293b] border border-slate-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+            className="w-full bg-[#1a1a1d] border border-slate-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
             placeholder="voce@empresa.com"
           />
         </div>
@@ -68,7 +68,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full bg-[#1e293b] border border-slate-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+            className="w-full bg-[#1a1a1d] border border-slate-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition-colors"
             placeholder="••••••••"
           />
         </div>
@@ -82,7 +82,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors"
+          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-[#050505] font-medium rounded-lg px-4 py-2.5 text-sm transition-colors"
         >
           {loading ? 'Entrando...' : 'Entrar'}
         </button>

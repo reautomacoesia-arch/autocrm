@@ -149,7 +149,7 @@ export default async function DashboardPage() {
             </Link>
           </div>
           {tasksDue.length === 0 ? (
-            <div className="bg-[#1e293b] border border-slate-700 rounded-xl p-6 text-center text-slate-500 text-sm">
+            <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl p-6 text-center text-slate-500 text-sm">
               Nenhuma tarefa pendente 🎉
             </div>
           ) : (
@@ -159,7 +159,7 @@ export default async function DashboardPage() {
                 return (
                   <div
                     key={task.id}
-                    className={`bg-[#1e293b] border rounded-lg px-4 py-3 ${
+                    className={`bg-[#1a1a1d] border rounded-lg px-4 py-3 ${
                       overdue ? 'border-red-800' : 'border-slate-700'
                     }`}
                   >
@@ -202,7 +202,7 @@ export default async function DashboardPage() {
             </Link>
           </div>
           {recentInteractions.length === 0 ? (
-            <div className="bg-[#1e293b] border border-slate-700 rounded-xl p-6 text-center text-slate-500 text-sm">
+            <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl p-6 text-center text-slate-500 text-sm">
               Nenhuma interação registrada ainda.
             </div>
           ) : (
@@ -210,7 +210,7 @@ export default async function DashboardPage() {
               {recentInteractions.map((interaction: any) => (
                 <div
                   key={interaction.id}
-                  className="bg-[#1e293b] border border-slate-700 rounded-lg px-4 py-3"
+                  className="bg-[#1a1a1d] border border-slate-700 rounded-lg px-4 py-3"
                 >
                   <div className="flex items-start gap-2">
                     <span className="text-sm flex-shrink-0 mt-0.5">

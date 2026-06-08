@@ -142,7 +142,7 @@ export default function DashboardCalendar() {
   ]
 
   return (
-    <div className="bg-[#1e293b] border border-slate-700 rounded-xl p-5 mb-8">
+    <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl p-5 mb-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <button
@@ -198,7 +198,7 @@ export default function DashboardCalendar() {
         <div className="grid grid-cols-7 gap-px bg-slate-700 border border-slate-700 rounded-lg overflow-hidden">
           {cells.map((day, idx) => {
             if (day === null) {
-              return <div key={`empty-${idx}`} className="bg-[#1e293b] min-h-[72px]" />
+              return <div key={`empty-${idx}`} className="bg-[#1a1a1d] min-h-[72px]" />
             }
 
             const isToday = year === todayYear && month === todayMonth && day === todayDay
@@ -215,7 +215,7 @@ export default function DashboardCalendar() {
                 key={day}
                 onClick={() => setSelectedDay(day)}
                 className={`min-h-[72px] p-1.5 cursor-pointer transition-colors ${
-                  isSelected ? 'bg-indigo-600/15' : 'bg-[#1e293b] hover:bg-slate-800'
+                  isSelected ? 'bg-indigo-600/15' : 'bg-[#1a1a1d] hover:bg-slate-800'
                 } ${isToday ? 'ring-2 ring-inset ring-indigo-500' : ''}`}
               >
                 <p
@@ -277,7 +277,7 @@ export default function DashboardCalendar() {
                       <button
                         key={`${ev.kind}-${ev.id}`}
                         onClick={() => goToEvent(ev)}
-                        className="w-full flex items-center gap-2.5 bg-[#0f172a] hover:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-lg px-3 py-2 text-left transition-colors group"
+                        className="w-full flex items-center gap-2.5 bg-[#050505] hover:bg-slate-800 border border-slate-700 hover:border-slate-600 rounded-lg px-3 py-2 text-left transition-colors group"
                       >
                         <span
                           className={`flex-shrink-0 w-2 h-2 rounded-full ${

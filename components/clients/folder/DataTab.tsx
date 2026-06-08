@@ -67,7 +67,7 @@ export default function DataTab({ client, onClientUpdated }: DataTabProps) {
             type="text"
             value={form.contact_name}
             onChange={(e) => setForm((p) => ({ ...p, contact_name: e.target.value }))}
-            className="w-full bg-[#1e293b] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            className="w-full bg-[#1a1a1d] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             placeholder="Ex: João Silva"
           />
         </div>
@@ -80,7 +80,7 @@ export default function DataTab({ client, onClientUpdated }: DataTabProps) {
               type="text"
               value={form.phone}
               onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-              className="flex-1 bg-[#1e293b] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="flex-1 bg-[#1a1a1d] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="Ex: (11) 99999-9999"
             />
             {form.phone && (
@@ -105,7 +105,7 @@ export default function DataTab({ client, onClientUpdated }: DataTabProps) {
               type="text"
               value={form.instagram}
               onChange={(e) => setForm((p) => ({ ...p, instagram: e.target.value }))}
-              className="flex-1 bg-[#1e293b] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="flex-1 bg-[#1a1a1d] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="Ex: @empresa"
             />
             {form.instagram && (
@@ -130,7 +130,7 @@ export default function DataTab({ client, onClientUpdated }: DataTabProps) {
               type="text"
               value={form.website}
               onChange={(e) => setForm((p) => ({ ...p, website: e.target.value }))}
-              className="flex-1 bg-[#1e293b] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              className="flex-1 bg-[#1a1a1d] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               placeholder="Ex: https://empresa.com"
             />
             {form.website && (
@@ -150,7 +150,7 @@ export default function DataTab({ client, onClientUpdated }: DataTabProps) {
         <button
           type="submit"
           disabled={saving}
-          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2.5 text-sm font-medium transition-colors"
+          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2.5 text-sm font-medium transition-colors"
         >
           {saving ? 'Salvando...' : saved ? '✓ Salvo!' : 'Salvar alterações'}
         </button>

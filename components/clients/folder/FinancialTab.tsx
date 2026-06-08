@@ -159,19 +159,19 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
     <div className="max-w-2xl">
       {/* Summary cards */}
       <div className="grid grid-cols-4 gap-3 mb-6">
-        <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
+        <div className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4">
           <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Mensalidade</p>
           <p className="text-white text-lg font-bold">{formatCurrency(monthlyValue)}</p>
         </div>
-        <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
+        <div className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4">
           <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Total Recebido</p>
           <p className="text-emerald-400 text-lg font-bold">{formatCurrency(totalReceived)}</p>
         </div>
-        <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
+        <div className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4">
           <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Pendente</p>
           <p className="text-amber-400 text-lg font-bold">{formatCurrency(totalPending)}</p>
         </div>
-        <div className="bg-[#1e293b] border border-slate-700 rounded-lg p-4">
+        <div className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4">
           <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">LTV Total</p>
           <p className="text-emerald-400 text-lg font-bold">{formatCurrency(ltv)}</p>
           <p className="text-slate-500 text-xs mt-1">total histórico recebido</p>
@@ -192,7 +192,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
       {showForm && (
         <form
           onSubmit={handleAdd}
-          className="bg-[#1e293b] border border-slate-700 rounded-lg p-4 mb-4 space-y-3"
+          className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4 mb-4 space-y-3"
         >
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -204,7 +204,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
                 required
                 value={form.amount}
                 onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
-                className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                 placeholder="0"
               />
             </div>
@@ -213,7 +213,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
               <select
                 value={form.type}
                 onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as TransactionType }))}
-                className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               >
                 <option value="received">Recebido</option>
                 <option value="pending">Pendente</option>
@@ -225,7 +225,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
                 type="date"
                 value={form.date}
                 onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
-                className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
               />
             </div>
             <div>
@@ -234,7 +234,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
                 type="text"
                 value={form.description}
                 onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                 placeholder="Ex: Mensalidade janeiro"
               />
             </div>
@@ -250,7 +250,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium"
+              className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium"
             >
               {saving ? 'Salvando...' : 'Registrar'}
             </button>
@@ -270,7 +270,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
                 <form
                   key={t.id}
                   onSubmit={(e) => handleEdit(e, t.id)}
-                  className="bg-[#1e293b] border border-indigo-500 rounded-lg p-4 space-y-3"
+                  className="bg-[#1a1a1d] border border-indigo-500 rounded-lg p-4 space-y-3"
                 >
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -282,7 +282,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
                         required
                         value={editForm.amount}
                         onChange={(e) => setEditForm((p) => ({ ...p, amount: e.target.value }))}
-                        className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                        className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                       />
                     </div>
                     <div>
@@ -292,7 +292,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
                         onChange={(e) =>
                           setEditForm((p) => ({ ...p, type: e.target.value as TransactionType }))
                         }
-                        className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                        className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                       >
                         <option value="received">Recebido</option>
                         <option value="pending">Pendente</option>
@@ -305,7 +305,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
                         required
                         value={editForm.date}
                         onChange={(e) => setEditForm((p) => ({ ...p, date: e.target.value }))}
-                        className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                        className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                       />
                     </div>
                     <div>
@@ -314,7 +314,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
                         type="text"
                         value={editForm.description}
                         onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
-                        className="w-full bg-[#0f172a] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                        className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                       />
                     </div>
                   </div>
@@ -329,7 +329,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
                     <button
                       type="submit"
                       disabled={editSaving}
-                      className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium"
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium"
                     >
                       {editSaving ? 'Salvando...' : 'Salvar'}
                     </button>
@@ -345,7 +345,7 @@ export default function FinancialTab({ clientId, monthlyValue }: FinancialTabPro
               <div
                 key={t.id}
                 onClick={() => startEdit(t)}
-                className="flex items-center justify-between bg-[#1e293b] border border-slate-700 rounded-lg px-4 py-3 cursor-pointer hover:border-slate-500 transition-colors"
+                className="flex items-center justify-between bg-[#1a1a1d] border border-slate-700 rounded-lg px-4 py-3 cursor-pointer hover:border-slate-500 transition-colors"
               >
                 <div>
                   <p className="text-white text-sm font-medium">{formatCurrency(t.amount)}</p>

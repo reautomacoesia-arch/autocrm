@@ -133,10 +133,10 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
   return (
     <div>
       {/* Header */}
-      <div className="bg-[#1e293b] rounded-xl border border-slate-700 p-5 mb-4">
+      <div className="bg-[#1a1a1d] rounded-xl border border-slate-700 p-5 mb-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+            <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-[#050505] font-bold text-lg flex-shrink-0">
               {client.name.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -147,13 +147,13 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
                     onChange={(e) => setHeaderForm((p) => ({ ...p, name: e.target.value }))}
                     required
                     autoFocus
-                    className="bg-[#0f172a] border border-indigo-500 text-white rounded-lg px-3 py-1.5 text-lg font-bold focus:outline-none w-full"
+                    className="bg-[#050505] border border-indigo-500 text-white rounded-lg px-3 py-1.5 text-lg font-bold focus:outline-none w-full"
                     placeholder="Nome do cliente *"
                   />
                   <input
                     value={headerForm.company}
                     onChange={(e) => setHeaderForm((p) => ({ ...p, company: e.target.value }))}
-                    className="bg-[#0f172a] border border-slate-600 text-slate-400 rounded-lg px-3 py-1.5 text-sm focus:outline-none w-full focus:border-indigo-500"
+                    className="bg-[#050505] border border-slate-600 text-slate-400 rounded-lg px-3 py-1.5 text-sm focus:outline-none w-full focus:border-indigo-500"
                     placeholder="Empresa"
                   />
                   <div className="flex gap-2">
@@ -167,7 +167,7 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
                     <button
                       type="submit"
                       disabled={headerSaving}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg px-3 py-1 text-xs font-medium disabled:opacity-50 transition-colors"
+                      className="bg-indigo-600 hover:bg-indigo-500 text-[#050505] rounded-lg px-3 py-1 text-xs font-medium disabled:opacity-50 transition-colors"
                     >
                       {headerSaving ? 'Salvando...' : 'Salvar'}
                     </button>

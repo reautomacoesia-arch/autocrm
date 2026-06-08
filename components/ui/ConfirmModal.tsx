@@ -57,7 +57,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
       {options && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60" onClick={handleCancel} role="presentation" />
-          <div className="relative bg-[#1e293b] border border-slate-700 rounded-xl p-6 w-full max-w-sm shadow-2xl mx-4" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+          <div className="relative bg-[#1a1a1d] border border-slate-700 rounded-xl p-6 w-full max-w-sm shadow-2xl mx-4" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 text-xl ${options.destructive ? 'bg-red-950' : 'bg-amber-950'}`}>
               {options.destructive ? '🗑️' : '⚠️'}
             </div>
