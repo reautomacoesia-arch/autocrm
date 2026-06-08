@@ -23,6 +23,16 @@ export default function SetPasswordPage() {
         router.replace('/login')
         return
       }
+
+      // Proteção: se o usuário já existe há mais de 24h, não é um convidado novo.
+      // Redireciona pro dashboard para evitar que um admin redefina sua própria senha.
+      const createdAt = user.created_at ? new Date(user.created_at).getTime() : 0
+      const isNewUser = Date.now() - createdAt < 24 * 60 * 60 * 1000
+      if (!isNewUser) {
+        router.replace('/')
+        return
+      }
+
       const name =
         user.user_metadata?.name ??
         user.email?.split('@')[0] ??
