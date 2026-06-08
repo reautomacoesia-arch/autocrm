@@ -30,7 +30,11 @@ export async function POST(request: Request) {
   // mode: 'email' (padrão) — Supabase envia e-mail automaticamente
   //        'link'          — gera link sem enviar e-mail; retorna URL para copiar
   const mode: 'email' | 'link' = body.mode === 'link' ? 'link' : 'email'
-  const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://autocrm-olive.vercel.app'}/`
+  // Aponta para /auth/callback que troca o code por sessão.
+  // O domínio base DEVE estar na lista "Redirect URLs" do Supabase Dashboard
+  // (Authentication → URL Configuration → Redirect URLs → adicionar https://autocrm-olive.vercel.app/**)
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://autocrm-olive.vercel.app').replace(/\/$/, '')
+  const redirectTo = `${siteUrl}/auth/callback`
 
   try {
     const admin = createAdminClient()
@@ -65,6 +69,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
+        userId: data.user?.id ?? null,
         link: (data as any).properties?.action_link ?? null,
       })
     }
@@ -92,7 +97,7 @@ export async function POST(request: Request) {
       }, { onConflict: 'id' })
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, userId: data.user?.id ?? null })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erro ao processar convite.'
     return NextResponse.json({ error: message }, { status: 500 })

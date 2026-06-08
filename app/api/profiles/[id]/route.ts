@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 
 export async function GET(
@@ -49,4 +50,40 @@ export async function PATCH(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+
+  const { id } = await params
+
+  if (user.id === id) {
+    return NextResponse.json(
+      { error: 'Você não pode remover sua própria conta.' },
+      { status: 400 },
+    )
+  }
+
+  // Apenas admins podem remover colaboradores
+  const { data: myProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (myProfile?.role !== 'admin') {
+    return NextResponse.json({ error: 'Apenas admins podem remover colaboradores.' }, { status: 403 })
+  }
+
+  // Deletar usuário no Supabase Auth (cascata apaga o profile via FK)
+  const admin = createAdminClient()
+  const { error } = await admin.auth.admin.deleteUser(id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ success: true })
 }

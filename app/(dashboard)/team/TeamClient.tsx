@@ -4,7 +4,8 @@ import { useState } from 'react'
 import type { Profile } from '@/lib/types'
 import ProfileAvatar from '@/components/team/ProfileAvatar'
 import { useToast } from '@/components/ui/ToastProvider'
-import { Pencil, Check, X, UserPlus, Mail, Send, Loader2, Link2, Copy, CheckCheck } from 'lucide-react'
+import { Pencil, Check, X, UserPlus, Mail, Send, Loader2, Link2, Copy, CheckCheck, UserMinus } from 'lucide-react'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 
 const COLORS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
@@ -41,6 +42,7 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
   const [copied, setCopied] = useState(false)
 
   const { toast } = useToast()
+  const confirm = useConfirm()
 
   const me = profiles.find((p) => p.id === currentUserId)
   const isAdmin = me?.role === 'admin'
@@ -102,9 +104,9 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
     if (data.link) setInviteLink(data.link)
     setInviteLoading(false)
 
-    // Adiciona placeholder na lista imediatamente
+    // Adiciona placeholder na lista imediatamente (usa userId real se disponível)
     const placeholder: Profile = {
-      id: `pending-${Date.now()}`,
+      id: data.userId ?? `pending-${Date.now()}`,
       name: inviteName || inviteEmail.split('@')[0],
       email: inviteEmail,
       avatar_color: '#64748b',
@@ -122,6 +124,35 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
   function handleInviteEmail(e: React.FormEvent) {
     e.preventDefault()
     doInvite('email')
+  }
+
+  async function handleRemoveMember(id: string, name: string) {
+    const isPendingLocal = id.startsWith('pending-')
+    const ok = await confirm({
+      title: isPendingLocal ? 'Cancelar convite?' : `Remover ${name}?`,
+      description: isPendingLocal
+        ? 'O convite será cancelado e o acesso revogado.'
+        : 'O acesso será revogado imediatamente. Esta ação não pode ser desfeita.',
+      destructive: true,
+      confirmLabel: isPendingLocal ? 'Cancelar convite' : 'Remover',
+    })
+    if (!ok) return
+
+    // Placeholder local sem ID real — só remove da lista
+    if (isPendingLocal) {
+      setProfiles((prev) => prev.filter((p) => p.id !== id))
+      toast('Convite removido da lista')
+      return
+    }
+
+    const res = await fetch(`/api/profiles/${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setProfiles((prev) => prev.filter((p) => p.id !== id))
+      toast('Colaborador removido')
+    } else {
+      const data = await res.json()
+      toast(data.error ?? 'Erro ao remover', 'error')
+    }
   }
 
   async function copyLink() {
@@ -396,15 +427,26 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
                     <p className="text-slate-500 text-xs mt-0.5">{p.email}</p>
                     <p className="text-slate-600 text-xs mt-0.5">{ROLE_LABEL[p.role] ?? p.role}</p>
                   </div>
-                  {isMe && !isPending && (
-                    <button
-                      onClick={() => startEdit(p)}
-                      className="text-slate-600 hover:text-indigo-400 transition-colors p-1.5"
-                      title="Editar perfil"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {isMe && !isPending && (
+                      <button
+                        onClick={() => startEdit(p)}
+                        className="text-slate-600 hover:text-indigo-400 transition-colors p-1.5"
+                        title="Editar perfil"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    )}
+                    {isAdmin && !isMe && (
+                      <button
+                        onClick={() => handleRemoveMember(p.id, p.name)}
+                        className="text-slate-700 hover:text-red-400 transition-colors p-1.5"
+                        title={isPending ? 'Cancelar convite' : 'Remover colaborador'}
+                      >
+                        <UserMinus size={14} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
