@@ -9,6 +9,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendEmail } from '@/lib/email'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -22,14 +23,13 @@ async function upsertNotification(
   body: string | null,
   link: string | null,
 ): Promise<boolean> {
-  // Check if notification already exists for this key
   const { data: existing } = await supabase
     .from('notifications')
     .select('id')
     .eq('key', key)
     .maybeSingle()
 
-  if (existing) return false // already notified, skip
+  if (existing) return false
 
   const { error } = await supabase
     .from('notifications')
@@ -70,6 +70,7 @@ export async function GET(request: Request) {
   const supabase = createAdminClient()
   let notified = 0
   let tasksCreated = 0
+  let emailsSent = 0
 
   // ── 2. Tarefas em atraso ─────────────────────────────────────────────────────
   const { data: cfg1 } = await supabase
@@ -89,6 +90,8 @@ export async function GET(request: Request) {
       .not('due_date', 'is', null)
       .lte('due_date', cutoff)
 
+    const overdueList: string[] = []
+
     for (const task of overdueTasks ?? []) {
       if (cfg1.config?.notify) {
         const fired = await upsertNotification(
@@ -98,8 +101,25 @@ export async function GET(request: Request) {
           null,
           '/tasks',
         )
-        if (fired) notified++
+        if (fired) {
+          notified++
+          overdueList.push(task.title)
+        }
       }
+    }
+
+    // E-mail resumo — enviado 1x (somente para itens que dispararam notificação nova)
+    if (cfg1.config?.send_email && overdueList.length > 0) {
+      const sent = await sendEmail(
+        `🔴 ${overdueList.length} tarefa${overdueList.length !== 1 ? 's' : ''} em atraso`,
+        [
+          `As seguintes tarefas estão em atraso há ${days}+ dia${days !== 1 ? 's' : ''}:`,
+          ...overdueList.map(t => `• ${t}`),
+        ],
+        'Ver tarefas',
+        '/tasks',
+      )
+      if (sent) emailsSent++
     }
   }
 
@@ -116,12 +136,16 @@ export async function GET(request: Request) {
 
     const { data: staleProposals } = await supabase
       .from('proposals')
-      .select('id, client_id, lead_id')
+      .select('id, client_id, lead_id, clients(name), leads(name)')
       .eq('status', 'sent')
       .lte('updated_at', cutoff)
 
+    const staleList: string[] = []
+
     for (const p of staleProposals ?? []) {
-      // Create follow-up task
+      const clientName =
+        (p as any).clients?.name ?? (p as any).leads?.name ?? 'Cliente desconhecido'
+
       if (cfg2.config?.create_task) {
         const taskTitle = (cfg2.config?.task_title as string) ?? 'Follow-up: proposta sem resposta'
         const alreadyCreated = await taskAlreadyCreatedToday(supabase, p.client_id, taskTitle)
@@ -137,7 +161,6 @@ export async function GET(request: Request) {
         }
       }
 
-      // Create notification
       if (cfg2.config?.notify) {
         const fired = await upsertNotification(
           supabase,
@@ -146,8 +169,24 @@ export async function GET(request: Request) {
           null,
           `/proposals/${p.id}`,
         )
-        if (fired) notified++
+        if (fired) {
+          notified++
+          staleList.push(`${clientName} — sem resposta há ${days}+ dias`)
+        }
       }
+    }
+
+    if (cfg2.config?.send_email && staleList.length > 0) {
+      const sent = await sendEmail(
+        `⏰ ${staleList.length} proposta${staleList.length !== 1 ? 's' : ''} aguardando resposta`,
+        [
+          `As seguintes propostas foram enviadas e não tiveram resposta:`,
+          ...staleList.map(s => `• ${s}`),
+        ],
+        'Ver propostas',
+        '/proposals',
+      )
+      if (sent) emailsSent++
     }
   }
 
@@ -161,12 +200,14 @@ export async function GET(request: Request) {
   if (cfg3?.enabled) {
     const days = (cfg3.config?.days_threshold as number) ?? 30
     const cutoff = new Date(Date.now() - days * 86_400_000).toISOString()
-    const month = new Date().toISOString().substring(0, 7) // YYYY-MM — notifica 1x/mês
+    const month = new Date().toISOString().substring(0, 7)
 
     const { data: activeClients } = await supabase
       .from('clients')
       .select('id, name')
       .eq('status', 'active')
+
+    const noContactList: string[] = []
 
     for (const client of activeClients ?? []) {
       const { data: lastInteraction } = await supabase
@@ -179,7 +220,6 @@ export async function GET(request: Request) {
 
       if (lastInteraction?.happened_at && lastInteraction.happened_at >= cutoff) continue
 
-      // Create task
       if (cfg3.config?.create_task) {
         const taskTitle = (cfg3.config?.task_title as string) ?? 'Retomar contato com cliente'
         const alreadyCreated = await taskAlreadyCreatedToday(supabase, client.id, taskTitle)
@@ -194,7 +234,6 @@ export async function GET(request: Request) {
         }
       }
 
-      // Notify once per month per client
       if (cfg3.config?.notify) {
         const fired = await upsertNotification(
           supabase,
@@ -203,15 +242,28 @@ export async function GET(request: Request) {
           `Último contato há mais de ${days} dias`,
           `/clients/${client.id}`,
         )
-        if (fired) notified++
+        if (fired) {
+          notified++
+          noContactList.push(`${client.name} — sem contato há ${days}+ dias`)
+        }
       }
+    }
+
+    if (cfg3.config?.send_email && noContactList.length > 0) {
+      const sent = await sendEmail(
+        `🔕 ${noContactList.length} cliente${noContactList.length !== 1 ? 's' : ''} sem contato recente`,
+        [
+          `Os seguintes clientes não tiveram interação registrada nos últimos ${days} dias:`,
+          ...noContactList.map(c => `• ${c}`),
+        ],
+        'Ver clientes',
+        '/clients',
+      )
+      if (sent) emailsSent++
     }
   }
 
-  // ── 5. Recorrência financeira ─────────────────────────────────────────────
-  // Para cada cliente ativo com billing_day configurado:
-  //   · Se today >= billing_day e ainda não gerou cobrança este mês → cria transação pending
-  //   · Usa recurring_key para deduplicar (índice único no DB)
+  // ── 5. Recorrência financeira ─────────────────────────────────────────────────
   const todayDate = new Date()
   const todayDay = todayDate.getDate()
   const currentMonth = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}`
@@ -228,22 +280,18 @@ export async function GET(request: Request) {
 
   for (const client of recurringClients ?? []) {
     const billingDay = client.billing_day as number
-
-    // Ainda não chegou o dia de cobrança neste mês
     if (todayDay < billingDay) continue
 
     const recurringKey = `recurring:${client.id}:${currentMonth}`
 
-    // Verificar se já gerou cobrança este mês
     const { data: existing } = await supabase
       .from('transactions')
       .select('id')
       .eq('recurring_key', recurringKey)
       .maybeSingle()
 
-    if (existing) continue // já gerou, pula
+    if (existing) continue
 
-    // Data de vencimento: billing_day do mês atual
     const billingDate = `${currentMonth}-${String(billingDay).padStart(2, '0')}`
 
     const { error: insertErr } = await supabase.from('transactions').insert({
@@ -257,8 +305,6 @@ export async function GET(request: Request) {
 
     if (!insertErr) {
       billingGenerated++
-
-      // Notificação informando que a cobrança foi gerada
       await upsertNotification(
         supabase,
         `billing_generated:${client.id}:${currentMonth}`,
@@ -269,13 +315,17 @@ export async function GET(request: Request) {
     }
   }
 
-  console.log(`[cron] notified=${notified} tasksCreated=${tasksCreated} billingGenerated=${billingGenerated}`)
+  console.log(
+    `[cron] notified=${notified} tasksCreated=${tasksCreated} ` +
+    `billingGenerated=${billingGenerated} emailsSent=${emailsSent}`,
+  )
 
   return NextResponse.json({
     success: true,
     notified,
     tasksCreated,
     billingGenerated,
+    emailsSent,
     timestamp: new Date().toISOString(),
   })
 }

@@ -44,7 +44,7 @@ export const AUTOMATION_DEFINITIONS: AutomationDefinition[] = [
       { key: 'create_transaction', type: 'checkbox', label: 'Criar transação recorrente', default: false },
       { key: 'transaction_amount', type: 'number', label: 'Valor da transação (R$)', default: 0, dependsOn: 'create_transaction' },
       { key: 'notify', type: 'checkbox', label: 'Criar notificação in-app', default: true },
-      { key: 'send_email', type: 'checkbox', label: 'Enviar e-mail (em breve)', default: false, disabled: true },
+      { key: 'send_email', type: 'checkbox', label: 'Enviar e-mail de alerta', default: false },
     ],
   },
   {
@@ -63,6 +63,7 @@ export const AUTOMATION_DEFINITIONS: AutomationDefinition[] = [
       { key: 'task_title', type: 'text', label: 'Título da tarefa', default: 'Follow-up pós-aprovação', dependsOn: 'create_task' },
       { key: 'task_priority', type: 'select', label: 'Prioridade', default: 'medium', options: ['high', 'medium', 'low'], dependsOn: 'create_task' },
       { key: 'notify', type: 'checkbox', label: 'Criar notificação in-app', default: true },
+      { key: 'send_email', type: 'checkbox', label: 'Enviar e-mail de alerta', default: false },
     ],
   },
   {
@@ -81,6 +82,7 @@ export const AUTOMATION_DEFINITIONS: AutomationDefinition[] = [
       { key: 'create_note', type: 'checkbox', label: 'Registrar nota automática', default: true },
       { key: 'note_text', type: 'text', label: 'Texto da nota', default: 'Lead perdido. Retomar contato em 90 dias.', dependsOn: 'create_note' },
       { key: 'notify', type: 'checkbox', label: 'Criar notificação in-app', default: false },
+      { key: 'send_email', type: 'checkbox', label: 'Enviar e-mail de alerta', default: false },
     ],
   },
   {
@@ -100,6 +102,7 @@ export const AUTOMATION_DEFINITIONS: AutomationDefinition[] = [
       { key: 'task_title', type: 'text', label: 'Título da tarefa', default: 'Reengajar cliente', dependsOn: 'create_task' },
       { key: 'task_priority', type: 'select', label: 'Prioridade', default: 'high', options: ['high', 'medium', 'low'], dependsOn: 'create_task' },
       { key: 'notify', type: 'checkbox', label: 'Criar notificação in-app', default: true },
+      { key: 'send_email', type: 'checkbox', label: 'Enviar e-mail de alerta', default: false },
     ],
   },
   {
@@ -121,6 +124,7 @@ export const AUTOMATION_DEFINITIONS: AutomationDefinition[] = [
       { key: 'task_title', type: 'text', label: 'Título da tarefa', default: 'Follow-up: proposta sem resposta', dependsOn: 'create_task' },
       { key: 'task_priority', type: 'select', label: 'Prioridade', default: 'high', options: ['high', 'medium', 'low'], dependsOn: 'create_task' },
       { key: 'notify', type: 'checkbox', label: 'Criar notificação in-app', default: true },
+      { key: 'send_email', type: 'checkbox', label: 'Enviar e-mail de alerta (resumo diário)', default: false },
     ],
   },
   {
@@ -142,6 +146,7 @@ export const AUTOMATION_DEFINITIONS: AutomationDefinition[] = [
       { key: 'task_title', type: 'text', label: 'Título da tarefa', default: 'Retomar contato com cliente', dependsOn: 'create_task' },
       { key: 'task_priority', type: 'select', label: 'Prioridade', default: 'medium', options: ['high', 'medium', 'low'], dependsOn: 'create_task' },
       { key: 'notify', type: 'checkbox', label: 'Criar notificação in-app', default: true },
+      { key: 'send_email', type: 'checkbox', label: 'Enviar e-mail de alerta (resumo diário)', default: false },
     ],
   },
   {
@@ -160,6 +165,7 @@ export const AUTOMATION_DEFINITIONS: AutomationDefinition[] = [
     fields: [
       { key: 'days_threshold', type: 'number', label: 'Dias em atraso para alertar', default: 1 },
       { key: 'notify', type: 'checkbox', label: 'Criar notificação in-app', default: true },
+      { key: 'send_email', type: 'checkbox', label: 'Enviar e-mail de alerta (resumo diário)', default: false },
     ],
   },
 ]

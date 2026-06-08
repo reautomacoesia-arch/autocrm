@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { sendEmail } from '@/lib/email'
 
 export interface AutomationContext {
   leadId?: string
@@ -85,7 +86,7 @@ export async function runAutomation(
   const config: Config = (cfg.config as Config) ?? {}
 
   switch (key) {
-    case 'lead_won':
+    case 'lead_won': {
       await createTask(supabase, config, context)
       await createTransaction(supabase, config, context)
       await createNotification(
@@ -94,9 +95,21 @@ export async function runAutomation(
         'Um lead foi convertido em cliente.',
         context.clientId ? `/clients/${context.clientId}` : '/clients'
       )
+      if (config.send_email) {
+        await sendEmail(
+          `🏆 Novo cliente: ${context.leadName ?? 'Lead convertido'}`,
+          [
+            `O lead <strong style="color:#f8fafc">${context.leadName ?? 'desconhecido'}</strong> foi convertido em cliente.`,
+            config.create_task ? `Tarefa de onboarding criada automaticamente.` : '',
+          ],
+          'Ver cliente',
+          context.clientId ? `/clients/${context.clientId}` : '/clients',
+        )
+      }
       break
+    }
 
-    case 'proposal_approved':
+    case 'proposal_approved': {
       await createTask(supabase, config, context)
       await createNotification(
         supabase, config,
@@ -104,9 +117,21 @@ export async function runAutomation(
         null,
         context.proposalId ? `/proposals/${context.proposalId}` : '/proposals'
       )
+      if (config.send_email) {
+        await sendEmail(
+          '✅ Proposta aprovada',
+          [
+            'Uma proposta foi marcada como <strong style="color:#f8fafc">aprovada</strong>.',
+            config.create_task ? 'Tarefa de follow-up criada automaticamente.' : '',
+          ],
+          'Ver proposta',
+          context.proposalId ? `/proposals/${context.proposalId}` : '/proposals',
+        )
+      }
       break
+    }
 
-    case 'lead_lost':
+    case 'lead_lost': {
       await createNote(supabase, config, context)
       await createNotification(
         supabase, config,
@@ -114,9 +139,21 @@ export async function runAutomation(
         (config.note_text as string) ?? null,
         '/pipeline'
       )
+      if (config.send_email) {
+        await sendEmail(
+          `❌ Lead perdido: ${context.leadName ?? ''}`,
+          [
+            `O lead <strong style="color:#f8fafc">${context.leadName ?? 'desconhecido'}</strong> foi marcado como perdido.`,
+            config.note_text ? `Nota registrada: ${config.note_text as string}` : '',
+          ],
+          'Ver pipeline',
+          '/pipeline',
+        )
+      }
       break
+    }
 
-    case 'client_churned':
+    case 'client_churned': {
       await createTask(supabase, config, context)
       await createNotification(
         supabase, config,
@@ -124,6 +161,18 @@ export async function runAutomation(
         null,
         context.clientId ? `/clients/${context.clientId}` : '/clients'
       )
+      if (config.send_email) {
+        await sendEmail(
+          `⚠️ Cliente inativo: ${context.clientName ?? ''}`,
+          [
+            `O cliente <strong style="color:#f8fafc">${context.clientName ?? 'desconhecido'}</strong> foi marcado como inativo ou churned.`,
+            config.create_task ? 'Tarefa de reengajamento criada automaticamente.' : '',
+          ],
+          'Ver cliente',
+          context.clientId ? `/clients/${context.clientId}` : '/clients',
+        )
+      }
       break
+    }
   }
 }
