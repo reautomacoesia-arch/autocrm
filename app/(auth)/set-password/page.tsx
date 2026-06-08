@@ -17,7 +17,11 @@ export default function SetPasswordPage() {
 
   // Carrega o nome do usuário convidado (se disponível no metadata)
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    // getSession() lê direto dos cookies — não faz request extra à rede.
+    // Mais confiável após navegação window.location.href vinda de /invite.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user ?? null
+
       if (!user) {
         // Sem sessão válida — manda pro login
         router.replace('/login')

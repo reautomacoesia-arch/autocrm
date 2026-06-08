@@ -3,25 +3,21 @@
 /**
  * Página de aterrissagem para links de convite.
  *
- * O Supabase redireciona para cá após verificar o token do convite.
- * O createBrowserClient já tem detectSessionInUrl: true por padrão,
- * então ele processa o ?code= (PKCE) ou #access_token= (hash) automaticamente
- * ao ser instanciado — NÃO chamamos exchangeCodeForSession manualmente para
- * não consumir o code duas vezes (o que causava erro de "Link inválido").
+ * O Supabase pode redirecionar para cá com três formatos diferentes:
+ *   1. ?code=CODE          — PKCE (mais comum, auto-processado pelo SDK)
+ *   2. ?token_hash=HASH    — OTP hash (formato mais novo do Supabase)
+ *   3. #access_token=...   — Implicit flow (auto-processado pelo SDK)
  *
- * Fluxo:
- *  1. SDK processa a URL e dispara SIGNED_IN
- *  2. onAuthStateChange captura e redireciona para /set-password (novo usuário)
- *     ou para / (usuário já existente)
+ * Após estabelecer a sessão, usa window.location.href (navegação completa)
+ * ao invés de router.replace para garantir que os cookies de sessão
+ * sejam enviados corretamente na próxima requisição.
  */
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
 
 export default function InviteConfirmPage() {
-  const router = useRouter()
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   useEffect(() => {
@@ -33,39 +29,53 @@ export default function InviteConfirmPage() {
       done = true
       const createdAt = user.created_at ? new Date(user.created_at).getTime() : 0
       const isNewUser = Date.now() - createdAt < 24 * 60 * 60 * 1000
-      router.replace(isNewUser ? '/set-password' : '/')
+      // Navegação COMPLETA (não client-side) para garantir que os cookies
+      // de sessão sejam enviados junto com a próxima requisição
+      window.location.href = isNewUser ? '/set-password' : '/'
     }
 
-    // Assina ANTES de qualquer verificação assíncrona.
-    // O SDK auto-processa ?code= ou #access_token= e dispara SIGNED_IN.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    async function tryEstablishSession() {
+      const params = new URLSearchParams(window.location.search)
+
+      // Formato 1: ?token_hash= (novo formato OTP do Supabase)
+      const tokenHash = params.get('token_hash')
+      if (tokenHash) {
+        const type = (params.get('type') ?? 'invite') as 'invite'
+        const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
+        if (!error && data.session) { go(data.session.user); return }
+        if (error) { setErrorMsg('Link de convite inválido ou expirado.'); return }
+      }
+
+      // Formato 2: ?code= (PKCE) — o SDK auto-processa, mas aguardamos via onAuthStateChange
+      // Formato 3: #access_token= (implicit) — o SDK auto-processa também
+
+      // Aguarda o SDK processar a URL (detectSessionInUrl: true)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session) {
+          subscription.unsubscribe()
+          go(session.user)
+        }
+      })
+
+      // Fallback: verifica se o SDK já processou antes de subscriberrmos
+      const { data: { session } } = await supabase.auth.getSession()
       if (session) {
         subscription.unsubscribe()
         go(session.user)
+        return
       }
-    })
 
-    // Fallback imediato: sessão pode já estar pronta se o SDK foi rápido
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        subscription.unsubscribe()
-        go(session.user)
-      }
-    })
-
-    // Timeout de segurança — se em 10 s nenhuma sessão aparecer, link inválido
-    const timer = setTimeout(() => {
-      if (!done) {
-        subscription.unsubscribe()
-        setErrorMsg('Link de convite inválido, já utilizado ou expirado.')
-      }
-    }, 10_000)
-
-    return () => {
-      clearTimeout(timer)
-      subscription.unsubscribe()
+      // Timeout de segurança — 10 s
+      setTimeout(() => {
+        if (!done) {
+          subscription.unsubscribe()
+          setErrorMsg('Link de convite inválido, já utilizado ou expirado.')
+        }
+      }, 10_000)
     }
-  }, [router])
+
+    tryEstablishSession()
+  }, [])
 
   if (errorMsg) {
     return (
