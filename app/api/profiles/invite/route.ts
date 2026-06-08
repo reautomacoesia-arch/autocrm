@@ -34,10 +34,11 @@ export async function POST(request: Request) {
   // O domínio base DEVE estar na lista "Redirect URLs" do Supabase Dashboard
   // (Authentication → URL Configuration → Redirect URLs → adicionar https://autocrm-olive.vercel.app/**)
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://autocrm-olive.vercel.app').replace(/\/$/, '')
-  // Aponta para /invite — página client-side que detecta a sessão
-  // tanto em PKCE (?code=) quanto em hash (#access_token=) e redireciona
-  // para /set-password em caso de usuário novo.
-  const redirectTo = `${siteUrl}/invite`
+  // Aponta para /auth/callback que troca o PKCE code por sessão server-side
+  // e aplica os cookies de sessão diretamente no redirect response.
+  // O parâmetro ?type=invite faz o callback redirecionar para /set-password
+  // em caso de usuário novo (< 24h).
+  const redirectTo = `${siteUrl}/auth/callback?type=invite`
 
   try {
     const admin = createAdminClient()
