@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   }
 
   if (type === 'invite') {
-    return NextResponse.redirect(`${origin}/auth/set-password`)
+    return NextResponse.redirect(`${origin}/set-password`)
   }
 
   return NextResponse.redirect(`${origin}/`)
