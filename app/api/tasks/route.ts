@@ -34,6 +34,9 @@ export async function POST(request: Request) {
       status: body.status ?? 'pending',
       client_id: body.client_id ?? null,
       lead_id: body.lead_id ?? null,
+      assigned_to: body.assigned_to ?? null,
+      assigned_to_id: body.assigned_to_id ?? null,
+      tags: body.tags ?? [],
     })
     .select()
     .single()

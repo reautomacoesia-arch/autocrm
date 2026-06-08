@@ -4,7 +4,7 @@ import { useState } from 'react'
 import type { TransactionType } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
 import Badge from '@/components/ui/Badge'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, Settings2, X } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 import EmptyState from '@/components/ui/EmptyState'
@@ -16,6 +16,7 @@ interface TransactionWithClient {
   type: TransactionType
   date: string
   description: string | null
+  recurring_key: string | null
   clients: { name: string; company: string | null } | null
 }
 
@@ -24,6 +25,7 @@ interface ClientOption {
   name: string
   company: string | null
   monthly_value: number
+  billing_day: number | null
 }
 
 interface TransactionManagerProps {
@@ -79,6 +81,13 @@ export default function TransactionManager({
   const [filterMonth, setFilterMonth] = useState<string>('')
   // FN4 — view
   const [activeView, setActiveView] = useState<'transactions' | 'by_client'>('transactions')
+  // Recorrência financeira
+  const [recurringDays, setRecurringDays] = useState<Record<string, number | null>>(
+    () => Object.fromEntries(clients.map((c) => [c.id, c.billing_day])),
+  )
+  const [configuringRecurringId, setConfiguringRecurringId] = useState<string | null>(null)
+  const [recurringDayInput, setRecurringDayInput] = useState<string>('')
+  const [recurringLoading, setRecurringLoading] = useState(false)
 
   const filteredTransactions = transactions
     .filter((t) => filterType === 'all' || t.type === filterType)
@@ -171,6 +180,27 @@ export default function TransactionManager({
     setTransactions((prev) => prev.filter((t) => t.id !== id))
     await fetch(`/api/transactions/${id}`, { method: 'DELETE' })
     toast('Transação removida')
+  }
+
+  async function handleSaveRecurring(clientId: string, day: number | null) {
+    setRecurringLoading(true)
+    const res = await fetch(`/api/clients/${clientId}/billing`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ billing_day: day }),
+    })
+    if (res.ok) {
+      setRecurringDays((prev) => ({ ...prev, [clientId]: day }))
+      setConfiguringRecurringId(null)
+      toast(
+        day
+          ? `Dia ${day} configurado — cobrança automática ativa`
+          : 'Recorrência removida',
+      )
+    } else {
+      toast('Erro ao salvar configuração', 'error')
+    }
+    setRecurringLoading(false)
   }
 
   function getMonthOptions(): { value: string; label: string }[] {
@@ -278,29 +308,121 @@ export default function TransactionManager({
         )}
       </div>
 
-      {/* Clients MRR breakdown */}
+      {/* Clients MRR breakdown + config de recorrência */}
       {clients.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
-            Receita por Cliente
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
+              Receita por Cliente
+            </h2>
+            {clients.some((c) => recurringDays[c.id]) && (
+              <span className="flex items-center gap-1 text-emerald-500 text-xs">
+                <RefreshCw size={10} />
+                {clients.filter((c) => recurringDays[c.id]).length} com cobrança automática
+              </span>
+            )}
+          </div>
           <div className="space-y-2">
-            {clients.map((client) => (
-              <div
-                key={client.id}
-                className="flex items-center justify-between bg-[#1a1a1d] border border-slate-700 rounded-lg px-4 py-3"
-              >
-                <div>
-                  <p className="text-white text-sm font-medium">{client.name}</p>
-                  {client.company && (
-                    <p className="text-slate-400 text-xs">{client.company}</p>
+            {clients.map((client) => {
+              const billingDay = recurringDays[client.id]
+              const isConfiguring = configuringRecurringId === client.id
+
+              return (
+                <div
+                  key={client.id}
+                  className="bg-[#1a1a1d] border border-slate-700 rounded-lg px-4 py-3"
+                >
+                  {/* Linha principal */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium">{client.name}</p>
+                      {client.company && (
+                        <p className="text-slate-400 text-xs">{client.company}</p>
+                      )}
+                      {billingDay ? (
+                        <p className="flex items-center gap-1 text-emerald-600 text-xs mt-0.5">
+                          <RefreshCw size={9} />
+                          Cobrança automática todo dia {billingDay}
+                        </p>
+                      ) : (
+                        <p className="text-slate-700 text-xs mt-0.5">Sem recorrência automática</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <p className="text-emerald-400 text-sm font-semibold">
+                        {formatCurrency(client.monthly_value)}/mês
+                      </p>
+                      <button
+                        onClick={() => {
+                          if (isConfiguring) {
+                            setConfiguringRecurringId(null)
+                          } else {
+                            setRecurringDayInput(billingDay ? String(billingDay) : '')
+                            setConfiguringRecurringId(client.id)
+                          }
+                        }}
+                        title="Configurar cobrança automática"
+                        className={`transition-colors ${
+                          isConfiguring
+                            ? 'text-indigo-400'
+                            : billingDay
+                            ? 'text-emerald-600 hover:text-emerald-400'
+                            : 'text-slate-600 hover:text-slate-300'
+                        }`}
+                      >
+                        {isConfiguring ? <X size={13} /> : <Settings2 size={13} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Painel de config inline */}
+                  {isConfiguring && (
+                    <div className="mt-3 pt-3 border-t border-slate-700/60">
+                      <p className="text-slate-400 text-xs mb-2">
+                        O cron diário gera automaticamente uma transação <strong className="text-slate-300">Pendente</strong> com o valor mensal do cliente no dia escolhido.
+                      </p>
+                      <div className="flex items-end gap-2">
+                        <div>
+                          <label className="block text-xs text-slate-500 mb-1">
+                            Dia do mês (1–28)
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="28"
+                            value={recurringDayInput}
+                            onChange={(e) => setRecurringDayInput(e.target.value)}
+                            placeholder="Ex: 5"
+                            className="w-24 bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                        <button
+                          onClick={() =>
+                            handleSaveRecurring(
+                              client.id,
+                              recurringDayInput ? parseInt(recurringDayInput) : null,
+                            )
+                          }
+                          disabled={recurringLoading || !recurringDayInput}
+                          className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-[#050505] text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                          {recurringLoading ? '...' : 'Ativar'}
+                        </button>
+                        {billingDay && (
+                          <button
+                            onClick={() => handleSaveRecurring(client.id, null)}
+                            disabled={recurringLoading}
+                            className="text-red-500 hover:text-red-400 disabled:opacity-40 text-sm px-2 py-1.5 transition-colors"
+                          >
+                            Remover
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
-                <p className="text-emerald-400 text-sm font-semibold">
-                  {formatCurrency(client.monthly_value)}/mês
-                </p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
@@ -560,6 +682,12 @@ export default function TransactionManager({
                     <p className="text-slate-500 text-xs mt-0.5">{formatDate(t.date)}</p>
                   </div>
                   <div className="flex items-center gap-2">
+                    {t.recurring_key && (
+                      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-900/20 text-emerald-600 border border-emerald-900/40">
+                        <RefreshCw size={8} />
+                        Auto
+                      </span>
+                    )}
                     <Badge variant={badge.variant}>{badge.label}</Badge>
                     {isOverdue && <Badge variant="red">Atrasado</Badge>}
                     <button

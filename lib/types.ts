@@ -117,6 +117,20 @@ export interface Transaction {
   updated_at: string
 }
 
+export interface Profile {
+  id: string
+  name: string
+  email: string | null
+  avatar_color: string
+  avatar_url: string | null
+  bio: string | null
+  phone: string | null
+  birth_date: string | null
+  role: string
+  created_at: string
+  updated_at: string
+}
+
 export interface Task {
   id: string
   client_id: string | null
@@ -126,8 +140,28 @@ export interface Task {
   priority: TaskPriority
   due_date: string | null
   status: TaskStatus
+  assigned_to: string | null
+  assigned_to_id: string | null
+  tags: string[]
   created_at: string
   updated_at: string
+}
+
+export interface TaskChecklistItem {
+  id: string
+  task_id: string
+  text: string
+  done: boolean
+  position: number
+  created_at: string
+}
+
+export interface TaskComment {
+  id: string
+  task_id: string
+  body: string
+  author: string
+  created_at: string
 }
 
 export interface Interaction {
@@ -177,6 +211,7 @@ export interface AutomationConfig {
 
 export interface Notification {
   id: string
+  key: string | null
   title: string
   body: string | null
   link: string | null

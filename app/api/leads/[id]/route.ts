@@ -17,31 +17,39 @@ export async function PATCH(
     .eq('id', id)
     .single()
 
+  // Build update object with only the fields present in the body
+  const fields: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (body.name !== undefined)             fields.name = body.name
+  if (body.company !== undefined)          fields.company = body.company ?? null
+  if (body.email !== undefined)            fields.email = body.email ?? null
+  if (body.phone !== undefined)            fields.phone = body.phone ?? null
+  if (body.estimated_value !== undefined)  fields.estimated_value = body.estimated_value ?? 0
+  if (body.stage !== undefined)            fields.stage = body.stage
+  if (body.notes !== undefined)            fields.notes = body.notes ?? null
+  if (body.instagram !== undefined)        fields.instagram = body.instagram ?? null
+  if (body.website !== undefined)          fields.website = body.website ?? null
+  if (body.source !== undefined)           fields.source = body.source ?? null
+  if (body.next_step !== undefined)        fields.next_step = body.next_step ?? null
+
   const { data, error } = await supabase
     .from('leads')
-    .update({
-      name: body.name,
-      company: body.company ?? null,
-      email: body.email ?? null,
-      phone: body.phone ?? null,
-      estimated_value: body.estimated_value ?? 0,
-      stage: body.stage,
-      notes: body.notes ?? null,
-      instagram: body.instagram ?? null,
-      website: body.website ?? null,
-      source: body.source ?? null,
-      next_step: body.next_step ?? null,
-      updated_at: new Date().toISOString(),
-    })
+    .update(fields)
     .eq('id', id)
     .select()
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Fire automations on stage change (fire-and-forget)
-  if (body.stage && prev?.stage !== body.stage) {
-    const context = { leadId: id, leadName: data?.name ?? prev?.name }
+  // Log pipeline stage change + fire automations (fire-and-forget)
+  if (body.stage && prev?.stage && prev.stage !== body.stage) {
+    const leadName = data?.name ?? prev?.name ?? 'Lead'
+    void supabase.from('pipeline_events').insert({
+      lead_id: id,
+      lead_name: leadName,
+      from_stage: prev.stage,
+      to_stage: body.stage,
+    }).then(() => {}, () => {})
+    const context = { leadId: id, leadName }
     if (body.stage === 'won') {
       void runAutomation(supabase, 'lead_won', { ...context, clientId: body.clientId })
     } else if (body.stage === 'lost') {

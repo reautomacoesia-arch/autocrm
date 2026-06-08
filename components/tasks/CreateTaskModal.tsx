@@ -2,22 +2,28 @@
 
 import { useState } from 'react'
 import Modal from '@/components/ui/Modal'
-import type { Client, Task, TaskPriority } from '@/lib/types'
+import type { Client, Profile, Task, TaskPriority, TaskStatus } from '@/lib/types'
+import { X } from 'lucide-react'
+import AssigneeSelector from '@/components/team/AssigneeSelector'
 
 interface CreateTaskModalProps {
   isOpen: boolean
   onClose: () => void
   clients: Client[]
+  profiles: Profile[]
   onTaskCreated: (task: Task) => void
   defaultClientId?: string
+  defaultStatus?: TaskStatus
 }
 
 export default function CreateTaskModal({
   isOpen,
   onClose,
   clients,
+  profiles,
   onTaskCreated,
   defaultClientId,
+  defaultStatus = 'pending',
 }: CreateTaskModalProps) {
   const [form, setForm] = useState({
     title: '',
@@ -25,9 +31,24 @@ export default function CreateTaskModal({
     priority: 'medium' as TaskPriority,
     due_date: '',
     client_id: defaultClientId ?? '',
+    assigned_to: '' as string,
+    assigned_to_id: '' as string,
   })
+  const [tags, setTags] = useState<string[]>([])
+  const [tagInput, setTagInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  function addTag() {
+    const t = tagInput.trim().toLowerCase()
+    if (!t || tags.includes(t)) return
+    setTags((prev) => [...prev, t])
+    setTagInput('')
+  }
+
+  function removeTag(tag: string) {
+    setTags((prev) => prev.filter((t) => t !== tag))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -43,6 +64,10 @@ export default function CreateTaskModal({
         priority: form.priority,
         due_date: form.due_date || null,
         client_id: form.client_id || null,
+        assigned_to: form.assigned_to || null,
+        assigned_to_id: form.assigned_to_id || null,
+        tags,
+        status: defaultStatus,
       }),
     })
 
@@ -54,7 +79,9 @@ export default function CreateTaskModal({
 
     const task = await res.json()
     onTaskCreated(task)
-    setForm({ title: '', description: '', priority: 'medium', due_date: '', client_id: defaultClientId ?? '' })
+    setForm({ title: '', description: '', priority: 'medium', due_date: '', client_id: defaultClientId ?? '', assigned_to: '', assigned_to_id: '' })
+    setTags([])
+    setTagInput('')
     setLoading(false)
   }
 
@@ -102,6 +129,44 @@ export default function CreateTaskModal({
               onChange={(e) => setForm((p) => ({ ...p, due_date: e.target.value }))}
               className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs text-slate-400 mb-1.5">Responsável</label>
+          <AssigneeSelector
+            profiles={profiles}
+            value={form.assigned_to_id || null}
+            onChange={(id, name) => setForm((p) => ({ ...p, assigned_to_id: id ?? '', assigned_to: name ?? '' }))}
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-slate-400 mb-1.5">Tags</label>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {tags.map((tag) => (
+              <span key={tag} className="flex items-center gap-1 bg-indigo-600/20 text-indigo-400 text-xs px-2 py-0.5 rounded-full">
+                {tag}
+                <button type="button" onClick={() => removeTag(tag)} className="hover:text-red-400 transition-colors">
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }}
+              placeholder="Adicionar tag (Enter)"
+              className="flex-1 bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 placeholder:text-slate-600"
+            />
+            <button
+              type="button"
+              onClick={addTag}
+              className="bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg px-3 text-sm transition-colors"
+            >
+              +
+            </button>
           </div>
         </div>
         {clients.length > 0 && (

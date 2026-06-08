@@ -49,3 +49,5 @@ gerador_propostas/
 
 # Config local do Claude Code
 .claude/
+
+.vercel

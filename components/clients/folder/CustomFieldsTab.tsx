@@ -71,10 +71,11 @@ export default function CustomFieldsTab({ entityType, entityId }: CustomFieldsTa
   useEffect(() => {
     fetch(`/api/custom-fields/values?entity_type=${entityType}&entity_id=${entityId}`)
       .then((r) => r.json())
-      .then((data: FieldWithValue[]) => {
-        setFields(data)
+      .then((data: unknown) => {
+        const list: FieldWithValue[] = Array.isArray(data) ? data : []
+        setFields(list)
         const vals: Record<string, string> = {}
-        for (const item of data) {
+        for (const item of list) {
           vals[item.definition.id] = item.value ?? ''
         }
         setEditValues(vals)

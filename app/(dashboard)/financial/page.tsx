@@ -7,7 +7,7 @@ export default async function FinancialPage() {
   const [clientsRes, transactionsRes] = await Promise.all([
     supabase
       .from('clients')
-      .select('id, name, company, monthly_value')
+      .select('id, name, company, monthly_value, billing_day')
       .eq('status', 'active')
       .order('monthly_value', { ascending: false }),
     supabase
@@ -17,7 +17,13 @@ export default async function FinancialPage() {
       .limit(100),
   ])
 
-  const clients = clientsRes.data ?? []
+  const clients = (clientsRes.data ?? []) as {
+    id: string
+    name: string
+    company: string | null
+    monthly_value: number
+    billing_day: number | null
+  }[]
   const transactions = transactionsRes.data ?? []
   const mrr = clients.reduce((sum: number, c: any) => sum + (c.monthly_value || 0), 0)
 

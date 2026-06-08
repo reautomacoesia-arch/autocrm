@@ -5,6 +5,7 @@ import type { AutomationConfig } from '@/lib/types'
 import type { AutomationDefinition } from '@/lib/automations'
 import { PRIORITY_LABELS } from '@/lib/automations'
 import { useToast } from '@/components/ui/ToastProvider'
+import { ChevronDown, ChevronUp, Clock, Zap } from 'lucide-react'
 
 interface AutomationCardProps {
   definition: AutomationDefinition
@@ -19,6 +20,9 @@ export default function AutomationCard({ definition, config }: AutomationCardPro
     Object.fromEntries(definition.fields.map((f) => [f.key, f.default]))
   )
   const [saving, setSaving] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
+
+  const isCron = definition.trigger.toLowerCase().includes('cron')
 
   async function handleSave() {
     setSaving(true)
@@ -43,27 +47,79 @@ export default function AutomationCard({ definition, config }: AutomationCardPro
 
   return (
     <div className={`bg-[#1a1a1d] border rounded-xl p-4 transition-colors ${enabled ? 'border-indigo-700' : 'border-slate-700'}`}>
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2.5">
-          <span className="text-xl">{definition.badge}</span>
-          <div>
-            <p className="text-white text-sm font-semibold">{definition.name}</p>
+      {/* ── Header ── */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <span className="text-xl flex-shrink-0 mt-0.5">{definition.badge}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-white text-sm font-semibold">{definition.name}</p>
+              {/* Trigger badge */}
+              <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                isCron
+                  ? 'bg-blue-500/10 text-blue-400'
+                  : 'bg-amber-500/10 text-amber-400'
+              }`}>
+                {isCron ? <Clock size={9} /> : <Zap size={9} />}
+                {isCron ? 'Cron diário 09h' : 'Evento'}
+              </span>
+            </div>
             <p className="text-slate-500 text-xs mt-0.5">{definition.description}</p>
           </div>
         </div>
+
         {/* Toggle */}
         <button
           onClick={() => setEnabled((p) => !p)}
           className={`flex-shrink-0 w-10 h-6 rounded-full transition-colors relative ${enabled ? 'bg-indigo-600' : 'bg-slate-700'}`}
+          title={enabled ? 'Desativar automação' : 'Ativar automação'}
         >
           <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${enabled ? 'left-5' : 'left-1'}`} />
         </button>
       </div>
 
-      {/* Config fields — only when enabled */}
+      {/* ── Info expandível ── */}
+      <button
+        type="button"
+        onClick={() => setShowDetails((p) => !p)}
+        className="mt-3 flex items-center gap-1.5 text-slate-500 hover:text-slate-300 text-xs transition-colors"
+      >
+        {showDetails ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        {showDetails ? 'Ocultar detalhes' : 'Como funciona?'}
+      </button>
+
+      {showDetails && (
+        <div className="mt-3 bg-slate-800/40 border border-slate-700/50 rounded-lg px-4 py-3 space-y-3">
+          {/* Gatilho */}
+          <div>
+            <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-wider mb-1">Gatilho</p>
+            <p className="text-slate-300 text-xs">{definition.trigger}</p>
+          </div>
+
+          {/* O que faz */}
+          <div>
+            <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-wider mb-1.5">O que acontece</p>
+            <ul className="space-y-1">
+              {definition.details.map((d, i) => (
+                <li key={i} className="flex items-start gap-2 text-xs text-slate-300">
+                  <span className="text-indigo-500 flex-shrink-0 mt-0.5">•</span>
+                  {d}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Exemplo */}
+          <div>
+            <p className="text-slate-500 text-[10px] font-semibold uppercase tracking-wider mb-1">Exemplo prático</p>
+            <p className="text-slate-400 text-xs italic leading-relaxed">{definition.example}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Config fields — só quando ativo ── */}
       {enabled && (
-        <div className="space-y-3 mt-3 pt-3 border-t border-slate-700">
+        <div className="space-y-3 mt-4 pt-4 border-t border-slate-700">
           {definition.fields.map((field) => {
             if (field.dependsOn && !values[field.dependsOn]) return null
 
@@ -138,7 +194,7 @@ export default function AutomationCard({ definition, config }: AutomationCardPro
         </div>
       )}
 
-      {/* When disabled: show small save button to persist disabled state */}
+      {/* Quando desativado: botão discreto para salvar estado desligado */}
       {!enabled && config !== null && (
         <button
           onClick={handleSave}

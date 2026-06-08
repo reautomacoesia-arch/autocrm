@@ -1,0 +1,52 @@
+import { createClient } from '@/lib/supabase/server'
+import { NextResponse } from 'next/server'
+
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const supabase = await createClient()
+  const { id } = await params
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 404 })
+  return NextResponse.json(data)
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const supabase = await createClient()
+  const { id } = await params
+  const body = await request.json()
+
+  // Only allow editing own profile
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user?.id !== id) {
+    return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
+  }
+
+  const fields: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (body.name !== undefined)         fields.name = body.name
+  if (body.avatar_color !== undefined) fields.avatar_color = body.avatar_color
+  if (body.avatar_url !== undefined)   fields.avatar_url = body.avatar_url ?? null
+  if (body.bio !== undefined)          fields.bio = body.bio ?? null
+  if (body.birth_date !== undefined)   fields.birth_date = body.birth_date ?? null
+  if (body.phone !== undefined)        fields.phone = body.phone ?? null
+  if (body.role !== undefined)         fields.role = body.role
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(fields)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data)
+}

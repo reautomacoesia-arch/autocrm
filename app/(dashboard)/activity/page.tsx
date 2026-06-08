@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { STAGE_LABELS } from '@/lib/pipeline'
+import type { LeadStage } from '@/lib/types'
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 20
 
 const TYPE_ICON: Record<string, string> = {
   note: '📝',
@@ -30,20 +32,49 @@ export default async function ActivityPage({
 
   const supabase = await createClient()
 
-  const [interactionsRes, countRes] = await Promise.all([
+  const [interactionsRes, pipelineEventsRes] = await Promise.all([
     supabase
       .from('interactions')
       .select('id, type, description, happened_at, clients(id, name)')
       .order('happened_at', { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1),
+      .limit(200),
     supabase
-      .from('interactions')
-      .select('*', { count: 'exact', head: true }),
+      .from('pipeline_events')
+      .select('id, lead_id, lead_name, from_stage, to_stage, happened_at')
+      .order('happened_at', { ascending: false })
+      .limit(200),
   ])
 
-  const interactions = interactionsRes.data ?? []
-  const totalCount = countRes.count ?? 0
+  type ActivityItem = {
+    id: string
+    icon: string
+    description: string
+    sub: string | null
+    link?: string
+    date: string
+  }
+
+  const items: ActivityItem[] = [
+    ...(interactionsRes.data ?? []).map((i: any) => ({
+      id: `i-${i.id}`,
+      icon: TYPE_ICON[i.type] ?? '📝',
+      description: i.description,
+      sub: i.clients?.name ?? null,
+      link: i.clients ? `/clients/${i.clients.id}` : undefined,
+      date: i.happened_at,
+    })),
+    ...(pipelineEventsRes.data ?? []).map((e: any) => ({
+      id: `p-${e.id}`,
+      icon: '🔄',
+      description: `${e.lead_name} avançou para ${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage}`,
+      sub: `${STAGE_LABELS[e.from_stage as LeadStage] ?? e.from_stage} → ${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage}`,
+      date: e.happened_at,
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+  const totalCount = items.length
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+  const paged = items.slice(offset, offset + PAGE_SIZE)
 
   return (
     <div>
@@ -56,38 +87,36 @@ export default async function ActivityPage({
           <span className="text-white text-sm">Histórico de Atividades</span>
         </div>
         <h1 className="text-white text-2xl font-bold">Histórico de Atividades</h1>
-        <p className="text-slate-400 text-sm mt-1">{totalCount} interação(ões) registrada(s)</p>
+        <p className="text-slate-400 text-sm mt-1">{totalCount} registro(s)</p>
       </div>
 
-      {interactions.length === 0 ? (
+      {paged.length === 0 ? (
         <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl p-12 text-center text-slate-500 text-sm">
-          Nenhuma interação registrada ainda.
+          Nenhuma atividade registrada ainda.
         </div>
       ) : (
         <div className="space-y-2">
-          {interactions.map((interaction: any) => (
+          {paged.map((item) => (
             <div
-              key={interaction.id}
+              key={item.id}
               className="bg-[#1a1a1d] border border-slate-700 rounded-lg px-4 py-3"
             >
               <div className="flex items-start gap-3">
-                <span className="text-lg flex-shrink-0 mt-0.5">
-                  {TYPE_ICON[interaction.type] ?? '📝'}
-                </span>
+                <span className="text-lg flex-shrink-0 mt-0.5">{item.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-slate-200 text-sm">{interaction.description}</p>
+                  <p className="text-slate-200 text-sm">{item.description}</p>
                   <div className="flex items-center gap-3 mt-1">
-                    {interaction.clients && (
+                    {item.sub && item.link ? (
                       <Link
-                        href={`/clients/${interaction.clients.id}`}
+                        href={item.link}
                         className="text-indigo-400 hover:text-indigo-300 text-xs transition-colors"
                       >
-                        {interaction.clients.name}
+                        {item.sub}
                       </Link>
-                    )}
-                    <span className="text-slate-500 text-xs">
-                      {formatDatetime(interaction.happened_at)}
-                    </span>
+                    ) : item.sub ? (
+                      <span className="text-slate-500 text-xs">{item.sub}</span>
+                    ) : null}
+                    <span className="text-slate-500 text-xs">{formatDatetime(item.date)}</span>
                   </div>
                 </div>
               </div>
