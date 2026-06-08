@@ -5,7 +5,7 @@ import type { Profile } from '@/lib/types'
 import ProfileAvatar from '@/components/team/ProfileAvatar'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/ui/ToastProvider'
-import { Camera, Loader2, Check, Phone, FileText, Palette, User, Cake } from 'lucide-react'
+import { Camera, Loader2, Check, Phone, FileText, Palette, User, Cake, KeyRound, Eye, EyeOff } from 'lucide-react'
 
 const COLORS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
@@ -57,6 +57,13 @@ export default function ProfileEditor({ profile: initial, userId }: ProfileEdito
   const [saving, setSaving] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  // ── Alterar senha ──
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' })
+  const [showPw, setShowPw] = useState({ current: false, next: false })
+  const [pwSaving, setPwSaving] = useState(false)
+  const [pwError, setPwError] = useState<string | null>(null)
+  const [pwSaved, setPwSaved] = useState(false)
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -127,6 +134,49 @@ export default function ProfileEditor({ profile: initial, userId }: ProfileEdito
     }
 
     setSaving(false)
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault()
+    setPwError(null)
+
+    if (pwForm.next.length < 8) {
+      setPwError('A nova senha deve ter pelo menos 8 caracteres.')
+      return
+    }
+    if (pwForm.next !== pwForm.confirm) {
+      setPwError('As senhas não coincidem.')
+      return
+    }
+
+    setPwSaving(true)
+    const supabase = createClient()
+
+    // Verifica senha atual fazendo re-autenticação
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: profile.email ?? '',
+      password: pwForm.current,
+    })
+
+    if (signInError) {
+      setPwError('Senha atual incorreta.')
+      setPwSaving(false)
+      return
+    }
+
+    // Atualiza para a nova senha
+    const { error: updateError } = await supabase.auth.updateUser({ password: pwForm.next })
+
+    if (updateError) {
+      setPwError(updateError.message)
+    } else {
+      setPwForm({ current: '', next: '', confirm: '' })
+      setPwSaved(true)
+      setTimeout(() => setPwSaved(false), 3000)
+      toast('Senha alterada com sucesso!')
+    }
+
+    setPwSaving(false)
   }
 
   const displayUrl = previewUrl ?? profile.avatar_url
@@ -283,6 +333,103 @@ export default function ProfileEditor({ profile: initial, userId }: ProfileEdito
             />
           ))}
         </div>
+      </div>
+
+      {/* ── Segurança ── */}
+      <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl px-6 py-6 mb-6">
+        <h2 className="text-slate-300 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 mb-5">
+          <KeyRound size={12} /> Segurança
+        </h2>
+
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          {/* Senha atual */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">Senha atual</label>
+            <div className="relative">
+              <input
+                type={showPw.current ? 'text' : 'password'}
+                value={pwForm.current}
+                onChange={(e) => setPwForm((p) => ({ ...p, current: e.target.value }))}
+                placeholder="••••••••"
+                className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500 placeholder:text-slate-600 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((p) => ({ ...p, current: !p.current }))}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                tabIndex={-1}
+              >
+                {showPw.current ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Nova senha */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">Nova senha</label>
+            <div className="relative">
+              <input
+                type={showPw.next ? 'text' : 'password'}
+                value={pwForm.next}
+                onChange={(e) => setPwForm((p) => ({ ...p, next: e.target.value }))}
+                placeholder="Mínimo 8 caracteres"
+                className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500 placeholder:text-slate-600 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((p) => ({ ...p, next: !p.next }))}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                tabIndex={-1}
+              >
+                {showPw.next ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Confirmar nova senha */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">Confirmar nova senha</label>
+            <input
+              type={showPw.next ? 'text' : 'password'}
+              value={pwForm.confirm}
+              onChange={(e) => setPwForm((p) => ({ ...p, confirm: e.target.value }))}
+              placeholder="Repita a nova senha"
+              className={`w-full bg-[#050505] border text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none transition-colors placeholder:text-slate-600 ${
+                pwForm.confirm && pwForm.confirm !== pwForm.next
+                  ? 'border-red-700 focus:border-red-500'
+                  : 'border-slate-700 focus:border-indigo-500'
+              }`}
+            />
+            {pwForm.confirm && pwForm.confirm !== pwForm.next && (
+              <p className="text-red-400 text-xs mt-1">As senhas não coincidem</p>
+            )}
+          </div>
+
+          {pwError && (
+            <p className="text-red-400 text-sm bg-red-900/20 border border-red-800 rounded-lg px-4 py-2.5">
+              {pwError}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={
+              pwSaving ||
+              !pwForm.current ||
+              pwForm.next.length < 8 ||
+              pwForm.next !== pwForm.confirm
+            }
+            className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium text-sm px-5 py-2.5 rounded-lg transition-colors"
+          >
+            {pwSaving ? (
+              <><Loader2 size={14} className="animate-spin" /> Salvando...</>
+            ) : pwSaved ? (
+              <><Check size={14} className="text-emerald-400" /> Senha alterada!</>
+            ) : (
+              <><KeyRound size={14} /> Alterar senha</>
+            )}
+          </button>
+        </form>
       </div>
 
       {/* ── Save ── */}
