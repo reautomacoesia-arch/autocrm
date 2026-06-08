@@ -4,7 +4,7 @@ import { useState } from 'react'
 import type { Profile } from '@/lib/types'
 import ProfileAvatar from '@/components/team/ProfileAvatar'
 import { useToast } from '@/components/ui/ToastProvider'
-import { Pencil, Check, X, UserPlus, Mail, Send, Loader2 } from 'lucide-react'
+import { Pencil, Check, X, UserPlus, Mail, Send, Loader2, Link2, Copy, CheckCheck } from 'lucide-react'
 
 const COLORS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
@@ -37,6 +37,8 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
   const [inviteLoading, setInviteLoading] = useState(false)
   const [inviteError, setInviteError] = useState<string | null>(null)
   const [inviteSent, setInviteSent] = useState(false)
+  const [inviteLink, setInviteLink] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const { toast } = useToast()
 
@@ -73,32 +75,34 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
     setInviteName('')
     setInviteError(null)
     setInviteSent(false)
+    setInviteLink(null)
+    setCopied(false)
     setShowInvite(true)
   }
 
-  async function handleInvite(e: React.FormEvent) {
-    e.preventDefault()
+  async function doInvite(mode: 'email' | 'link') {
     setInviteLoading(true)
     setInviteError(null)
 
     const res = await fetch('/api/profiles/invite', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: inviteEmail, name: inviteName }),
+      body: JSON.stringify({ email: inviteEmail, name: inviteName, mode }),
     })
 
     const data = await res.json()
 
     if (!res.ok) {
-      setInviteError(data.error ?? 'Erro ao enviar convite.')
+      setInviteError(data.error ?? 'Erro ao processar convite.')
       setInviteLoading(false)
       return
     }
 
     setInviteSent(true)
+    if (data.link) setInviteLink(data.link)
     setInviteLoading(false)
 
-    // Add placeholder profile to the list so it shows up immediately
+    // Adiciona placeholder na lista imediatamente
     const placeholder: Profile = {
       id: `pending-${Date.now()}`,
       name: inviteName || inviteEmail.split('@')[0],
@@ -113,6 +117,18 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
       updated_at: new Date().toISOString(),
     }
     setProfiles((prev) => [...prev, placeholder])
+  }
+
+  function handleInviteEmail(e: React.FormEvent) {
+    e.preventDefault()
+    doInvite('email')
+  }
+
+  async function copyLink() {
+    if (!inviteLink) return
+    await navigator.clipboard.writeText(inviteLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2500)
   }
 
   return (
@@ -155,18 +171,60 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
               <div className="px-6 py-5">
                 {inviteSent ? (
                   /* ── Success state ── */
-                  <div className="text-center py-4">
-                    <div className="w-12 h-12 bg-emerald-600/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Check size={22} className="text-emerald-400" />
+                  <div className="py-2">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 bg-emerald-600/20 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Check size={18} className="text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium text-sm">
+                          {inviteLink ? 'Link gerado!' : 'Convite enviado!'}
+                        </p>
+                        <p className="text-slate-500 text-xs mt-0.5">
+                          {inviteLink
+                            ? 'Copie o link abaixo e envie pelo canal que preferir.'
+                            : `E-mail enviado para ${inviteEmail}`}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-white font-medium text-sm mb-1">Convite enviado!</p>
-                    <p className="text-slate-400 text-xs">
-                      Um e-mail foi enviado para{' '}
-                      <span className="text-indigo-400">{inviteEmail}</span> com o link de acesso.
-                    </p>
-                    <div className="flex gap-2 mt-5">
+
+                    {inviteLink && (
+                      <div className="mb-4">
+                        <p className="text-slate-500 text-xs mb-2">Link de acesso (uso único):</p>
+                        <div className="flex gap-2">
+                          <input
+                            readOnly
+                            value={inviteLink}
+                            className="flex-1 bg-[#050505] border border-slate-700 text-slate-300 rounded-lg px-3 py-2 text-xs focus:outline-none truncate"
+                            onClick={(e) => (e.target as HTMLInputElement).select()}
+                          />
+                          <button
+                            onClick={copyLink}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors flex-shrink-0 ${
+                              copied
+                                ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-800'
+                                : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                            }`}
+                          >
+                            {copied ? <CheckCheck size={13} /> : <Copy size={13} />}
+                            {copied ? 'Copiado!' : 'Copiar'}
+                          </button>
+                        </div>
+                        <p className="text-slate-600 text-xs mt-2">
+                          Cole no WhatsApp, e-mail ou qualquer canal. O link expira após o primeiro uso.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
                       <button
-                        onClick={() => { setInviteSent(false); setInviteEmail(''); setInviteName('') }}
+                        onClick={() => {
+                          setInviteSent(false)
+                          setInviteEmail('')
+                          setInviteName('')
+                          setInviteLink(null)
+                          setCopied(false)
+                        }}
                         className="flex-1 border border-slate-700 text-slate-400 rounded-lg py-2 text-sm hover:bg-slate-800 transition-colors"
                       >
                         Convidar outro
@@ -181,7 +239,7 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
                   </div>
                 ) : (
                   /* ── Form ── */
-                  <form onSubmit={handleInvite} className="space-y-4">
+                  <form onSubmit={handleInviteEmail} className="space-y-4">
                     <div>
                       <label className="block text-xs text-slate-400 mb-1.5">Nome (opcional)</label>
                       <input
@@ -205,37 +263,36 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
                       />
                     </div>
 
-                    <p className="text-slate-600 text-xs leading-relaxed">
-                      A pessoa receberá um e-mail com link para criar sua senha e acessar o CRM.
-                      O perfil dela ficará disponível para atribuição de tarefas imediatamente.
-                    </p>
-
                     {inviteError && (
                       <p className="text-red-400 text-xs bg-red-900/20 border border-red-800 rounded-lg px-3 py-2">
                         {inviteError}
                       </p>
                     )}
 
-                    <div className="flex gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setShowInvite(false)}
-                        className="flex-1 border border-slate-700 text-slate-400 rounded-lg py-2 text-sm hover:bg-slate-800 transition-colors"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={inviteLoading}
-                        className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                      >
-                        {inviteLoading ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          <Send size={13} />
-                        )}
-                        {inviteLoading ? 'Enviando...' : 'Enviar convite'}
-                      </button>
+                    {/* Dois modos de convite */}
+                    <div className="pt-1 space-y-2">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={inviteLoading || !inviteEmail}
+                          onClick={() => doInvite('link')}
+                          className="flex-1 flex items-center justify-center gap-1.5 border border-slate-600 hover:border-indigo-600 text-slate-300 hover:text-indigo-400 disabled:opacity-40 rounded-lg py-2 text-sm transition-colors"
+                        >
+                          {inviteLoading ? <Loader2 size={13} className="animate-spin" /> : <Link2 size={13} />}
+                          Gerar link
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={inviteLoading}
+                          className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-[#050505] rounded-lg py-2 text-sm font-medium transition-colors"
+                        >
+                          {inviteLoading ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                          {inviteLoading ? 'Aguarde...' : 'Enviar por e-mail'}
+                        </button>
+                      </div>
+                      <p className="text-slate-700 text-xs text-center">
+                        Link = você copia e manda onde quiser · E-mail = Supabase envia automaticamente
+                      </p>
                     </div>
                   </form>
                 )}
