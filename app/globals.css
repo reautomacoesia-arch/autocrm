@@ -6,31 +6,29 @@
   --obsidian: #1a1a1d;
   --neural-gold: #d4af37;
   --phantom-white: #f8f9fa;
-
-  --background: var(--korvus-black);
-  --foreground: var(--phantom-white);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+@theme {
+  /* Base */
+  --color-background: #050505;
+  --color-foreground: #f8f9fa;
 
-  /* Fontes */
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-montserrat);
-  --font-mono: var(--font-roboto-mono);
+  /* Fontes (variáveis injetadas pelo next/font) */
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-montserrat), system-ui, sans-serif;
+  --font-mono: var(--font-roboto-mono), ui-monospace, monospace;
 
   /* ── Destaque: escala indigo → Neural Gold ──────────────────────── */
   --color-indigo-300: #e9d9a6;
   --color-indigo-400: #dfc367;
-  --color-indigo-500: #d4af37;  /* Neural Gold */
+  --color-indigo-500: #d4af37; /* Neural Gold */
   --color-indigo-600: #cba62f;
   --color-indigo-700: #a8852a;
   --color-indigo-800: #3d3214;
   --color-indigo-900: #2a2310;
 
   /* ── Neutros: escala slate → tons Korvus ────────────────────────── */
-  --color-slate-100: #f8f9fa;  /* Phantom White */
+  --color-slate-100: #f8f9fa; /* Phantom White */
   --color-slate-200: #e5e5e7;
   --color-slate-300: #c9c9ce;
   --color-slate-400: #8a8a93;
@@ -42,12 +40,12 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: #050505;
+  color: #f8f9fa;
   font-family: var(--font-inter), system-ui, sans-serif;
 }
 
-/* Títulos em Montserrat (uppercase fica só no wordmark e labels já-uppercase,
+/* Títulos em Montserrat (uppercase só no wordmark e labels já-uppercase,
    pois nomes de clientes/títulos dinâmicos não devem virar caixa alta) */
 h1, h2, h3, h4 {
   font-family: var(--font-montserrat), system-ui, sans-serif;
