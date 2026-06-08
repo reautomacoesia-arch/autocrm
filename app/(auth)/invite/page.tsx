@@ -4,14 +4,15 @@
  * Página de aterrissagem para links de convite.
  *
  * O Supabase redireciona para cá após verificar o token do convite.
- * Ele pode usar dois formatos:
- *   • PKCE  — ?code=CODE   (query param, visível no servidor)
- *   • Hash  — #access_token=... (fragmento, só visível no browser)
+ * O createBrowserClient já tem detectSessionInUrl: true por padrão,
+ * então ele processa o ?code= (PKCE) ou #access_token= (hash) automaticamente
+ * ao ser instanciado — NÃO chamamos exchangeCodeForSession manualmente para
+ * não consumir o code duas vezes (o que causava erro de "Link inválido").
  *
- * Como esta é uma página client-side, o SDK do Supabase no browser
- * detecta ambos os casos automaticamente via detectSessionInUrl.
- * Após a sessão ser estabelecida, redireciona para /set-password
- * (usuários novos) ou para / (usuários já existentes).
+ * Fluxo:
+ *  1. SDK processa a URL e dispara SIGNED_IN
+ *  2. onAuthStateChange captura e redireciona para /set-password (novo usuário)
+ *     ou para / (usuário já existente)
  */
 
 import { useEffect, useState } from 'react'
@@ -25,52 +26,45 @@ export default function InviteConfirmPage() {
 
   useEffect(() => {
     const supabase = createClient()
-    let redirected = false
+    let done = false
 
     function go(user: { created_at?: string }) {
-      if (redirected) return
-      redirected = true
+      if (done) return
+      done = true
       const createdAt = user.created_at ? new Date(user.created_at).getTime() : 0
       const isNewUser = Date.now() - createdAt < 24 * 60 * 60 * 1000
       router.replace(isNewUser ? '/set-password' : '/')
     }
 
-    async function init() {
-      // Caso PKCE: ?code= na URL — exchange manual
-      const params = new URLSearchParams(window.location.search)
-      const code = params.get('code')
-      if (code) {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-        if (error) {
-          setErrorMsg('Link de convite inválido ou já utilizado.')
-          return
-        }
-        if (data.session) { go(data.session.user); return }
+    // Assina ANTES de qualquer verificação assíncrona.
+    // O SDK auto-processa ?code= ou #access_token= e dispara SIGNED_IN.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        subscription.unsubscribe()
+        go(session.user)
       }
+    })
 
-      // Caso Hash: #access_token= — SDK detecta automaticamente
-      // Já pode estar pronto:
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) { go(session.user); return }
+    // Fallback imediato: sessão pode já estar pronta se o SDK foi rápido
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        subscription.unsubscribe()
+        go(session.user)
+      }
+    })
 
-      // Se ainda não tem sessão, aguarda o evento de auth
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
-          subscription.unsubscribe()
-          go(session.user)
-        }
-      })
+    // Timeout de segurança — se em 10 s nenhuma sessão aparecer, link inválido
+    const timer = setTimeout(() => {
+      if (!done) {
+        subscription.unsubscribe()
+        setErrorMsg('Link de convite inválido, já utilizado ou expirado.')
+      }
+    }, 10_000)
 
-      // Timeout de segurança — 6 s
-      setTimeout(() => {
-        if (!redirected) {
-          subscription.unsubscribe()
-          setErrorMsg('Link de convite inválido, já utilizado ou expirado.')
-        }
-      }, 6000)
+    return () => {
+      clearTimeout(timer)
+      subscription.unsubscribe()
     }
-
-    init()
   }, [router])
 
   if (errorMsg) {
