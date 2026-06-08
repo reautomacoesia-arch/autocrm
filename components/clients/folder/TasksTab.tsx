@@ -109,9 +109,13 @@ export default function TasksTab({ clientId }: TasksTabProps) {
       confirmLabel: 'Remover',
     })
     if (!ok) return
-    setTasks((prev) => prev.filter((t) => t.id !== taskId))
-    await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
-    toast('Tarefa removida')
+    const res = await fetch(`/api/tasks/${taskId}`, { method: 'DELETE' })
+    if (res.ok) {
+      setTasks((prev) => prev.filter((t) => t.id !== taskId))
+      toast('Tarefa removida')
+    } else {
+      toast('Erro ao remover tarefa', 'error')
+    }
   }
 
   if (loading) {

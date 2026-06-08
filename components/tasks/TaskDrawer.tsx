@@ -403,7 +403,15 @@ export default function TaskDrawer({
             Criada em {formatDatetime(localTask.created_at)}
           </span>
           <button
-            onClick={() => { onTaskDeleted(localTask.id); onClose() }}
+            onClick={async () => {
+              const res = await fetch(`/api/tasks/${localTask.id}`, { method: 'DELETE' })
+              if (res.ok) {
+                onTaskDeleted(localTask.id)
+                onClose()
+              } else {
+                toast('Erro ao remover tarefa', 'error')
+              }
+            }}
             className="flex items-center gap-1.5 text-red-500 hover:text-red-400 text-xs transition-colors"
           >
             <Trash2 size={12} /> Excluir tarefa
