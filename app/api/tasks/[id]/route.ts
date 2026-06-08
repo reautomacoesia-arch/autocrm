@@ -15,9 +15,10 @@ export async function PATCH(
   if (body.status !== undefined)      fields.status = body.status
   if (body.priority !== undefined)    fields.priority = body.priority
   if (body.due_date !== undefined)    fields.due_date = body.due_date ?? null
-  if (body.assigned_to !== undefined)    fields.assigned_to = body.assigned_to ?? null
-  if (body.assigned_to_id !== undefined) fields.assigned_to_id = body.assigned_to_id ?? null
-  if (body.tags !== undefined)        fields.tags = body.tags
+  if (body.assigned_to !== undefined)     fields.assigned_to = body.assigned_to ?? null
+  if (body.assigned_to_id !== undefined)  fields.assigned_to_id = body.assigned_to_id ?? null
+  if (body.assigned_to_ids !== undefined) fields.assigned_to_ids = body.assigned_to_ids ?? []
+  if (body.tags !== undefined)            fields.tags = body.tags
 
   const { data, error } = await supabase
     .from('tasks')

@@ -134,7 +134,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
     return tasks.filter((t) => {
       if (filter !== 'all' && t.status !== filter) return false
       if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false
-      if (filterAssignee && t.assigned_to_id !== filterAssignee) return false
+      if (filterAssignee && !(t.assigned_to_ids?.includes(filterAssignee) || t.assigned_to_id === filterAssignee)) return false
       if (filterPriority && t.priority !== filterPriority) return false
       if (filterTag && !(t.tags ?? []).includes(filterTag)) return false
       if (filterDue === 'overdue' && !isOverdue(t.due_date, t.status)) return false
@@ -294,14 +294,25 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
             {task.client_id && clientMap[task.client_id] && (
               <span className="text-xs text-slate-500">• {clientMap[task.client_id]}</span>
             )}
-            {task.assigned_to_id && (() => {
-              const p = profiles.find((p) => p.id === task.assigned_to_id)
-              return p ? (
+            {(() => {
+              const ids = task.assigned_to_ids?.length
+                ? task.assigned_to_ids
+                : task.assigned_to_id ? [task.assigned_to_id] : []
+              if (!ids.length) return null
+              const assignees = ids
+                .map((id) => profiles.find((p) => p.id === id))
+                .filter(Boolean) as typeof profiles
+              if (!assignees.length) return null
+              return (
                 <span className="flex items-center gap-1 text-xs text-slate-500">
-                  <ProfileAvatar name={p.name} color={p.avatar_color} avatarUrl={p.avatar_url} size="sm" />
-                  {p.name}
+                  <div className="flex -space-x-1">
+                    {assignees.slice(0, 3).map((p) => (
+                      <ProfileAvatar key={p.id} name={p.name} color={p.avatar_color} avatarUrl={p.avatar_url} size="sm" />
+                    ))}
+                  </div>
+                  {assignees.length === 1 ? assignees[0].name : `${assignees.length} responsáveis`}
                 </span>
-              ) : null
+              )
             })()}
             {task.tags?.map((tag) => (
               <span key={tag} className="text-indigo-400/70 text-xs">#{tag}</span>

@@ -145,13 +145,20 @@ export default function TaskKanban({ tasks, clientMap, profiles, onTaskClick, on
                         ))}
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
-                        {task.assigned_to_id && profileMap[task.assigned_to_id] && (
-                          <ProfileAvatar
-                            name={profileMap[task.assigned_to_id].name}
-                            color={profileMap[task.assigned_to_id].avatar_color}
-                            size="sm"
-                          />
-                        )}
+                        {(() => {
+                          const ids = task.assigned_to_ids?.length
+                            ? task.assigned_to_ids
+                            : task.assigned_to_id ? [task.assigned_to_id] : []
+                          const assignees = ids.map((id) => profileMap[id]).filter(Boolean)
+                          if (!assignees.length) return null
+                          return (
+                            <div className="flex -space-x-1">
+                              {assignees.slice(0, 3).map((p) => (
+                                <ProfileAvatar key={p.id} name={p.name} color={p.avatar_color} size="sm" />
+                              ))}
+                            </div>
+                          )
+                        })()}
                         {task.due_date && (
                           <span className={`text-xs ${overdue ? 'text-red-400' : 'text-slate-600'}`}>
                             {overdue ? '⚠ ' : ''}{formatDate(task.due_date)}

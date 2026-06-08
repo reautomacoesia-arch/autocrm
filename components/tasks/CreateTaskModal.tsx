@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Modal from '@/components/ui/Modal'
 import type { Client, Profile, Task, TaskPriority, TaskStatus } from '@/lib/types'
 import { X } from 'lucide-react'
-import AssigneeSelector from '@/components/team/AssigneeSelector'
+import MultiAssigneeSelector from '@/components/team/MultiAssigneeSelector'
 
 interface CreateTaskModalProps {
   isOpen: boolean
@@ -31,8 +31,7 @@ export default function CreateTaskModal({
     priority: 'medium' as TaskPriority,
     due_date: '',
     client_id: defaultClientId ?? '',
-    assigned_to: '' as string,
-    assigned_to_id: '' as string,
+    assigned_to_ids: [] as string[],
   })
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
@@ -64,8 +63,7 @@ export default function CreateTaskModal({
         priority: form.priority,
         due_date: form.due_date || null,
         client_id: form.client_id || null,
-        assigned_to: form.assigned_to || null,
-        assigned_to_id: form.assigned_to_id || null,
+        assigned_to_ids: form.assigned_to_ids,
         tags,
         status: defaultStatus,
       }),
@@ -79,7 +77,7 @@ export default function CreateTaskModal({
 
     const task = await res.json()
     onTaskCreated(task)
-    setForm({ title: '', description: '', priority: 'medium', due_date: '', client_id: defaultClientId ?? '', assigned_to: '', assigned_to_id: '' })
+    setForm({ title: '', description: '', priority: 'medium', due_date: '', client_id: defaultClientId ?? '', assigned_to_ids: [] })
     setTags([])
     setTagInput('')
     setLoading(false)
@@ -132,11 +130,11 @@ export default function CreateTaskModal({
           </div>
         </div>
         <div>
-          <label className="block text-xs text-slate-400 mb-1.5">Responsável</label>
-          <AssigneeSelector
+          <label className="block text-xs text-slate-400 mb-1.5">Responsáveis</label>
+          <MultiAssigneeSelector
             profiles={profiles}
-            value={form.assigned_to_id || null}
-            onChange={(id, name) => setForm((p) => ({ ...p, assigned_to_id: id ?? '', assigned_to: name ?? '' }))}
+            value={form.assigned_to_ids}
+            onChange={(ids) => setForm((p) => ({ ...p, assigned_to_ids: ids }))}
           />
         </div>
         <div>

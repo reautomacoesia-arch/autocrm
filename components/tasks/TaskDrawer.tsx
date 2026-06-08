@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Profile, Task, TaskChecklistItem, TaskComment, TaskPriority, TaskStatus } from '@/lib/types'
 import { X, Plus, Trash2, Check, Tag } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
-import AssigneeSelector from '@/components/team/AssigneeSelector'
+import MultiAssigneeSelector from '@/components/team/MultiAssigneeSelector'
 
 const STATUS_LABEL: Record<TaskStatus, string> = {
   pending: 'Pendente',
@@ -234,11 +234,11 @@ export default function TaskDrawer({
               />
             </div>
             <div>
-              <p className="text-slate-500 text-xs mb-1">Responsável</p>
-              <AssigneeSelector
+              <p className="text-slate-500 text-xs mb-1">Responsáveis</p>
+              <MultiAssigneeSelector
                 profiles={profiles}
-                value={localTask.assigned_to_id ?? null}
-                onChange={(id, name) => patchTask({ assigned_to_id: id, assigned_to: name })}
+                value={localTask.assigned_to_ids ?? (localTask.assigned_to_id ? [localTask.assigned_to_id] : [])}
+                onChange={(ids) => patchTask({ assigned_to_ids: ids })}
               />
             </div>
           </div>

@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       lead_id: body.lead_id ?? null,
       assigned_to: body.assigned_to ?? null,
       assigned_to_id: body.assigned_to_id ?? null,
+      assigned_to_ids: body.assigned_to_ids ?? [],
       tags: body.tags ?? [],
     })
     .select()

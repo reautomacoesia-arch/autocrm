@@ -142,6 +142,7 @@ export interface Task {
   status: TaskStatus
   assigned_to: string | null
   assigned_to_id: string | null
+  assigned_to_ids: string[]
   tags: string[]
   created_at: string
   updated_at: string
