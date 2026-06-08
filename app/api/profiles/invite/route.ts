@@ -34,7 +34,9 @@ export async function POST(request: Request) {
   // O domínio base DEVE estar na lista "Redirect URLs" do Supabase Dashboard
   // (Authentication → URL Configuration → Redirect URLs → adicionar https://autocrm-olive.vercel.app/**)
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://autocrm-olive.vercel.app').replace(/\/$/, '')
-  const redirectTo = `${siteUrl}/auth/callback`
+  // ?type=invite faz o callback redirecionar para /auth/set-password
+  // onde o usuário define a senha antes de entrar no app
+  const redirectTo = `${siteUrl}/auth/callback?type=invite`
 
   try {
     const admin = createAdminClient()
