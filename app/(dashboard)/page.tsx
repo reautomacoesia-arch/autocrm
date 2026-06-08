@@ -17,6 +17,12 @@ const PRIORITY_LABEL: Record<string, string> = {
   low: 'Baixa',
 }
 
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'Pendente',
+  in_progress: 'Em andamento',
+  done: 'Concluída',
+}
+
 const TYPE_ICON: Record<string, string> = {
   note: '📝',
   meeting: '📞',
@@ -47,18 +53,38 @@ function isOverdue(dateStr: string | null): boolean {
   return new Date(year, month - 1, day) < new Date(new Date().toDateString())
 }
 
+function isDueToday(dateStr: string | null, today: string): boolean {
+  return dateStr === today
+}
+
+function getGreeting(utcHour: number): string {
+  const brtHour = (utcHour - 3 + 24) % 24
+  if (brtHour < 12) return 'Bom dia'
+  if (brtHour < 18) return 'Boa tarde'
+  return 'Boa noite'
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient()
 
   const d = new Date()
   const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const greeting = getGreeting(d.getUTCHours())
+
+  // Usuário logado + perfil para saudação personalizada
+  const { data: { user } } = await supabase.auth.getUser()
+  const profileRes = user
+    ? await supabase.from('profiles').select('name').eq('id', user.id).single()
+    : null
+  const userName = profileRes?.data?.name ?? null
+  const firstName = userName ? userName.split(' ')[0] : null
 
   const [
     clientsRes,
     leadsRes,
     proposalsRes,
-    tasksRes,
-    tasksDueRes,
+    allPendingTasksRes,
+    myTasksRes,
     interactionsRes,
     pipelineEventsRes,
   ] = await Promise.all([
@@ -71,17 +97,21 @@ export default async function DashboardPage() {
       .from('proposals')
       .select('id, value')
       .in('status', ['draft', 'sent']),
+    // Todas as tarefas da equipe (só contagem para o card)
     supabase
       .from('tasks')
       .select('id')
       .neq('status', 'done'),
-    supabase
-      .from('tasks')
-      .select('id, title, priority, status, due_date, clients(name)')
-      .neq('status', 'done')
-      .lte('due_date', today)
-      .order('due_date', { ascending: true })
-      .limit(5),
+    // Minhas tarefas (atribuídas ao usuário logado, não concluídas)
+    user
+      ? supabase
+          .from('tasks')
+          .select('id, title, priority, status, due_date, clients(name)')
+          .eq('assigned_to_id', user.id)
+          .neq('status', 'done')
+          .order('due_date', { ascending: true })
+          .limit(8)
+      : Promise.resolve({ data: [] }),
     supabase
       .from('interactions')
       .select('id, type, description, happened_at, clients(name)')
@@ -99,11 +129,12 @@ export default async function DashboardPage() {
   const leadsCount = leadsRes.data?.length ?? 0
   const openProposals = proposalsRes.data ?? []
   const openProposalsValue = openProposals.reduce((sum: number, p: any) => sum + (p.value ?? 0), 0)
-  const pendingTasksCount = tasksRes.data?.length ?? 0
-  const tasksDue = tasksDueRes.data ?? []
-  const overdueCount = tasksDue.filter((t: any) => isOverdue(t.due_date)).length
+  const allPendingCount = allPendingTasksRes.data?.length ?? 0
+  const myTasks = (myTasksRes as any).data ?? []
+  const myOverdueCount = myTasks.filter((t: any) => isOverdue(t.due_date)).length
+  const myDueTodayCount = myTasks.filter((t: any) => isDueToday(t.due_date, today)).length
 
-  // Merge interactions + pipeline events, sorted by date, top 5
+  // Merge interactions + pipeline events, sorted by date
   const interactions = (interactionsRes.data ?? []).map((i: any) => ({
     id: i.id,
     icon: TYPE_ICON[i.type] ?? '📝',
@@ -124,9 +155,20 @@ export default async function DashboardPage() {
 
   return (
     <div>
+      {/* Cabeçalho personalizado */}
       <div className="mb-6">
-        <h1 className="text-white text-2xl font-bold">Dashboard</h1>
-        <p className="text-slate-400 text-sm mt-1">Visão geral do seu negócio</p>
+        <h1 className="text-white text-2xl font-bold">
+          {firstName ? `${greeting}, ${firstName}! 👋` : 'Dashboard'}
+        </h1>
+        <p className="text-slate-400 text-sm mt-1">
+          {myOverdueCount > 0
+            ? `Você tem ${myOverdueCount} tarefa${myOverdueCount > 1 ? 's' : ''} em atraso`
+            : myDueTodayCount > 0
+            ? `${myDueTodayCount} tarefa${myDueTodayCount > 1 ? 's' : ''} para hoje`
+            : myTasks.length > 0
+            ? `${myTasks.length} tarefa${myTasks.length > 1 ? 's' : ''} na sua fila`
+            : 'Visão geral do seu negócio'}
+        </p>
       </div>
 
       {/* Metric cards */}
@@ -150,21 +192,25 @@ export default async function DashboardPage() {
           color="amber"
         />
         <MetricCard
-          label="Tarefas pendentes"
-          value={String(pendingTasksCount)}
-          sub={overdueCount > 0 ? `${overdueCount} em atraso` : undefined}
-          color={pendingTasksCount > 0 ? 'amber' : 'white'}
+          label="Tarefas da equipe"
+          value={String(allPendingCount)}
+          sub={
+            myTasks.length > 0
+              ? `${myTasks.length} atribuída${myTasks.length > 1 ? 's' : ''} a mim`
+              : 'sem atribuição a mim'
+          }
+          color={myOverdueCount > 0 ? 'amber' : 'white'}
         />
       </div>
 
       <DashboardCalendar />
 
       <div className="grid grid-cols-2 gap-6">
-        {/* Tasks due today / overdue */}
+        {/* Minhas tarefas */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
-              Tarefas para hoje
+              Minhas tarefas
             </h2>
             <Link
               href="/tasks"
@@ -173,35 +219,59 @@ export default async function DashboardPage() {
               Ver todas →
             </Link>
           </div>
-          {tasksDue.length === 0 ? (
-            <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl p-6 text-center text-slate-500 text-sm">
-              Nenhuma tarefa pendente 🎉
+          {myTasks.length === 0 ? (
+            <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl p-6 text-center">
+              <p className="text-slate-400 text-sm">Nenhuma tarefa atribuída a você 🎉</p>
+              <Link
+                href="/tasks"
+                className="inline-block mt-2 text-indigo-400 hover:text-indigo-300 text-xs transition-colors"
+              >
+                Ver tarefas da equipe →
+              </Link>
             </div>
           ) : (
             <div className="space-y-2">
-              {tasksDue.map((task: any) => {
+              {myTasks.map((task: any) => {
                 const overdue = isOverdue(task.due_date)
+                const dueToday = isDueToday(task.due_date, today)
                 return (
                   <div
                     key={task.id}
                     className={`bg-[#1a1a1d] border rounded-lg px-4 py-3 ${
-                      overdue ? 'border-red-800' : 'border-slate-700'
+                      overdue
+                        ? 'border-red-800/70'
+                        : dueToday
+                        ? 'border-amber-800/50'
+                        : 'border-slate-700'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-sm font-medium truncate">{task.title}</p>
-                        {task.clients && (
-                          <p className="text-slate-500 text-xs mt-0.5">{task.clients.name}</p>
-                        )}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {task.clients && (
+                            <p className="text-slate-500 text-xs">{task.clients.name}</p>
+                          )}
+                          <span className="text-slate-700 text-xs">
+                            {STATUS_LABEL[task.status] ?? task.status}
+                          </span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className={`text-xs font-medium ${PRIORITY_COLOR[task.priority] ?? ''}`}>
                           {PRIORITY_LABEL[task.priority] ?? task.priority}
                         </span>
                         {task.due_date && (
-                          <span className={`text-xs ${overdue ? 'text-red-400' : 'text-slate-500'}`}>
-                            {overdue ? '⚠ ' : ''}{formatDate(task.due_date)}
+                          <span
+                            className={`text-xs ${
+                              overdue
+                                ? 'text-red-400'
+                                : dueToday
+                                ? 'text-amber-400'
+                                : 'text-slate-500'
+                            }`}
+                          >
+                            {overdue ? '⚠ ' : dueToday ? '📅 ' : ''}{formatDate(task.due_date)}
                           </span>
                         )}
                       </div>
@@ -213,7 +283,7 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {/* Recent activity */}
+        {/* Atividade recente */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
