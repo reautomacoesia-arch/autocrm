@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Profile } from '@/lib/types'
 import ProfileAvatar from '@/components/team/ProfileAvatar'
 import { useToast } from '@/components/ui/ToastProvider'
@@ -40,9 +40,32 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
   const [inviteSent, setInviteSent] = useState(false)
   const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  // Links de convite salvos no localStorage: { [userId]: link }
+  const [storedLinks, setStoredLinks] = useState<Record<string, string>>({})
+  const [cardCopied, setCardCopied] = useState<string | null>(null) // userId que acabou de copiar
 
   const { toast } = useToast()
   const confirm = useConfirm()
+
+  // Carrega links de convite válidos do localStorage ao montar
+  useEffect(() => {
+    const links: Record<string, string> = {}
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (!key?.startsWith('korvus_invite_')) continue
+      try {
+        const { link, expiresAt } = JSON.parse(localStorage.getItem(key) ?? '{}')
+        if (Date.now() < expiresAt) {
+          links[key.replace('korvus_invite_', '')] = link
+        } else {
+          localStorage.removeItem(key) // expirado, limpa
+        }
+      } catch {
+        /* ignora entradas corrompidas */
+      }
+    }
+    setStoredLinks(links)
+  }, [])
 
   const me = profiles.find((p) => p.id === currentUserId)
   const isAdmin = me?.role === 'admin'
@@ -104,6 +127,15 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
     if (data.link) setInviteLink(data.link)
     setInviteLoading(false)
 
+    // Persiste link no localStorage por 1h para poder copiar depois
+    if (data.userId && data.link) {
+      localStorage.setItem(
+        `korvus_invite_${data.userId}`,
+        JSON.stringify({ link: data.link, expiresAt: Date.now() + 3600 * 1000 }),
+      )
+      setStoredLinks((prev) => ({ ...prev, [data.userId]: data.link }))
+    }
+
     // Adiciona placeholder na lista imediatamente (usa userId real se disponível)
     const placeholder: Profile = {
       id: data.userId ?? `pending-${Date.now()}`,
@@ -160,6 +192,14 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
     await navigator.clipboard.writeText(inviteLink)
     setCopied(true)
     setTimeout(() => setCopied(false), 2500)
+  }
+
+  async function copyStoredLink(userId: string) {
+    const link = storedLinks[userId]
+    if (!link) return
+    await navigator.clipboard.writeText(link)
+    setCardCopied(userId)
+    setTimeout(() => setCardCopied(null), 2500)
   }
 
   return (
@@ -428,15 +468,31 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
                     <p className="text-slate-600 text-xs mt-0.5">{ROLE_LABEL[p.role] ?? p.role}</p>
                   </div>
                   <div className="flex items-center gap-1">
-                    {isMe && !isPending && (
+                    {/* Link de convite copiável — aparece enquanto válido (1h) */}
+                    {storedLinks[p.id] && (
+                      <button
+                        onClick={() => copyStoredLink(p.id)}
+                        className={`transition-colors p-1.5 ${
+                          cardCopied === p.id
+                            ? 'text-emerald-400'
+                            : 'text-slate-600 hover:text-indigo-400'
+                        }`}
+                        title="Copiar link de convite"
+                      >
+                        {cardCopied === p.id ? <CheckCheck size={14} /> : <Link2 size={14} />}
+                      </button>
+                    )}
+                    {/* Editar — admin vê em todos; membro só no próprio */}
+                    {(isMe || isAdmin) && !isPending && (
                       <button
                         onClick={() => startEdit(p)}
                         className="text-slate-600 hover:text-indigo-400 transition-colors p-1.5"
-                        title="Editar perfil"
+                        title={isMe ? 'Editar meu perfil' : 'Editar colaborador'}
                       >
                         <Pencil size={14} />
                       </button>
                     )}
+                    {/* Remover — admin em qualquer membro não-self */}
                     {isAdmin && !isMe && (
                       <button
                         onClick={() => handleRemoveMember(p.id, p.name)}

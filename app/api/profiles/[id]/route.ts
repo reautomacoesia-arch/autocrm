@@ -26,9 +26,18 @@ export async function PATCH(
   const { id } = await params
   const body = await request.json()
 
-  // Only allow editing own profile
   const { data: { user } } = await supabase.auth.getUser()
-  if (user?.id !== id) {
+  if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+
+  // Admin pode editar qualquer perfil; outros só o próprio
+  const { data: myProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  const isAdmin = myProfile?.role === 'admin'
+  if (user.id !== id && !isAdmin) {
     return NextResponse.json({ error: 'Sem permissão' }, { status: 403 })
   }
 
