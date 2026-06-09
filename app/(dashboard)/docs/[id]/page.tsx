@@ -35,6 +35,7 @@ export default async function DocPage({
     .from('workspace_docs')
     .select('id, title, created_at')
     .eq('parent_id', notebookId)
+    .order('position', { ascending: true })
     .order('created_at', { ascending: true })
 
   return (

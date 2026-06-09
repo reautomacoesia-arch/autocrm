@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import { useEditor, EditorContent, Extension } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
@@ -18,7 +19,7 @@ import Suggestion from '@tiptap/suggestion'
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion'
 import {
   ArrowLeft, Bold, BookOpen, Code, ChevronDown, FileText, Globe,
-  Heading1, Heading2, Heading3, Highlighter, Italic, List,
+  GripVertical, Heading1, Heading2, Heading3, Highlighter, Italic, List,
   ListChecks, ListOrdered, Lock, Minus, Palette, Plus, Quote,
   RotateCcw, SquareCode, Strikethrough, TableIcon, Trash2, Type,
   Underline as UnderlineIcon,
@@ -297,6 +298,21 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
     })
   }
 
+  async function handleDragEnd(result: DropResult) {
+    if (!result.destination || result.destination.index === result.source.index) return
+    const reordered = Array.from(pages)
+    const [moved] = reordered.splice(result.source.index, 1)
+    reordered.splice(result.destination.index, 0, moved)
+    // Atualiza estado imediatamente (otimista)
+    setPages(reordered)
+    // Persiste no banco
+    await fetch(`/api/docs/${notebookId}/pages`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: reordered.map((p) => p.id) }),
+    })
+  }
+
   async function handleAddPage() {
     setAddingPage(true)
     const res = await fetch(`/api/docs/${notebookId}/pages`, {
@@ -392,31 +408,57 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
         <div className="flex-1 overflow-y-auto py-2 px-1.5">
           <p className="text-slate-600 text-[10px] uppercase tracking-wider px-2 py-1.5">Páginas</p>
 
-          {/* Pages */}
-          {pages.map((page) => (
-            <div key={page.id} className="group flex items-center">
-              <button
-                onClick={() => router.push(`/docs/${page.id}`)}
-                className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors text-xs min-w-0 ${
-                  doc.id === page.id
-                    ? 'bg-indigo-600/15 text-indigo-400 font-medium'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                }`}
-              >
-                <FileText size={12} className="flex-shrink-0" />
-                <span className="truncate">{page.title || 'Nova página'}</span>
-              </button>
-              {notebookIsOwner && (
-                <button
-                  onClick={(e) => handleDeletePage(page.id, e)}
-                  className="opacity-0 group-hover:opacity-100 p-1 mr-1 text-slate-600 hover:text-red-400 transition-all flex-shrink-0"
-                  title="Excluir página"
-                >
-                  <Trash2 size={11} />
-                </button>
+          {/* Pages — drag to reorder */}
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="pages">
+              {(provided) => (
+                <div ref={provided.innerRef} {...provided.droppableProps}>
+                  {pages.map((page, index) => (
+                    <Draggable key={page.id} draggableId={page.id} index={index} isDragDisabled={!notebookIsOwner}>
+                      {(drag, snapshot) => (
+                        <div
+                          ref={drag.innerRef}
+                          {...drag.draggableProps}
+                          className={`group flex items-center rounded-lg transition-colors ${snapshot.isDragging ? 'bg-slate-800 opacity-90 shadow-lg' : ''}`}
+                        >
+                          {/* Drag handle */}
+                          {notebookIsOwner && (
+                            <span
+                              {...drag.dragHandleProps}
+                              className="pl-1 pr-0.5 py-1.5 text-slate-700 opacity-0 group-hover:opacity-100 hover:text-slate-400 transition-all cursor-grab active:cursor-grabbing flex-shrink-0"
+                            >
+                              <GripVertical size={11} />
+                            </span>
+                          )}
+                          <button
+                            onClick={() => router.push(`/docs/${page.id}`)}
+                            className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors text-xs min-w-0 ${
+                              doc.id === page.id
+                                ? 'bg-indigo-600/15 text-indigo-400 font-medium'
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                            }`}
+                          >
+                            <FileText size={12} className="flex-shrink-0" />
+                            <span className="truncate">{page.title || 'Nova página'}</span>
+                          </button>
+                          {notebookIsOwner && (
+                            <button
+                              onClick={(e) => handleDeletePage(page.id, e)}
+                              className="opacity-0 group-hover:opacity-100 p-1 mr-1 text-slate-600 hover:text-red-400 transition-all flex-shrink-0"
+                              title="Excluir página"
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
               )}
-            </div>
-          ))}
+            </Droppable>
+          </DragDropContext>
 
           {/* Add page — inline after last page (ClickUp-style) */}
           {notebookIsOwner && (
