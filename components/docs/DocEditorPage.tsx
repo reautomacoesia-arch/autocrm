@@ -392,17 +392,6 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
         <div className="flex-1 overflow-y-auto py-2 px-1.5">
           <p className="text-slate-600 text-[10px] uppercase tracking-wider px-2 py-1.5">Páginas</p>
 
-          {/* Notebook overview (only shown when viewing a page) */}
-          {isPage && (
-            <button
-              onClick={() => router.push(`/docs/${notebookId}`)}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 text-xs"
-            >
-              <FileText size={12} className="flex-shrink-0" />
-              <span className="truncate italic">Visão geral</span>
-            </button>
-          )}
-
           {/* Pages */}
           {pages.map((page) => (
             <div key={page.id} className="group flex items-center">
