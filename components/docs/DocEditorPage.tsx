@@ -425,7 +425,6 @@ export default function DocEditorPage({
         {editor && (
           <BubbleMenu
             editor={editor}
-            tippyOptions={{ duration: 100 }}
             shouldShow={({ from, to }) => from !== to}
           >
             <div className="flex items-center gap-0.5 bg-[#111113] border border-slate-700 rounded-lg shadow-xl p-1">
