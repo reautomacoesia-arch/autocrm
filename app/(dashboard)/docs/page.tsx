@@ -40,7 +40,7 @@ export default function DocsPage() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) setCurrentUserId(user.id)
     })
-    fetch('/api/docs')
+    fetch('/api/docs?root=1')
       .then((r) => r.json())
       .then((d) => { setDocs(Array.isArray(d) ? d : []); setLoading(false) })
       .catch(() => setLoading(false))

@@ -1,37 +1,51 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
-export async function GET(request: Request) {
+// Lista páginas de um caderno
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-  const rootOnly = new URL(request.url).searchParams.get('root') === '1'
-
-  let query = supabase
+  const { id } = await params
+  const { data, error } = await supabase
     .from('workspace_docs')
-    .select('id, title, visibility, created_by, created_at, updated_at')
-    .order('updated_at', { ascending: false })
+    .select('id, title, created_at, updated_at')
+    .eq('parent_id', id)
+    .order('created_at', { ascending: true })
 
-  if (rootOnly) query = query.is('parent_id', null)
-
-  const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data ?? [])
 }
 
-export async function POST(request: Request) {
+// Cria uma nova página dentro do caderno
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
+  const { id } = await params
   const body = await request.json().catch(() => ({}))
+
+  // Herda a visibilidade do caderno pai
+  const { data: parent } = await supabase
+    .from('workspace_docs')
+    .select('visibility')
+    .eq('id', id)
+    .single()
 
   const { data, error } = await supabase
     .from('workspace_docs')
     .insert({
-      title: body.title ?? 'Sem título',
-      visibility: body.visibility ?? 'personal',
+      title: body.title ?? 'Nova página',
+      parent_id: id,
+      visibility: parent?.visibility ?? 'personal',
       created_by: user.id,
     })
     .select()
