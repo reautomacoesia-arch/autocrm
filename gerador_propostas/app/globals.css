@@ -90,6 +90,7 @@ body {
     --border: 240 4% 13%;
     --input: 240 4% 13%;
     --ring: 43 65% 52%;
+    --radius: 0.5rem;
   }
   * { border-color: hsl(var(--border)); }
   body { background-color: #050505; color: #f8f9fa; }
