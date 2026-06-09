@@ -35,6 +35,29 @@ export async function GET(
   return NextResponse.json({ url })
 }
 
+// Atualiza descrição do documento
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string; docId: string }> }
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+
+  const { docId } = await params
+  const { description } = await request.json()
+
+  const { data, error } = await supabase
+    .from('client_documents')
+    .update({ description: description ?? null })
+    .eq('id', docId)
+    .select()
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data)
+}
+
 // Deleta documento (R2 + DB)
 export async function DELETE(
   _request: Request,
