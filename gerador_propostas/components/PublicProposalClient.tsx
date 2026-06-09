@@ -41,8 +41,6 @@ export default function PublicProposalClient({
   const [selectedAddons, setSelectedAddons] = useState<string[]>([])
   const totals = computeTotals(proposal.proposal_value, baseMonthly, addons, selectedAddons)
 
-  const value = formatBRL(totals.setup)
-
   function toggleAddon(id: string) {
     setSelectedAddons((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
@@ -357,7 +355,7 @@ export default function PublicProposalClient({
 
           <SignatureCanvas onSign={handleSign} loading={loading} disabled={!accepted} />
           {!accepted && (
-            <p className="mt-3 text-xs text-center text-amber-600">
+            <p className="mt-3 text-xs text-center" style={{ color: 'rgba(212,175,55,0.8)' }}>
               Marque a caixa de aceite acima para liberar a assinatura.
             </p>
           )}
@@ -406,7 +404,7 @@ export default function PublicProposalClient({
             <h2 className="text-3xl font-black text-white mb-2 tracking-tight">
               Proposta assinada!
             </h2>
-            <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+            <p className="text-sm mb-8 leading-relaxed" style={{ color: 'rgba(255,255,255,0.4)' }}>
               Confirme o investimento para darmos<br/>início ao seu projeto de automação.
             </p>
 
@@ -415,7 +413,7 @@ export default function PublicProposalClient({
               background: 'rgba(212,175,55,0.08)',
               border: '1px solid rgba(212,175,55,0.2)',
             }}>
-              <p className="text-slate-400 text-xs uppercase tracking-widest mb-2 font-semibold">Setup (à vista)</p>
+              <p className="text-xs uppercase tracking-widest mb-2 font-semibold" style={{ color: 'rgba(255,255,255,0.4)' }}>Setup (à vista)</p>
               <p className="text-4xl font-black text-white">
                 {formatBRL((proposal as any).final_setup_value ?? totals.setup)}
               </p>
