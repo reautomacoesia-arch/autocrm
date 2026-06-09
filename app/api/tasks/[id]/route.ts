@@ -1,6 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
+const STATUS_LABELS: Record<string, string> = {
+  pending:     'Pendente',
+  in_progress: 'Em andamento',
+  done:        'Concluída',
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -19,6 +25,29 @@ export async function PATCH(
   if (body.assigned_to_id !== undefined)  fields.assigned_to_id = body.assigned_to_id ?? null
   if (body.assigned_to_ids !== undefined) fields.assigned_to_ids = body.assigned_to_ids ?? []
   if (body.tags !== undefined)            fields.tags = body.tags
+
+  // Busca status atual antes de atualizar (para detectar mudança real)
+  let previousStatus: string | null = null
+  if (body.status !== undefined) {
+    const { data: current } = await supabase
+      .from('tasks')
+      .select('status, client_id, title')
+      .eq('id', id)
+      .single()
+    previousStatus = current?.status ?? null
+
+    // Se status realmente mudou e tarefa tem cliente, registra no histórico
+    if (current && current.client_id && current.status !== body.status) {
+      const from = STATUS_LABELS[current.status] ?? current.status
+      const to   = STATUS_LABELS[body.status]    ?? body.status
+      await supabase.from('interactions').insert({
+        client_id:    current.client_id,
+        type:         'task_update',
+        description:  `Tarefa "${current.title}" avançou de ${from} → ${to}`,
+        happened_at:  new Date().toISOString(),
+      })
+    }
+  }
 
   const { data, error } = await supabase
     .from('tasks')

@@ -5,7 +5,7 @@ export type ProjectStatus = 'in_progress' | 'completed' | 'paused' | 'cancelled'
 export type TaskStatus = 'pending' | 'in_progress' | 'done'
 export type TaskPriority = 'low' | 'medium' | 'high'
 export type TransactionType = 'received' | 'pending'
-export type InteractionType = 'note' | 'meeting' | 'email'
+export type InteractionType = 'note' | 'meeting' | 'email' | 'task_update'
 
 export interface Lead {
   id: string
