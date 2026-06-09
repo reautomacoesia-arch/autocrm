@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Download, File, FileSpreadsheet, FileText, Image, Loader2, Trash2, Upload } from 'lucide-react'
+import { Download, File, FileSpreadsheet, FileText, ImageIcon, Loader2, Trash2, Upload } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 
@@ -11,6 +11,11 @@ interface ClientDocument {
   size: number
   mime_type: string
   created_at: string
+}
+
+interface UploadingFile {
+  name: string
+  progress: number // 0-100
 }
 
 const ACCEPTED = [
@@ -30,12 +35,12 @@ const ACCEPTED = [
 ].join(',')
 
 function fileIcon(mime: string) {
-  if (mime.includes('pdf')) return <FileText size={18} className="text-red-400" />
-  if (mime.includes('image')) return <Image size={18} className="text-blue-400" />
+  if (mime.includes('pdf'))   return <FileText size={18} className="text-red-400" />
+  if (mime.includes('image')) return <ImageIcon size={18} className="text-blue-400" />
   if (mime.includes('sheet') || mime.includes('excel') || mime.includes('csv'))
     return <FileSpreadsheet size={18} className="text-emerald-400" />
   if (mime.includes('word') || mime.includes('document'))
-    return <FileText size={18} className="text-blue-400" />
+    return <FileText size={18} className="text-blue-300" />
   return <File size={18} className="text-slate-400" />
 }
 
@@ -47,16 +52,14 @@ function formatSize(bytes: number): string {
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
+    day: '2-digit', month: 'short', year: 'numeric',
   })
 }
 
 export default function DocumentsTab({ clientId }: { clientId: string }) {
   const [docs, setDocs] = useState<ClientDocument[]>([])
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
+  const [uploading, setUploading] = useState<UploadingFile | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
@@ -70,37 +73,81 @@ export default function DocumentsTab({ clientId }: { clientId: string }) {
   }, [clientId])
 
   async function uploadFile(file: File) {
-    if (file.size > 50 * 1024 * 1024) {
-      toast('Arquivo muito grande. Máximo 50 MB.', 'error')
-      return
-    }
-    setUploading(true)
-    const form = new FormData()
-    form.append('file', file)
+    const MAX = 500 * 1024 * 1024
+    if (file.size > MAX) { toast('Máximo 500 MB por arquivo.', 'error'); return }
+
+    setUploading({ name: file.name, progress: 0 })
+
     try {
-      const res = await fetch(`/api/clients/${clientId}/documents`, {
+      // Passo 1: pede URL assinada ao servidor
+      const presignRes = await fetch(`/api/clients/${clientId}/documents/presign`, {
         method: 'POST',
-        body: form,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: file.name,
+          size: file.size,
+          mime_type: file.type || 'application/octet-stream',
+        }),
       })
-      if (res.ok) {
-        const doc = await res.json()
+
+      if (!presignRes.ok) {
+        const err = await presignRes.json().catch(() => ({}))
+        toast(err.error ?? 'Erro ao preparar upload.', 'error')
+        setUploading(null)
+        return
+      }
+
+      const { upload_url, r2_key } = await presignRes.json()
+      setUploading((p) => p ? { ...p, progress: 10 } : p)
+
+      // Passo 2: envia direto ao R2 via XMLHttpRequest para acompanhar progresso
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('PUT', upload_url)
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 80) + 10 // 10-90%
+            setUploading((p) => p ? { ...p, progress: pct } : p)
+          }
+        }
+        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`R2 status ${xhr.status}`)))
+        xhr.onerror = () => reject(new Error('Falha de rede'))
+        xhr.send(file)
+      })
+
+      setUploading((p) => p ? { ...p, progress: 95 } : p)
+
+      // Passo 3: confirma no banco de dados
+      const confirmRes = await fetch(`/api/clients/${clientId}/documents`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          r2_key,
+          name: file.name,
+          size: file.size,
+          mime_type: file.type || 'application/octet-stream',
+        }),
+      })
+
+      if (confirmRes.ok) {
+        const doc = await confirmRes.json()
         setDocs((prev) => [doc, ...prev])
         toast('Arquivo enviado com sucesso')
       } else {
-        const body = await res.json().catch(() => ({}))
-        toast(body.error ?? 'Erro ao enviar arquivo', 'error')
+        toast('Arquivo salvo, mas erro ao registrar no banco.', 'error')
       }
-    } catch {
-      toast('Erro de conexão ao enviar arquivo', 'error')
+    } catch (err) {
+      console.error('Upload error:', err)
+      toast('Erro ao enviar arquivo. Verifique a conexão.', 'error')
     }
-    setUploading(false)
+
+    setUploading(null)
   }
 
   async function handleFiles(files: FileList | null) {
     if (!files) return
-    for (const file of Array.from(files)) {
-      await uploadFile(file)
-    }
+    for (const file of Array.from(files)) await uploadFile(file)
   }
 
   async function handleDownload(doc: ClientDocument) {
@@ -109,7 +156,7 @@ export default function DocumentsTab({ clientId }: { clientId: string }) {
       const { url } = await res.json()
       window.open(url, '_blank')
     } else {
-      toast('Erro ao gerar link de download', 'error')
+      toast('Erro ao gerar link de download.', 'error')
     }
   }
 
@@ -121,14 +168,12 @@ export default function DocumentsTab({ clientId }: { clientId: string }) {
       confirmLabel: 'Remover',
     })
     if (!ok) return
-    const res = await fetch(`/api/clients/${clientId}/documents/${doc.id}`, {
-      method: 'DELETE',
-    })
+    const res = await fetch(`/api/clients/${clientId}/documents/${doc.id}`, { method: 'DELETE' })
     if (res.ok) {
       setDocs((prev) => prev.filter((d) => d.id !== doc.id))
       toast('Documento removido')
     } else {
-      toast('Erro ao remover documento', 'error')
+      toast('Erro ao remover documento.', 'error')
     }
   }
 
@@ -146,23 +191,29 @@ export default function DocumentsTab({ clientId }: { clientId: string }) {
       <div
         onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => {
-          e.preventDefault()
-          setDragOver(false)
-          handleFiles(e.dataTransfer.files)
-        }}
+        onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files) }}
         onClick={() => !uploading && inputRef.current?.click()}
-        className={`border-2 border-dashed rounded-xl px-6 py-8 flex flex-col items-center gap-3 cursor-pointer transition-colors ${
-          dragOver
-            ? 'border-indigo-500 bg-indigo-600/5'
-            : 'border-slate-700 hover:border-slate-500'
-        } ${uploading ? 'pointer-events-none opacity-60' : ''}`}
+        className={`border-2 border-dashed rounded-xl px-6 py-8 flex flex-col items-center gap-3 transition-colors ${
+          uploading ? 'cursor-default border-slate-700' :
+          dragOver ? 'cursor-copy border-indigo-500 bg-indigo-600/5' :
+          'cursor-pointer border-slate-700 hover:border-slate-500'
+        }`}
       >
         {uploading ? (
-          <>
-            <Loader2 size={24} className="text-indigo-400 animate-spin" />
-            <p className="text-slate-400 text-sm">Enviando arquivo...</p>
-          </>
+          <div className="w-full space-y-2">
+            <div className="flex items-center gap-2 justify-center text-slate-400 text-sm">
+              <Loader2 size={15} className="animate-spin text-indigo-400" />
+              <span className="truncate max-w-xs">{uploading.name}</span>
+              <span className="text-indigo-400 font-medium">{uploading.progress}%</span>
+            </div>
+            {/* Barra de progresso */}
+            <div className="w-full bg-slate-800 rounded-full h-1.5">
+              <div
+                className="bg-indigo-500 h-1.5 rounded-full transition-all duration-300"
+                style={{ width: `${uploading.progress}%` }}
+              />
+            </div>
+          </div>
         ) : (
           <>
             <Upload size={24} className="text-slate-500" />
@@ -171,7 +222,7 @@ export default function DocumentsTab({ clientId }: { clientId: string }) {
                 Arraste arquivos ou clique para selecionar
               </p>
               <p className="text-slate-600 text-xs mt-1">
-                PDF, Word, Excel, imagens · Máximo 50 MB por arquivo
+                PDF, Word, Excel, imagens · Máximo 500 MB por arquivo
               </p>
             </div>
           </>
