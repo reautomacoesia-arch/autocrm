@@ -9,144 +9,167 @@ import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
+import Underline from '@tiptap/extension-underline'
+import { Color } from '@tiptap/extension-color'
+import TextStyle from '@tiptap/extension-text-style'
+import { Highlight } from '@tiptap/extension-highlight'
+import { Table, TableRow, TableHeader, TableCell } from '@tiptap/extension-table'
 import Suggestion from '@tiptap/suggestion'
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion'
 import {
   ArrowLeft, Bold, Code, Globe, Heading1, Heading2, Heading3,
   Italic, List, ListOrdered, Lock, Minus, Quote, Strikethrough,
-  SquareCode, Type, ListChecks, Trash2,
+  SquareCode, Type, ListChecks, Trash2, Underline as UnderlineIcon,
+  Highlighter, Palette, TableIcon, ChevronDown, RotateCcw,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface WorkspaceDoc {
-  id: string
-  title: string
-  content: object
-  visibility: 'personal' | 'shared'
-  created_by: string
-  created_at: string
-  updated_at: string
+  id: string; title: string; content: object
+  visibility: 'personal' | 'shared'; created_by: string
+  created_at: string; updated_at: string
 }
-
 interface SlashCmd {
-  title: string
-  description: string
+  category: string; title: string; description: string
   icon: React.ReactNode
-  command: (params: { editor: NonNullable<ReturnType<typeof useEditor>>; range: { from: number; to: number } }) => void
+  command: (p: { editor: NonNullable<ReturnType<typeof useEditor>>; range: { from: number; to: number } }) => void
 }
 
-// ─── Slash commands list ──────────────────────────────────────────────────────
-const SLASH_COMMANDS: SlashCmd[] = [
-  {
-    title: 'Texto',
-    description: 'Parágrafo normal',
-    icon: <Type size={15} />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setParagraph().run(),
-  },
-  {
-    title: 'Título 1',
-    description: 'Título grande',
-    icon: <Heading1 size={15} />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 1 }).run(),
-  },
-  {
-    title: 'Título 2',
-    description: 'Título médio',
-    icon: <Heading2 size={15} />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 2 }).run(),
-  },
-  {
-    title: 'Título 3',
-    description: 'Título pequeno',
-    icon: <Heading3 size={15} />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 3 }).run(),
-  },
-  {
-    title: 'Lista',
-    description: 'Lista com marcadores',
-    icon: <List size={15} />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBulletList().run(),
-  },
-  {
-    title: 'Lista numerada',
-    description: 'Lista ordenada',
-    icon: <ListOrdered size={15} />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run(),
-  },
-  {
-    title: 'Checklist',
-    description: 'Lista de tarefas',
-    icon: <ListChecks size={15} />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleTaskList().run(),
-  },
-  {
-    title: 'Citação',
-    description: 'Bloco de citação',
-    icon: <Quote size={15} />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBlockquote().run(),
-  },
-  {
-    title: 'Código',
-    description: 'Bloco de código',
-    icon: <SquareCode size={15} />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
-  },
-  {
-    title: 'Divisor',
-    description: 'Linha horizontal',
-    icon: <Minus size={15} />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHorizontalRule().run(),
-  },
+// ─── Colors ──────────────────────────────────────────────────────────────────
+const TEXT_COLORS = [
+  { label: 'Padrão',   color: null },
+  { label: 'Cinza',    color: '#8a8a93' },
+  { label: 'Vermelho', color: '#ef4444' },
+  { label: 'Laranja',  color: '#f97316' },
+  { label: 'Amarelo',  color: '#eab308' },
+  { label: 'Verde',    color: '#22c55e' },
+  { label: 'Azul',     color: '#3b82f6' },
+  { label: 'Roxo',     color: '#a855f7' },
+  { label: 'Rosa',     color: '#ec4899' },
+]
+const HIGHLIGHT_COLORS = [
+  { label: 'Nenhum',   color: null },
+  { label: 'Amarelo',  color: '#fef08a' },
+  { label: 'Verde',    color: '#bbf7d0' },
+  { label: 'Azul',     color: '#bfdbfe' },
+  { label: 'Rosa',     color: '#fbcfe8' },
+  { label: 'Laranja',  color: '#fed7aa' },
+  { label: 'Roxo',     color: '#e9d5ff' },
 ]
 
-// ─── Slash Menu UI ────────────────────────────────────────────────────────────
-function SlashMenu({
-  items,
-  selectedIndex,
-  onSelect,
-  coords,
-}: {
-  items: SlashCmd[]
-  selectedIndex: number
-  onSelect: (cmd: SlashCmd) => void
-  coords: { top: number; left: number }
+// ─── Slash commands ───────────────────────────────────────────────────────────
+const SLASH_COMMANDS: SlashCmd[] = [
+  // Texto
+  { category: 'Texto', title: 'Texto', description: 'Parágrafo normal', icon: <Type size={14} />,
+    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setParagraph().run() },
+  { category: 'Texto', title: 'Título 1', description: 'Título grande', icon: <Heading1 size={14} />,
+    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 1 }).run() },
+  { category: 'Texto', title: 'Título 2', description: 'Título médio', icon: <Heading2 size={14} />,
+    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 2 }).run() },
+  { category: 'Texto', title: 'Título 3', description: 'Título pequeno', icon: <Heading3 size={14} />,
+    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHeading({ level: 3 }).run() },
+  // Listas
+  { category: 'Listas', title: 'Lista', description: 'Marcadores', icon: <List size={14} />,
+    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBulletList().run() },
+  { category: 'Listas', title: 'Numerada', description: 'Lista ordenada', icon: <ListOrdered size={14} />,
+    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run() },
+  { category: 'Listas', title: 'Checklist', description: 'Lista de tarefas', icon: <ListChecks size={14} />,
+    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleTaskList().run() },
+  // Conteúdo
+  { category: 'Conteúdo', title: 'Citação', description: 'Bloco de citação', icon: <Quote size={14} />,
+    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBlockquote().run() },
+  { category: 'Conteúdo', title: 'Código', description: 'Bloco de código', icon: <SquareCode size={14} />,
+    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run() },
+  { category: 'Conteúdo', title: 'Divisor', description: 'Linha horizontal', icon: <Minus size={14} />,
+    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHorizontalRule().run() },
+  // Organização
+  { category: 'Organização', title: 'Tabela', description: '3 colunas × 3 linhas', icon: <TableIcon size={14} />,
+    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
+]
+
+// ─── Slash Menu (2 colunas) ───────────────────────────────────────────────────
+function SlashMenu({ items, selectedIndex, onSelect, coords }: {
+  items: SlashCmd[]; selectedIndex: number
+  onSelect: (cmd: SlashCmd) => void; coords: { top: number; left: number }
 }) {
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
-
-  useEffect(() => {
-    itemRefs.current[selectedIndex]?.scrollIntoView({ block: 'nearest' })
-  }, [selectedIndex])
-
+  useEffect(() => { itemRefs.current[selectedIndex]?.scrollIntoView({ block: 'nearest' }) }, [selectedIndex])
   if (items.length === 0) return null
+
+  // Agrupa por categoria
+  const categories = Array.from(new Set(items.map((c) => c.category)))
+  let globalIdx = 0
 
   return (
     <div
-      className="fixed z-[9999] bg-[#1a1a1d] border border-slate-700 rounded-xl shadow-2xl overflow-hidden w-64"
+      className="fixed z-[9999] bg-[#1a1a1d] border border-slate-700 rounded-xl shadow-2xl overflow-hidden w-[340px]"
       style={{ top: coords.top, left: coords.left }}
       onMouseDown={(e) => e.preventDefault()}
     >
-      <div className="p-1.5 max-h-72 overflow-y-auto">
-        <p className="text-slate-600 text-[10px] px-2 py-1 uppercase tracking-wider font-medium">Blocos</p>
-        {items.map((item, i) => (
+      <div className="p-2 max-h-80 overflow-y-auto space-y-3">
+        {categories.map((cat) => {
+          const catItems = items.filter((c) => c.category === cat)
+          return (
+            <div key={cat}>
+              <p className="text-slate-600 text-[10px] px-1 pb-1 uppercase tracking-wider font-medium">{cat}</p>
+              <div className="grid grid-cols-2 gap-1">
+                {catItems.map((item) => {
+                  const idx = globalIdx++
+                  return (
+                    <button
+                      key={item.title}
+                      ref={(el) => { itemRefs.current[idx] = el }}
+                      onClick={() => onSelect(item)}
+                      className={`flex items-center gap-2 px-2 py-2 rounded-lg text-sm transition-colors text-left ${
+                        idx === selectedIndex ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-300 hover:bg-slate-700/50'
+                      }`}
+                    >
+                      <div className="w-7 h-7 bg-slate-800 rounded-md flex items-center justify-center flex-shrink-0 text-slate-400">
+                        {item.icon}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-xs leading-tight truncate">{item.title}</p>
+                        <p className="text-[10px] text-slate-500 leading-tight truncate">{item.description}</p>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Color Palette popup ─────────────────────────────────────────────────────
+function ColorPalette({ colors, onSelect, currentColor, label }: {
+  colors: { label: string; color: string | null }[]
+  onSelect: (color: string | null) => void
+  currentColor: string | null
+  label: string
+}) {
+  return (
+    <div className="absolute top-full left-0 mt-1 bg-[#111113] border border-slate-700 rounded-xl shadow-2xl p-2 z-50 w-44">
+      <p className="text-slate-500 text-[10px] uppercase tracking-wider px-1 pb-1">{label}</p>
+      <div className="grid grid-cols-3 gap-1">
+        {colors.map(({ label: lbl, color }) => (
           <button
-            key={item.title}
-            ref={(el) => { itemRefs.current[i] = el }}
-            onClick={() => onSelect(item)}
-            className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors ${
-              i === selectedIndex
-                ? 'bg-indigo-600/20 text-indigo-400'
-                : 'text-slate-300 hover:bg-slate-700/50'
+            key={lbl}
+            title={lbl}
+            onClick={() => onSelect(color)}
+            className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors hover:bg-slate-700/50 ${
+              currentColor === color ? 'bg-slate-700' : ''
             }`}
           >
-            <div className="w-8 h-8 bg-slate-800 rounded-md flex items-center justify-center flex-shrink-0 text-slate-400">
-              {item.icon}
-            </div>
-            <div className="text-left">
-              <p className="font-medium text-sm leading-tight">{item.title}</p>
-              <p className="text-[11px] text-slate-500 leading-tight">{item.description}</p>
-            </div>
+            <span
+              className="w-3 h-3 rounded-full flex-shrink-0 border border-slate-600"
+              style={{ background: color ?? 'transparent' }}
+            />
+            <span className="text-slate-300 truncate text-[10px]">{lbl}</span>
           </button>
         ))}
       </div>
@@ -154,7 +177,7 @@ function SlashMenu({
   )
 }
 
-// ─── Slash Commands Tiptap Extension ─────────────────────────────────────────
+// ─── Slash Commands Extension ────────────────────────────────────────────────
 function createSlashExtension(callbacksRef: React.MutableRefObject<{
   onStart: (p: SuggestionProps<SlashCmd>) => void
   onUpdate: (p: SuggestionProps<SlashCmd>) => void
@@ -182,7 +205,7 @@ function createSlashExtension(callbacksRef: React.MutableRefObject<{
             SLASH_COMMANDS.filter((c) =>
               c.title.toLowerCase().startsWith(query.toLowerCase()) ||
               c.description.toLowerCase().includes(query.toLowerCase())
-            ).slice(0, 10),
+            ),
           render: () => ({
             onStart: (p: SuggestionProps<SlashCmd>) => callbacksRef.current.onStart(p),
             onUpdate: (p: SuggestionProps<SlashCmd>) => callbacksRef.current.onUpdate(p),
@@ -195,14 +218,8 @@ function createSlashExtension(callbacksRef: React.MutableRefObject<{
   })
 }
 
-// ─── Main Editor Page ─────────────────────────────────────────────────────────
-export default function DocEditorPage({
-  doc,
-  currentUserId,
-}: {
-  doc: WorkspaceDoc
-  currentUserId: string
-}) {
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export default function DocEditorPage({ doc, currentUserId }: { doc: WorkspaceDoc; currentUserId: string }) {
   const router = useRouter()
   const { toast } = useToast()
   const confirm = useConfirm()
@@ -213,15 +230,16 @@ export default function DocEditorPage({
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('saved')
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // ── Slash menu state ──────────────────────────────────────────────────────
+  // Color pickers
+  const [showTextColors, setShowTextColors] = useState(false)
+  const [showHighlights, setShowHighlights] = useState(false)
+
+  // Slash menu state
   const [slashMenu, setSlashMenu] = useState<{
-    items: SlashCmd[]
-    coords: { top: number; left: number }
-    selectedIndex: number
-    command: ((item: SlashCmd) => void) | null
+    items: SlashCmd[]; coords: { top: number; left: number }
+    selectedIndex: number; command: ((item: SlashCmd) => void) | null
   } | null>(null)
   const slashDataRef = useRef({ items: [] as SlashCmd[], selectedIndex: 0, command: null as ((item: SlashCmd) => void) | null })
-
   const slashCallbacksRef = useRef({
     onStart: (_p: SuggestionProps<SlashCmd>) => {},
     onUpdate: (_p: SuggestionProps<SlashCmd>) => {},
@@ -229,28 +247,18 @@ export default function DocEditorPage({
     onExit: () => {},
   })
 
-  // Wire callbacks (always current closure)
   slashCallbacksRef.current = {
     onStart(props) {
       const coords = props.editor.view.coordsAtPos(props.range.from)
       slashDataRef.current = { items: props.items, selectedIndex: 0, command: props.command }
-      setSlashMenu({
-        items: props.items,
-        coords: { top: coords.bottom + 4, left: coords.left },
-        selectedIndex: 0,
-        command: props.command,
-      })
+      setSlashMenu({ items: props.items, coords: { top: coords.bottom + 4, left: coords.left }, selectedIndex: 0, command: props.command })
     },
     onUpdate(props) {
       const coords = props.editor.view.coordsAtPos(props.range.from)
       slashDataRef.current.items = props.items
       slashDataRef.current.selectedIndex = 0
       slashDataRef.current.command = props.command
-      setSlashMenu((prev) =>
-        prev
-          ? { ...prev, items: props.items, coords: { top: coords.bottom + 4, left: coords.left }, selectedIndex: 0 }
-          : null
-      )
+      setSlashMenu((prev) => prev ? { ...prev, items: props.items, coords: { top: coords.bottom + 4, left: coords.left }, selectedIndex: 0 } : null)
     },
     onKeyDown({ event }) {
       const { items, selectedIndex, command } = slashDataRef.current
@@ -274,34 +282,25 @@ export default function DocEditorPage({
       }
       return false
     },
-    onExit() {
-      setSlashMenu(null)
-      slashDataRef.current = { items: [], selectedIndex: 0, command: null }
-    },
+    onExit() { setSlashMenu(null); slashDataRef.current = { items: [], selectedIndex: 0, command: null } },
   }
 
-  // ── Create extension once ─────────────────────────────────────────────────
   const slashExtension = useMemo(() => createSlashExtension(slashCallbacksRef), [])
 
-  // ── Auto-save ─────────────────────────────────────────────────────────────
-  const scheduleSave = useCallback(
-    (patch: Record<string, unknown>) => {
-      if (!isOwner) return
-      setSaveStatus('saving')
-      if (saveTimer.current) clearTimeout(saveTimer.current)
-      saveTimer.current = setTimeout(async () => {
-        await fetch(`/api/docs/${doc.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(patch),
-        })
-        setSaveStatus('saved')
-      }, 1500)
-    },
-    [doc.id, isOwner]
-  )
+  // Auto-save
+  const scheduleSave = useCallback((patch: Record<string, unknown>) => {
+    if (!isOwner) return
+    setSaveStatus('saving')
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(async () => {
+      await fetch(`/api/docs/${doc.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      })
+      setSaveStatus('saved')
+    }, 1500)
+  }, [doc.id, isOwner])
 
-  // ── Editor ────────────────────────────────────────────────────────────────
   const editor = useEditor({
     editable: isOwner,
     extensions: [
@@ -309,80 +308,78 @@ export default function DocEditorPage({
       TaskList,
       TaskItem.configure({ nested: true }),
       Link.configure({ openOnClick: false }),
-      Placeholder.configure({ placeholder: 'Comece a escrever, ou pressione "/" para ver os comandos…' }),
+      Placeholder.configure({ placeholder: 'Comece a escrever, ou pressione "/" para ver os blocos disponíveis…' }),
+      Underline,
+      TextStyle,
+      Color,
+      Highlight.configure({ multicolor: true }),
+      Table.configure({ resizable: false }),
+      TableRow,
+      TableHeader,
+      TableCell,
       slashExtension,
     ],
     content: doc.content as object,
-    onUpdate({ editor }) {
-      scheduleSave({ content: editor.getJSON() })
-    },
+    onUpdate({ editor }) { scheduleSave({ content: editor.getJSON() }) },
   })
 
-  // ── Title save ────────────────────────────────────────────────────────────
+  // Close color pickers on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      const target = e.target as HTMLElement
+      if (!target.closest('[data-color-picker]')) {
+        setShowTextColors(false)
+        setShowHighlights(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
   function handleTitleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setTitle(e.target.value)
     scheduleSave({ title: e.target.value })
   }
 
-  // ── Visibility toggle ─────────────────────────────────────────────────────
   async function toggleVisibility() {
     if (!isOwner) return
     const next = visibility === 'personal' ? 'shared' : 'personal'
     setVisibility(next)
     const res = await fetch(`/api/docs/${doc.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ visibility: next }),
     })
-    if (res.ok) {
-      toast(next === 'shared' ? 'Documento compartilhado com o time' : 'Documento definido como pessoal')
-    } else {
-      setVisibility(visibility) // revert
-      toast('Erro ao alterar visibilidade', 'error')
-    }
+    if (res.ok) { toast(next === 'shared' ? 'Documento compartilhado' : 'Documento definido como pessoal') }
+    else { setVisibility(visibility); toast('Erro ao alterar visibilidade', 'error') }
   }
 
-  // ── Delete ────────────────────────────────────────────────────────────────
   async function handleDelete() {
-    const ok = await confirm({
-      title: 'Excluir este documento?',
-      description: 'Esta ação não pode ser desfeita.',
-      destructive: true,
-      confirmLabel: 'Excluir',
-    })
+    const ok = await confirm({ title: 'Excluir este documento?', description: 'Esta ação não pode ser desfeita.', destructive: true, confirmLabel: 'Excluir' })
     if (!ok) return
     const res = await fetch(`/api/docs/${doc.id}`, { method: 'DELETE' })
-    if (res.ok) {
-      toast('Documento excluído')
-      router.push('/docs')
-    } else {
-      toast('Erro ao excluir', 'error')
-    }
+    if (res.ok) { toast('Documento excluído'); router.push('/docs') }
+    else { toast('Erro ao excluir', 'error') }
   }
+
+  // Get current colors for indicators
+  const currentTextColor = editor?.getAttributes('textStyle')?.color ?? null
+  const currentHighlight = editor?.getAttributes('highlight')?.color ?? null
 
   return (
     <div className="min-h-screen">
-      {/* ── Top bar ─────────────────────────────────────────────────────── */}
+      {/* Top bar */}
       <div className="flex items-center justify-between mb-8 gap-4">
-        <button
-          onClick={() => router.push('/docs')}
-          className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-sm"
-        >
+        <button onClick={() => router.push('/docs')} className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-sm">
           <ArrowLeft size={15} /> Documentos
         </button>
-
         <div className="flex items-center gap-2">
-          {/* Save status */}
           <span className="text-slate-600 text-xs">
             {saveStatus === 'saving' ? 'Salvando…' : saveStatus === 'saved' ? 'Salvo' : ''}
           </span>
-
           {isOwner && (
             <>
-              {/* Visibility toggle */}
               <button
                 onClick={toggleVisibility}
-                title={visibility === 'shared' ? 'Compartilhado com o time — clique para tornar pessoal' : 'Pessoal — clique para compartilhar'}
                 className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
                   visibility === 'shared'
                     ? 'bg-indigo-600/15 border-indigo-700 text-indigo-400 hover:bg-indigo-600/25'
@@ -392,13 +389,7 @@ export default function DocEditorPage({
                 {visibility === 'shared' ? <Globe size={13} /> : <Lock size={13} />}
                 {visibility === 'shared' ? 'Compartilhado' : 'Pessoal'}
               </button>
-
-              {/* Delete */}
-              <button
-                onClick={handleDelete}
-                title="Excluir documento"
-                className="p-1.5 text-slate-500 hover:text-red-400 transition-colors"
-              >
+              <button onClick={handleDelete} className="p-1.5 text-slate-500 hover:text-red-400 transition-colors">
                 <Trash2 size={15} />
               </button>
             </>
@@ -406,62 +397,126 @@ export default function DocEditorPage({
         </div>
       </div>
 
-      {/* ── Document ────────────────────────────────────────────────────── */}
+      {/* Document */}
       <div className="max-w-3xl mx-auto">
-        {/* Title */}
         {isOwner ? (
           <input
-            type="text"
-            value={title}
-            onChange={handleTitleChange}
-            placeholder="Sem título"
+            type="text" value={title} onChange={handleTitleChange} placeholder="Sem título"
             className="w-full bg-transparent text-white text-4xl font-bold font-display placeholder:text-slate-700 focus:outline-none mb-8"
           />
         ) : (
           <h1 className="text-white text-4xl font-bold font-display mb-8">{title || 'Sem título'}</h1>
         )}
 
-        {/* Bubble Menu (aparece ao selecionar texto) */}
+        {/* Bubble Menu */}
         {editor && (
           <BubbleMenu
             editor={editor}
-            shouldShow={({ from, to }) => from !== to}
+            shouldShow={({ from, to }) => from !== to && !editor.isActive('codeBlock')}
           >
-            <div className="flex items-center gap-0.5 bg-[#111113] border border-slate-700 rounded-lg shadow-xl p-1">
+            <div className="flex items-center gap-0.5 bg-[#111113] border border-slate-700 rounded-xl shadow-2xl p-1.5">
+              {/* Formatting buttons */}
               {[
-                { title: 'Negrito', icon: <Bold size={13} />, action: () => editor.chain().focus().toggleBold().run(), active: editor.isActive('bold') },
-                { title: 'Itálico', icon: <Italic size={13} />, action: () => editor.chain().focus().toggleItalic().run(), active: editor.isActive('italic') },
-                { title: 'Riscado', icon: <Strikethrough size={13} />, action: () => editor.chain().focus().toggleStrike().run(), active: editor.isActive('strike') },
-                { title: 'Código', icon: <Code size={13} />, action: () => editor.chain().focus().toggleCode().run(), active: editor.isActive('code') },
+                { title: 'Negrito (⌘B)',    icon: <Bold size={13} />,          action: () => editor.chain().focus().toggleBold().run(),      active: editor.isActive('bold') },
+                { title: 'Itálico (⌘I)',    icon: <Italic size={13} />,        action: () => editor.chain().focus().toggleItalic().run(),    active: editor.isActive('italic') },
+                { title: 'Sublinhado (⌘U)', icon: <UnderlineIcon size={13} />, action: () => editor.chain().focus().toggleUnderline().run(), active: editor.isActive('underline') },
+                { title: 'Riscado',         icon: <Strikethrough size={13} />, action: () => editor.chain().focus().toggleStrike().run(),    active: editor.isActive('strike') },
+                { title: 'Código inline',   icon: <Code size={13} />,          action: () => editor.chain().focus().toggleCode().run(),      active: editor.isActive('code') },
               ].map(({ title, icon, action, active }) => (
-                <button
-                  key={title}
-                  onClick={action}
-                  title={title}
-                  className={`p-1.5 rounded transition-colors ${active ? 'bg-indigo-600/30 text-indigo-400' : 'text-slate-300 hover:bg-slate-700/50'}`}
+                <button key={title} onClick={action} title={title}
+                  className={`p-1.5 rounded-lg transition-colors ${active ? 'bg-indigo-600/30 text-indigo-400' : 'text-slate-300 hover:bg-slate-700/50'}`}
                 >
                   {icon}
                 </button>
               ))}
+
+              {/* Divider */}
+              <div className="w-px h-4 bg-slate-700 mx-0.5" />
+
+              {/* Text color */}
+              <div className="relative" data-color-picker>
+                <button
+                  onClick={() => { setShowTextColors((v) => !v); setShowHighlights(false) }}
+                  title="Cor do texto"
+                  className="flex items-center gap-0.5 p-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors"
+                >
+                  <span className="relative">
+                    <Palette size={13} />
+                    {currentTextColor && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#111113]"
+                        style={{ background: currentTextColor }} />
+                    )}
+                  </span>
+                  <ChevronDown size={10} className="text-slate-500" />
+                </button>
+                {showTextColors && (
+                  <ColorPalette
+                    label="Cor do texto"
+                    colors={TEXT_COLORS}
+                    currentColor={currentTextColor}
+                    onSelect={(color) => {
+                      if (color) editor.chain().focus().setColor(color).run()
+                      else editor.chain().focus().unsetColor().run()
+                      setShowTextColors(false)
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Highlight */}
+              <div className="relative" data-color-picker>
+                <button
+                  onClick={() => { setShowHighlights((v) => !v); setShowTextColors(false) }}
+                  title="Destaque"
+                  className="flex items-center gap-0.5 p-1.5 rounded-lg text-slate-300 hover:bg-slate-700/50 transition-colors"
+                >
+                  <span className="relative">
+                    <Highlighter size={13} />
+                    {currentHighlight && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-[#111113]"
+                        style={{ background: currentHighlight }} />
+                    )}
+                  </span>
+                  <ChevronDown size={10} className="text-slate-500" />
+                </button>
+                {showHighlights && (
+                  <ColorPalette
+                    label="Destaque"
+                    colors={HIGHLIGHT_COLORS}
+                    currentColor={currentHighlight}
+                    onSelect={(color) => {
+                      if (color) editor.chain().focus().setHighlight({ color }).run()
+                      else editor.chain().focus().unsetHighlight().run()
+                      setShowHighlights(false)
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Reset all formatting */}
+              <div className="w-px h-4 bg-slate-700 mx-0.5" />
+              <button
+                onClick={() => editor.chain().focus().unsetAllMarks().run()}
+                title="Remover formatação"
+                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-700/50 transition-colors"
+              >
+                <RotateCcw size={12} />
+              </button>
             </div>
           </BubbleMenu>
         )}
 
-        {/* Editor content */}
         <div className="tiptap-content">
           <EditorContent editor={editor} />
         </div>
       </div>
 
-      {/* Slash command menu */}
+      {/* Slash menu */}
       {slashMenu && (
         <SlashMenu
           items={slashMenu.items}
           selectedIndex={slashMenu.selectedIndex}
-          onSelect={(cmd) => {
-            slashMenu.command?.(cmd)
-            setSlashMenu(null)
-          }}
+          onSelect={(cmd) => { slashMenu.command?.(cmd); setSlashMenu(null) }}
           coords={slashMenu.coords}
         />
       )}

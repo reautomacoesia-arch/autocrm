@@ -158,3 +158,36 @@ h1, h2, h3, h4 {
   pointer-events: none;
   height: 0;
 }
+
+/* Table */
+.tiptap-content .ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.75em 0;
+  overflow: hidden;
+}
+.tiptap-content .ProseMirror table td,
+.tiptap-content .ProseMirror table th {
+  border: 1px solid #2a2a2f;
+  padding: 8px 12px;
+  min-width: 80px;
+  vertical-align: top;
+  text-align: left;
+}
+.tiptap-content .ProseMirror table th {
+  background: #1a1a1d;
+  font-weight: 600;
+  color: #c9c9ce;
+  font-size: 0.875em;
+}
+.tiptap-content .ProseMirror table td { background: #111113; }
+.tiptap-content .ProseMirror table .selectedCell:after {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(212,175,55,0.08);
+  pointer-events: none;
+}
+.tiptap-content .ProseMirror table .column-resize-handle {
+  position: absolute; right: -2px; top: 0; bottom: 0;
+  width: 4px; background: #d4af37; cursor: col-resize;
+}
