@@ -406,7 +406,7 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
 
         {/* Pages list */}
         <div className="flex-1 overflow-y-auto py-2 px-1.5">
-          <p className="text-slate-600 text-[10px] uppercase tracking-wider px-2 py-1.5">Páginas</p>
+          <p className="text-slate-500 text-[10px] uppercase tracking-wider px-2 py-1.5">Páginas</p>
 
           {/* Pages — drag to reorder */}
           <DragDropContext onDragEnd={handleDragEnd}>
@@ -425,7 +425,7 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
                           {notebookIsOwner && (
                             <span
                               {...drag.dragHandleProps}
-                              className="pl-1 pr-0.5 py-1.5 text-slate-700 opacity-0 group-hover:opacity-100 hover:text-slate-400 transition-all cursor-grab active:cursor-grabbing flex-shrink-0"
+                              className="pl-1 pr-0.5 py-1.5 text-slate-500 opacity-40 group-hover:opacity-100 hover:text-slate-300 transition-all cursor-grab active:cursor-grabbing flex-shrink-0"
                             >
                               <GripVertical size={11} />
                             </span>
@@ -434,8 +434,8 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
                             onClick={() => router.push(`/docs/${page.id}`)}
                             className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors text-xs min-w-0 ${
                               doc.id === page.id
-                                ? 'bg-indigo-600/15 text-indigo-400 font-medium'
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                                ? 'bg-indigo-600/15 text-indigo-300 font-medium'
+                                : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
                             }`}
                           >
                             <FileText size={12} className="flex-shrink-0" />
@@ -444,7 +444,7 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
                           {notebookIsOwner && (
                             <button
                               onClick={(e) => handleDeletePage(page.id, e)}
-                              className="opacity-0 group-hover:opacity-100 p-1 mr-1 text-slate-600 hover:text-red-400 transition-all flex-shrink-0"
+                              className="opacity-40 group-hover:opacity-100 p-1 mr-1 text-slate-400 hover:text-red-400 transition-all flex-shrink-0"
                               title="Excluir página"
                             >
                               <Trash2 size={11} />
@@ -465,7 +465,7 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
             <button
               onClick={handleAddPage}
               disabled={addingPage}
-              className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-slate-600 hover:text-slate-400 hover:bg-slate-800/40 transition-colors text-xs mt-0.5 group/add"
+              className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-colors text-xs mt-0.5 group/add"
             >
               <Plus size={12} className="group-hover/add:text-indigo-400 transition-colors" />
               {addingPage ? 'Criando…' : 'Adicionar página'}
