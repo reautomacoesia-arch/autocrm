@@ -16,6 +16,7 @@ import {
   Zap,
   LogOut,
   BarChart2,
+  BookOpen,
 } from 'lucide-react'
 import NotificationBell from '@/components/automations/NotificationBell'
 import ProfileAvatar from '@/components/team/ProfileAvatar'
@@ -30,6 +31,7 @@ const navItems = [
   { href: '/financial', icon: DollarSign, label: 'Financeiro' },
   { href: '/reports', icon: BarChart2, label: 'Relatórios' },
   { href: '/tasks', icon: CheckSquare, label: 'Tarefas' },
+  { href: '/docs', icon: BookOpen, label: 'Documentos' },
   { href: '/team', icon: Users2, label: 'Equipe' },
   { href: '/automations', icon: Zap, label: 'Automações' },
   { href: '/services', icon: Settings, label: 'Serviços' },
