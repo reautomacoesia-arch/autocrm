@@ -9,6 +9,7 @@ export default async function FinancialPage() {
       .from('clients')
       .select('id, name, company, monthly_value, billing_day')
       .eq('status', 'active')
+      .eq('is_internal', false)
       .order('monthly_value', { ascending: false }),
     supabase
       .from('transactions')

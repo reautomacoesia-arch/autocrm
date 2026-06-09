@@ -14,7 +14,7 @@ import CustomFieldsTab from './CustomFieldsTab'
 import DocumentsTab from './DocumentsTab'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
-import { Building2, DollarSign, Mail, Pause, Pencil, Phone, Play, Trash2 } from 'lucide-react'
+import { Building2, DollarSign, Mail, Pause, Pencil, Phone, Play, Trash2, UserCheck } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 
@@ -115,6 +115,22 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
     setHeaderSaving(false)
   }
 
+  async function handleToggleInternal() {
+    const next = !client.is_internal
+    const res = await fetch(`/api/clients/${client.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_internal: next }),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      setClient(updated)
+      toast(next ? 'Marcado como nossa empresa' : 'Removido de nossa empresa')
+    } else {
+      toast('Erro ao atualizar', 'error')
+    }
+  }
+
   async function handleDelete() {
     const ok = await confirm({
       title: 'Remover este cliente permanentemente?',
@@ -179,6 +195,11 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
                 <div className="group">
                   <div className="flex items-center gap-2">
                     <h1 className="text-white text-xl font-bold">{client.name}</h1>
+                    {client.is_internal && (
+                      <span className="text-[10px] bg-indigo-600/20 text-indigo-400 border border-indigo-700/50 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                        <Building2 size={10} /> Nossa empresa
+                      </span>
+                    )}
                     <button
                       onClick={() => {
                         setHeaderForm({ name: client.name, company: client.company ?? '' })
@@ -241,6 +262,18 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
                 ? 'Churned'
                 : 'Inativo'}
             </Badge>
+            <button
+              onClick={handleToggleInternal}
+              title={client.is_internal ? 'Remover de "Nossa empresa"' : 'Marcar como nossa empresa'}
+              className={`flex items-center gap-1.5 border rounded-lg px-3 py-1.5 text-xs transition-colors ${
+                client.is_internal
+                  ? 'border-indigo-700 text-indigo-400 hover:border-red-700 hover:text-red-400'
+                  : 'border-slate-700 text-slate-400 hover:border-indigo-600 hover:text-indigo-400'
+              }`}
+            >
+              <UserCheck size={13} />
+              {client.is_internal ? 'Nossa empresa' : 'Marcar interna'}
+            </button>
             <button
               onClick={handleToggleStatus}
               title={client.status === 'active' ? 'Pausar cliente' : 'Reativar cliente'}

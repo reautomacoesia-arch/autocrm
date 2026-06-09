@@ -18,7 +18,8 @@ export default async function ReportsPage() {
     supabase
       .from('clients')
       .select('monthly_value')
-      .eq('status', 'active'),
+      .eq('status', 'active')
+      .eq('is_internal', false),
   ])
 
   const transactions = (transactionsRes.data ?? []) as {

@@ -47,6 +47,7 @@ export interface Client {
   instagram: string | null
   website: string | null
   contact_name: string | null
+  is_internal: boolean
   created_at: string
   updated_at: string
 }

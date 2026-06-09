@@ -5,7 +5,7 @@ import Link from 'next/link'
 import type { Client, ClientStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
-import { Search, ChevronRight, Plus } from 'lucide-react'
+import { Building2, ChevronRight, Plus, Search } from 'lucide-react'
 import AddClientModal from './AddClientModal'
 import EmptyState from '@/components/ui/EmptyState'
 
@@ -45,7 +45,11 @@ export default function ClientList({ clients: initialClients, lastInteractions =
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'churned'>('all')
   const [sortBy, setSortBy] = useState<'default' | 'name' | 'mrr' | 'lastContact'>('default')
 
-  const filtered = clients
+  // Separa empresa interna dos clientes reais
+  const internalClients = clients.filter((c) => c.is_internal)
+  const externalClients = clients.filter((c) => !c.is_internal)
+
+  const filtered = externalClients
     .filter(
       (c) =>
         c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -107,7 +111,7 @@ export default function ClientList({ clients: initialClients, lastInteractions =
                   : 'bg-slate-800 text-slate-400 hover:text-slate-200'
               }`}
             >
-              {s === 'all' ? `Todos (${clients.length})` : STATUS_BADGE[s as ClientStatus].label}
+              {s === 'all' ? `Todos (${externalClients.length})` : STATUS_BADGE[s as ClientStatus].label}
             </button>
           ))}
         </div>
@@ -122,6 +126,38 @@ export default function ClientList({ clients: initialClients, lastInteractions =
           <option value="lastContact">Último contato</option>
         </select>
       </div>
+
+      {/* Nossa empresa — seção separada, não conta como cliente */}
+      {internalClients.length > 0 && (
+        <div className="mb-5">
+          <p className="text-slate-500 text-xs uppercase tracking-wider font-medium mb-2 flex items-center gap-1.5">
+            <Building2 size={11} /> Nossa empresa
+          </p>
+          {internalClients.map((client) => (
+            <Link
+              key={client.id}
+              href={`/clients/${client.id}`}
+              className="flex items-center justify-between bg-indigo-950/30 hover:bg-indigo-900/20 border border-indigo-900/50 hover:border-indigo-700/50 rounded-lg px-4 py-3 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-indigo-600/30 rounded-full flex items-center justify-center text-indigo-300 font-bold text-sm flex-shrink-0">
+                  {client.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="text-indigo-200 text-sm font-medium">{client.name}</p>
+                    <span className="text-[10px] bg-indigo-600/20 text-indigo-400 border border-indigo-700/50 px-1.5 py-0.5 rounded-full font-medium">
+                      Nossa empresa
+                    </span>
+                  </div>
+                  {client.company && <p className="text-slate-500 text-xs">{client.company}</p>}
+                </div>
+              </div>
+              <ChevronRight size={14} className="text-indigo-700 group-hover:text-indigo-400 transition-colors" />
+            </Link>
+          ))}
+        </div>
+      )}
 
       <div className="space-y-2">
         {sorted.length === 0 ? (

@@ -29,20 +29,21 @@ export async function PATCH(
     .eq('id', id)
     .single()
 
+  const updateFields: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (body.name          !== undefined) updateFields.name          = body.name
+  if (body.company       !== undefined) updateFields.company       = body.company ?? null
+  if (body.email         !== undefined) updateFields.email         = body.email ?? null
+  if (body.phone         !== undefined) updateFields.phone         = body.phone ?? null
+  if (body.monthly_value !== undefined) updateFields.monthly_value = body.monthly_value
+  if (body.status        !== undefined) updateFields.status        = body.status
+  if (body.instagram     !== undefined) updateFields.instagram     = body.instagram ?? null
+  if (body.website       !== undefined) updateFields.website       = body.website ?? null
+  if (body.contact_name  !== undefined) updateFields.contact_name  = body.contact_name ?? null
+  if (body.is_internal   !== undefined) updateFields.is_internal   = body.is_internal
+
   const { data, error } = await supabase
     .from('clients')
-    .update({
-      name: body.name,
-      company: body.company ?? null,
-      email: body.email ?? null,
-      phone: body.phone ?? null,
-      monthly_value: body.monthly_value,
-      status: body.status,
-      instagram: body.instagram ?? null,
-      website: body.website ?? null,
-      contact_name: body.contact_name ?? null,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateFields)
     .eq('id', id)
     .select()
     .single()

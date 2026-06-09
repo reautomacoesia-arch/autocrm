@@ -88,7 +88,7 @@ export default async function DashboardPage() {
     interactionsRes,
     pipelineEventsRes,
   ] = await Promise.all([
-    supabase.from('clients').select('id, monthly_value').eq('status', 'active'),
+    supabase.from('clients').select('id, monthly_value').eq('status', 'active').eq('is_internal', false),
     supabase
       .from('leads')
       .select('id')
