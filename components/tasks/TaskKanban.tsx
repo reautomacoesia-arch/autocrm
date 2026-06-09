@@ -154,7 +154,7 @@ export default function TaskKanban({ tasks, clientMap, profiles, onTaskClick, on
                           return (
                             <div className="flex -space-x-1">
                               {assignees.slice(0, 3).map((p) => (
-                                <ProfileAvatar key={p.id} name={p.name} color={p.avatar_color} size="sm" />
+                                <ProfileAvatar key={p.id} name={p.name} color={p.avatar_color} avatarUrl={p.avatar_url} size="sm" />
                               ))}
                             </div>
                           )
