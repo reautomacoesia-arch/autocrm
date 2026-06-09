@@ -4,9 +4,10 @@ import { DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { NextResponse } from 'next/server'
 
-// Gera URL assinada para download
+// Gera URL assinada para download ou preview
+// ?preview=true → disposition inline (para exibir no browser)
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string; docId: string }> }
 ) {
   const supabase = await createClient()
@@ -22,14 +23,18 @@ export async function GET(
 
   if (error || !doc) return NextResponse.json({ error: 'Documento não encontrado.' }, { status: 404 })
 
+  const isPreview = new URL(request.url).searchParams.get('preview') === 'true'
+
   const url = await getSignedUrl(
     r2,
     new GetObjectCommand({
       Bucket: R2_BUCKET,
       Key: doc.r2_key,
-      ResponseContentDisposition: `attachment; filename="${encodeURIComponent(doc.name)}"`,
+      ResponseContentDisposition: isPreview
+        ? `inline; filename="${encodeURIComponent(doc.name)}"`
+        : `attachment; filename="${encodeURIComponent(doc.name)}"`,
     }),
-    { expiresIn: 3600 } // 1 hora
+    { expiresIn: 3600 }
   )
 
   return NextResponse.json({ url })
