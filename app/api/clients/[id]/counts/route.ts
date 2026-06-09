@@ -15,6 +15,7 @@ export async function GET(
     { count: interactions },
     { count: tasks_total },
     { count: tasks_pending },
+    { count: documents },
   ] = await Promise.all([
     supabase.from('projects').select('*', { count: 'exact', head: true }).eq('client_id', id),
     supabase.from('proposals').select('*', { count: 'exact', head: true }).eq('client_id', id),
@@ -22,6 +23,7 @@ export async function GET(
     supabase.from('interactions').select('*', { count: 'exact', head: true }).eq('client_id', id),
     supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('client_id', id),
     supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('client_id', id).neq('status', 'done'),
+    supabase.from('client_documents').select('*', { count: 'exact', head: true }).eq('client_id', id),
   ])
 
   return NextResponse.json({
@@ -31,5 +33,6 @@ export async function GET(
     interactions: interactions ?? 0,
     tasks_total: tasks_total ?? 0,
     tasks_pending: tasks_pending ?? 0,
+    documents: documents ?? 0,
   })
 }

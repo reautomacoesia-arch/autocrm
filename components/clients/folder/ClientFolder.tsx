@@ -11,6 +11,7 @@ import TasksTab from './TasksTab'
 import ProposalsTab from './ProposalsTab'
 import FinancialTab from './FinancialTab'
 import CustomFieldsTab from './CustomFieldsTab'
+import DocumentsTab from './DocumentsTab'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
 import { Building2, DollarSign, Mail, Pause, Pencil, Phone, Play, Trash2 } from 'lucide-react'
@@ -25,6 +26,7 @@ const TABS = [
   { id: 'financial',  label: '💰 Financeiro', countKey: 'transactions',  greenIfPositive: false },
   { id: 'history',    label: '💬 Histórico',  countKey: 'interactions',  greenIfPositive: false },
   { id: 'tasks',      label: '✅ Tarefas',    countKey: 'tasks_pending', greenIfPositive: true  },
+  { id: 'documents',  label: '📎 Documentos', countKey: 'documents',     greenIfPositive: false },
   { id: 'custom',     label: '⚙️ Campos',     countKey: null,            greenIfPositive: false },
 ]
 
@@ -308,6 +310,7 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
       )}
       {activeTab === 'history' && <HistoryTab clientId={client.id} />}
       {activeTab === 'tasks' && <TasksTab clientId={client.id} />}
+      {activeTab === 'documents' && <DocumentsTab clientId={client.id} />}
       {activeTab === 'custom' && (
         <CustomFieldsTab entityType="client" entityId={client.id} />
       )}
