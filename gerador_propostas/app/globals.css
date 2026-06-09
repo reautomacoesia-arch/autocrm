@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  color: #f8f9fa;
+  background: #050505;
+}
+
+[contenteditable]:focus {
+  outline: 2px dashed #D4AF37;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+[contenteditable]:empty:before {
+  content: attr(data-placeholder);
+  color: #64748b;
+}
+
+/* Proposal row hover */
+.proposal-row {
+  background: #1A1A1D;
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: background 0.15s, border-color 0.15s;
+}
+.proposal-row:hover {
+  background: #222226;
+  border-color: rgba(255,255,255,0.12);
+}
+.proposal-row:hover .row-actions { opacity: 1; }
+.row-actions { opacity: 0; transition: opacity 0.15s; }
+
+/* Action buttons */
+.action-btn {
+  color: rgba(255,255,255,0.35);
+  border-radius: 10px;
+  transition: color 0.15s, background 0.15s, transform 0.15s;
+}
+.action-btn:hover {
+  color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.07);
+  transform: scale(1.1);
+}
+.action-btn.green { color: rgba(52,211,153,0.6); }
+.action-btn.green:hover { color: rgba(52,211,153,1); background: rgba(16,185,129,0.1); }
+
+/* Inputs glassmorphism */
+.login-input {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: border-color 0.15s, background 0.15s;
+}
+.login-input::placeholder { color: rgba(255,255,255,0.25); }
+.login-input:focus {
+  border-color: rgba(212,175,55,0.6);
+  background: rgba(255,255,255,0.06);
+  outline: none;
+}
+
+/* Logout button */
+.logout-btn {
+  color: rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: color 0.15s, border-color 0.15s;
+}
+.logout-btn:hover {
+  color: rgba(255,255,255,0.8);
+  border-color: rgba(255,255,255,0.22);
+}
+
+@layer base {
+  .dark {
+    --background: 0 0% 2%;
+    --foreground: 210 17% 98%;
+    --card: 240 5% 10%;
+    --card-foreground: 210 17% 98%;
+    --popover: 240 5% 10%;
+    --popover-foreground: 210 17% 98%;
+    --primary: 210 17% 98%;
+    --primary-foreground: 0 0% 2%;
+    --secondary: 240 4% 13%;
+    --secondary-foreground: 210 17% 98%;
+    --muted: 240 4% 13%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 240 4% 13%;
+    --accent-foreground: 210 17% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 17% 98%;
+    --border: 240 4% 13%;
+    --input: 240 4% 13%;
+    --ring: 43 65% 52%;
+  }
+  * { border-color: hsl(var(--border)); }
+  body { background-color: #050505; color: #f8f9fa; }
+}
