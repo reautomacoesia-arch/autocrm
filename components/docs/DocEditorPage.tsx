@@ -198,6 +198,8 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
   const notebookId = doc.parent_id ?? doc.id
 
   const [title, setTitle] = useState(doc.title)
+  const [notebookTitle, setNotebookTitle] = useState(notebook.title)
+  const [editingNotebook, setEditingNotebook] = useState(false)
   const [visibility, setVisibility] = useState<'personal' | 'shared'>(doc.visibility)
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('saved')
   const [pages, setPages] = useState<PageInfo[]>(initialPages)
@@ -205,6 +207,7 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
   const [showTextColors, setShowTextColors] = useState(false)
   const [showHighlights, setShowHighlights] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const titleInputRef = useRef<HTMLInputElement>(null)
 
   // Slash menu
   const [slashMenu, setSlashMenu] = useState<{ items: SlashCmd[]; coords: { top: number; left: number }; selectedIndex: number; command: ((item: SlashCmd) => void) | null } | null>(null)
@@ -274,6 +277,26 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  function handleNotebookTitleClick() {
+    if (!notebookIsOwner) return
+    if (!isPage) {
+      titleInputRef.current?.focus()
+    } else {
+      setEditingNotebook(true)
+    }
+  }
+
+  async function saveNotebookTitle(val: string) {
+    const trimmed = val.trim() || 'Sem título'
+    setNotebookTitle(trimmed)
+    setEditingNotebook(false)
+    await fetch(`/api/docs/${notebook.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: trimmed }),
+    })
+  }
+
   async function handleAddPage() {
     setAddingPage(true)
     const res = await fetch(`/api/docs/${notebookId}/pages`, {
@@ -341,7 +364,27 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
             <div className="w-7 h-7 bg-indigo-600/20 rounded-md flex items-center justify-center flex-shrink-0">
               <BookOpen size={14} className="text-indigo-400" />
             </div>
-            <span className="text-white text-sm font-semibold truncate">{notebook.title || 'Sem título'}</span>
+            {editingNotebook && isPage ? (
+              <input
+                autoFocus
+                value={notebookTitle}
+                onChange={(e) => setNotebookTitle(e.target.value)}
+                onBlur={(e) => saveNotebookTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveNotebookTitle(notebookTitle)
+                  if (e.key === 'Escape') setEditingNotebook(false)
+                }}
+                className="bg-transparent text-white text-sm font-semibold focus:outline-none border-b border-indigo-500 w-full min-w-0"
+              />
+            ) : (
+              <span
+                onClick={handleNotebookTitleClick}
+                title={notebookIsOwner ? 'Clique para editar' : ''}
+                className={`text-sm font-semibold truncate ${notebookIsOwner ? 'cursor-pointer text-white hover:text-indigo-300 transition-colors' : 'text-white'}`}
+              >
+                {isPage ? (notebookTitle || 'Sem título') : (title || 'Sem título')}
+              </span>
+            )}
           </div>
         </div>
 
@@ -361,48 +404,46 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
           )}
 
           {/* Pages */}
-          {pages.length === 0 ? (
-            <p className="text-slate-700 text-xs px-2 py-2 italic">Nenhuma página ainda</p>
-          ) : (
-            pages.map((page) => (
-              <div key={page.id} className="group flex items-center">
+          {pages.map((page) => (
+            <div key={page.id} className="group flex items-center">
+              <button
+                onClick={() => router.push(`/docs/${page.id}`)}
+                className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors text-xs min-w-0 ${
+                  doc.id === page.id
+                    ? 'bg-indigo-600/15 text-indigo-400 font-medium'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                }`}
+              >
+                <FileText size={12} className="flex-shrink-0" />
+                <span className="truncate">{page.title || 'Nova página'}</span>
+              </button>
+              {notebookIsOwner && (
                 <button
-                  onClick={() => router.push(`/docs/${page.id}`)}
-                  className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors text-xs min-w-0 ${
-                    doc.id === page.id
-                      ? 'bg-indigo-600/15 text-indigo-400 font-medium'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                  }`}
+                  onClick={(e) => handleDeletePage(page.id, e)}
+                  className="opacity-0 group-hover:opacity-100 p-1 mr-1 text-slate-600 hover:text-red-400 transition-all flex-shrink-0"
+                  title="Excluir página"
                 >
-                  <FileText size={12} className="flex-shrink-0" />
-                  <span className="truncate">{page.title || 'Nova página'}</span>
+                  <Trash2 size={11} />
                 </button>
-                {notebookIsOwner && (
-                  <button
-                    onClick={(e) => handleDeletePage(page.id, e)}
-                    className="opacity-0 group-hover:opacity-100 p-1 mr-1 text-slate-600 hover:text-red-400 transition-all flex-shrink-0"
-                    title="Excluir página"
-                  >
-                    <Trash2 size={11} />
-                  </button>
-                )}
-              </div>
-            ))
-          )}
-        </div>
+              )}
+            </div>
+          ))}
 
-        {/* Add page + notebook controls */}
-        <div className="border-t border-slate-700/30 p-2 space-y-1">
+          {/* Add page — inline after last page (ClickUp-style) */}
           {notebookIsOwner && (
             <button
               onClick={handleAddPage}
               disabled={addingPage}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 transition-colors text-xs"
+              className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-slate-600 hover:text-slate-400 hover:bg-slate-800/40 transition-colors text-xs mt-0.5 group/add"
             >
-              <Plus size={13} />
+              <Plus size={12} className="group-hover/add:text-indigo-400 transition-colors" />
               {addingPage ? 'Criando…' : 'Adicionar página'}
             </button>
           )}
+        </div>
+
+        {/* Notebook controls */}
+        <div className="border-t border-slate-700/30 p-2 space-y-1">
           <div className="flex items-center gap-1 px-1">
             {isOwner && (
               <button onClick={toggleVisibility} title={visibility === 'shared' ? 'Compartilhado' : 'Pessoal'}
@@ -427,7 +468,7 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
         {/* Editor top bar */}
         <div className="flex items-center justify-between px-10 pt-8 pb-2 flex-shrink-0">
           <div className="text-slate-600 text-xs flex items-center gap-1.5">
-            <span className="text-slate-500">{notebook.title || 'Caderno'}</span>
+            <span className="text-slate-500">{(isPage ? notebookTitle : title) || 'Caderno'}</span>
             {isPage && <><span>/</span><span className="text-slate-400">{title || 'Nova página'}</span></>}
           </div>
           <span className="text-slate-600 text-xs">
@@ -441,6 +482,7 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
             {/* Title */}
             {isOwner ? (
               <input
+                ref={titleInputRef}
                 type="text" value={title}
                 onChange={(e) => { setTitle(e.target.value); scheduleSave({ title: e.target.value }) }}
                 placeholder={isPage ? 'Título da página' : 'Título do caderno'}
