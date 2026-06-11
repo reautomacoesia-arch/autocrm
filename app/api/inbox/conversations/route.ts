@@ -10,7 +10,8 @@ export async function GET(request: Request) {
   const status = searchParams.get('status')
   const channel = searchParams.get('channel')
   const assignedTo = searchParams.get('assigned_to')
-  const search = searchParams.get('search')
+  const rawSearch = searchParams.get('search')
+  const search = rawSearch ? rawSearch.replace(/[,()\"]/g, '') : null
 
   let query = supabase
     .from('inbox_conversations')
