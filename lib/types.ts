@@ -98,6 +98,8 @@ export interface Proposal {
   status: ProposalStatus
   valid_until: string | null
   notes: string | null
+  external_id: string | null
+  external_url: string | null
   created_at: string
   updated_at: string
 }

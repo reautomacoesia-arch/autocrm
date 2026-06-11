@@ -5,7 +5,7 @@ import type { Proposal, ProposalItem, ProposalStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
 import { useRouter } from 'next/navigation'
-import { Pencil, X } from 'lucide-react'
+import { ExternalLink, Pencil, X } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 
@@ -60,6 +60,7 @@ export default function ProposalDetail({ proposal: initial, services }: Proposal
   const confirm = useConfirm()
 
   const contact = proposal.clients ?? proposal.leads
+  const isExternal = !!proposal.external_id
   const transitions = STATUS_TRANSITIONS[proposal.status]
 
   async function changeStatus(status: ProposalStatus) {
@@ -179,24 +180,48 @@ export default function ProposalDetail({ proposal: initial, services }: Proposal
             <Badge variant={STATUS_BADGE[proposal.status].variant}>
               {STATUS_BADGE[proposal.status].label}
             </Badge>
-            <button
-              onClick={() => {
-                setEditForm({
-                  value: String(proposal.value),
-                  valid_until: proposal.valid_until ?? '',
-                  notes: proposal.notes ?? '',
-                })
-                setIsEditing(true)
-              }}
-              className="text-slate-400 hover:text-indigo-400 transition-colors p-1"
-              title="Editar proposta"
-            >
-              <Pencil size={14} />
-            </button>
+            {!isExternal && (
+              <button
+                onClick={() => {
+                  setEditForm({
+                    value: String(proposal.value),
+                    valid_until: proposal.valid_until ?? '',
+                    notes: proposal.notes ?? '',
+                  })
+                  setIsEditing(true)
+                }}
+                className="text-slate-400 hover:text-indigo-400 transition-colors p-1"
+                title="Editar proposta"
+              >
+                <Pencil size={14} />
+              </button>
+            )}
           </div>
         </div>
 
-        {transitions.length > 0 && !isEditing && (
+        {isExternal && (
+          <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-slate-700">
+            <div className="flex items-center gap-2">
+              <Badge variant="indigo">Gerado por IA</Badge>
+              <span className="text-emerald-400 text-sm font-semibold">
+                {formatCurrency(proposal.value)}
+              </span>
+            </div>
+            {proposal.external_url && (
+              <a
+                href={proposal.external_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 text-xs font-medium transition-colors"
+              >
+                Abrir no Gerador de Propostas
+                <ExternalLink size={12} />
+              </a>
+            )}
+          </div>
+        )}
+
+        {transitions.length > 0 && !isEditing && !isExternal && (
           <div className="flex gap-2 mt-4 pt-4 border-t border-slate-700">
             {transitions.map((status) => (
               <button
@@ -279,6 +304,7 @@ export default function ProposalDetail({ proposal: initial, services }: Proposal
       </div>
 
       {/* Items */}
+      {!isExternal && (
       <div className="mb-6">
         <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
           Itens da Proposta
@@ -364,6 +390,7 @@ export default function ProposalDetail({ proposal: initial, services }: Proposal
           </p>
         </div>
       </div>
+      )}
 
       {/* Notes */}
       {proposal.notes && !isEditing && (

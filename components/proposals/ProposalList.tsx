@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import type { Client, Proposal, ProposalStatus, Service } from '@/lib/types'
+import type { Client, Lead, Proposal, ProposalStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
-import CreateProposalModal from './CreateProposalModal'
+import GenerateProposalModal from './GenerateProposalModal'
 import EmptyState from '@/components/ui/EmptyState'
 import { formatCurrency } from '@/lib/pipeline'
 import { Plus, ChevronRight } from 'lucide-react'
@@ -27,10 +27,10 @@ type ProposalWithRelations = Proposal & {
 interface ProposalListProps {
   proposals: ProposalWithRelations[]
   clients: Client[]
-  services: Service[]
+  leads: Lead[]
 }
 
-export default function ProposalList({ proposals: initial, clients, services }: ProposalListProps) {
+export default function ProposalList({ proposals: initial, clients, leads }: ProposalListProps) {
   const [proposals] = useState<ProposalWithRelations[]>(initial)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [filter, setFilter] = useState<ProposalStatus | 'all'>('all')
@@ -144,6 +144,9 @@ export default function ProposalList({ proposals: initial, clients, services }: 
                   <span className="text-emerald-400 text-sm font-semibold hidden sm:block">
                     {formatCurrency(proposal.value)}
                   </span>
+                  {proposal.external_id && (
+                    <Badge variant="indigo">Gerado por IA</Badge>
+                  )}
                   <Badge variant={badge.variant}>{badge.label}</Badge>
                   <ChevronRight
                     size={14}
@@ -156,11 +159,11 @@ export default function ProposalList({ proposals: initial, clients, services }: 
         )}
       </div>
 
-      <CreateProposalModal
+      <GenerateProposalModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         clients={clients}
-        services={services}
+        leads={leads}
       />
     </>
   )

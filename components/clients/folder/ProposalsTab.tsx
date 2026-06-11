@@ -82,6 +82,9 @@ export default function ProposalsTab({ clientId, clientName }: ProposalsTabProps
                   <p className="text-slate-400 text-xs mt-0.5">{formatDate(proposal.created_at)}</p>
                 </div>
                 <div className="flex items-center gap-3">
+                  {proposal.external_id && (
+                    <Badge variant="indigo">Gerado por IA</Badge>
+                  )}
                   <Badge variant={badge.variant}>{badge.label}</Badge>
                   <ChevronRight
                     size={14}
