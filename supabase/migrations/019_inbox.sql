@@ -41,6 +41,8 @@ CREATE POLICY "auth_inbox_messages" ON public.inbox_messages
   FOR ALL USING (auth.role() = 'authenticated');
 
 CREATE INDEX IF NOT EXISTS inbox_messages_conversation_id_idx ON public.inbox_messages(conversation_id);
+CREATE INDEX IF NOT EXISTS inbox_conversations_last_message_at_idx ON public.inbox_conversations(last_message_at DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS inbox_conversations_status_idx ON public.inbox_conversations(status);
 
 -- Mantém inbox_conversations.updated_at em dia (reusa função da migration 013)
 CREATE TRIGGER inbox_conversations_updated_at
