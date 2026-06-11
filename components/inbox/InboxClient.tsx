@@ -56,12 +56,16 @@ export default function InboxClient({
 
   // Polling: mensagens da conversa aberta a cada 5s
   useEffect(() => {
-    if (!selectedId) {
-      setMessages([])
-      return
-    }
-
     let cancelled = false
+
+    if (!selectedId) {
+      queueMicrotask(() => {
+        if (!cancelled) setMessages([])
+      })
+      return () => {
+        cancelled = true
+      }
+    }
 
     async function load() {
       const res = await fetch(`/api/inbox/conversations/${selectedId}/messages`)

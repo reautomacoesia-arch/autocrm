@@ -29,7 +29,7 @@ beforeEach(() => {
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: async () => [],
-  } as any)
+  } as Response)
 })
 
 describe('Sidebar', () => {
