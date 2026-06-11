@@ -35,6 +35,10 @@ export async function POST(
     return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 })
   }
 
+  if (!['inbound', 'outbound'].includes(body.direction)) {
+    return NextResponse.json({ error: 'Direção de mensagem inválida.' }, { status: 400 })
+  }
+
   const { data: message, error } = await supabase
     .from('inbox_messages')
     .insert({
