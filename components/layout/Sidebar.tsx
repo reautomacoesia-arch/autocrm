@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
   LayoutDashboard,
+  Inbox,
   Target,
   Users,
   Users2,
@@ -25,6 +26,7 @@ import type { Profile } from '@/lib/types'
 
 const navItems = [
   { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/inbox', icon: Inbox, label: 'Inbox' },
   { href: '/pipeline', icon: Target, label: 'Pipeline' },
   { href: '/clients', icon: Users, label: 'Clientes' },
   { href: '/proposals', icon: FileText, label: 'Propostas' },

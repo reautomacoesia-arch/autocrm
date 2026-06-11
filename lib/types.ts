@@ -6,6 +6,9 @@ export type TaskStatus = 'pending' | 'in_progress' | 'done'
 export type TaskPriority = 'low' | 'medium' | 'high'
 export type TransactionType = 'received' | 'pending'
 export type InteractionType = 'note' | 'meeting' | 'email' | 'task_update'
+export type InboxChannel = 'whatsapp' | 'instagram' | 'facebook'
+export type ConversationStatus = 'open' | 'pending' | 'resolved'
+export type MessageDirection = 'inbound' | 'outbound'
 
 export interface Lead {
   id: string
@@ -30,6 +33,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   site: 'Site',
   linkedin: 'LinkedIn',
   whatsapp: 'WhatsApp',
+  facebook: 'Facebook',
   outro: 'Outro',
 }
 
@@ -218,5 +222,33 @@ export interface Notification {
   body: string | null
   link: string | null
   read: boolean
+  created_at: string
+}
+
+export interface InboxConversation {
+  id: string
+  channel: InboxChannel
+  contact_name: string
+  contact_handle: string | null
+  lead_id: string | null
+  client_id: string | null
+  status: ConversationStatus
+  assigned_to: string | null
+  last_message_at: string | null
+  last_message_preview: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface InboxMessage {
+  id: string
+  conversation_id: string
+  direction: MessageDirection
+  content: string | null
+  attachment_r2_key: string | null
+  attachment_name: string | null
+  attachment_mime_type: string | null
+  attachment_size: number | null
+  sender_id: string | null
   created_at: string
 }
