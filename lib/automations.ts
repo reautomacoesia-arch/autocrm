@@ -1,4 +1,6 @@
-export type FieldType = 'checkbox' | 'text' | 'number' | 'select'
+import { DEFAULT_SDR_SYSTEM_PROMPT } from './ai-sdr'
+
+export type FieldType = 'checkbox' | 'text' | 'textarea' | 'number' | 'select'
 
 export interface AutomationField {
   key: string
@@ -128,6 +130,28 @@ export const AUTOMATION_DEFINITIONS: AutomationDefinition[] = [
     ],
   },
   {
+    key: 'lead_no_contact',
+    name: 'Lead sem contato',
+    description: 'Lead em aberto no pipeline sem atualização há X dias.',
+    trigger: 'Automático — cron diário às 09h (horário de Brasília)',
+    details: [
+      'Verifica leads nos estágios Lead, Contato feito, Proposta enviada e Negociando que não tiveram nenhuma atualização no período configurado',
+      'Cria tarefa de follow-up vinculada ao lead para retomar o contato antes que ele fique frio',
+      'Notifica no sino uma vez por dia por lead — não fica gerando spam',
+      'Ideal para garantir que nenhum lead fique esquecido no pipeline',
+    ],
+    example: 'Lead "Maria Souza" parado em "Contato feito" há 3 dias sem atualização → tarefa "Retomar contato com lead" criada + notificação.',
+    badge: '⏳',
+    fields: [
+      { key: 'days_threshold', type: 'number', label: 'Dias sem atualização', default: 3 },
+      { key: 'create_task', type: 'checkbox', label: 'Criar tarefa de follow-up', default: true },
+      { key: 'task_title', type: 'text', label: 'Título da tarefa', default: 'Retomar contato com lead', dependsOn: 'create_task' },
+      { key: 'task_priority', type: 'select', label: 'Prioridade', default: 'medium', options: ['high', 'medium', 'low'], dependsOn: 'create_task' },
+      { key: 'notify', type: 'checkbox', label: 'Criar notificação in-app', default: true },
+      { key: 'send_email', type: 'checkbox', label: 'Enviar e-mail de alerta (resumo diário)', default: false },
+    ],
+  },
+  {
     key: 'client_no_contact',
     name: 'Cliente sem contato',
     description: 'Cliente ativo sem nenhuma interação registrada há X dias.',
@@ -166,6 +190,29 @@ export const AUTOMATION_DEFINITIONS: AutomationDefinition[] = [
       { key: 'days_threshold', type: 'number', label: 'Dias em atraso para alertar', default: 1 },
       { key: 'notify', type: 'checkbox', label: 'Criar notificação in-app', default: true },
       { key: 'send_email', type: 'checkbox', label: 'Enviar e-mail de alerta (resumo diário)', default: false },
+    ],
+  },
+  {
+    key: 'ai_sdr',
+    name: 'Agente de IA no WhatsApp (SDR virtual)',
+    description: 'Responde automaticamente novas mensagens recebidas no WhatsApp e qualifica leads.',
+    trigger: 'Evento — nova mensagem recebida no WhatsApp (webhook Z-API)',
+    details: [
+      'Responde o contato pelo WhatsApp usando o histórico da conversa e as instruções configuradas abaixo',
+      'Quando identifica um lead qualificado (nome + necessidade clara), cria automaticamente o lead no pipeline',
+      'Pode ser desligado em conversas individuais pelo botão "IA" na inbox, quando um humano assumir o atendimento',
+      'Requer as variáveis de ambiente ANTHROPIC_API_KEY, ZAPI_INSTANCE_ID, ZAPI_TOKEN, ZAPI_CLIENT_TOKEN e WHATSAPP_WEBHOOK_SECRET configuradas',
+    ],
+    example: 'Contato manda "oi, quanto custa o serviço de gestão de tráfego?" → agente responde, faz 2-3 perguntas de qualificação e cria o lead no pipeline com um resumo da conversa.',
+    badge: '🤖',
+    fields: [
+      {
+        key: 'system_prompt',
+        type: 'textarea',
+        label: 'Instruções do agente (contexto da empresa, tom de voz, o que oferecer)',
+        default: DEFAULT_SDR_SYSTEM_PROMPT,
+      },
+      { key: 'notify', type: 'checkbox', label: 'Notificar quando um lead novo for criado', default: true },
     ],
   },
 ]

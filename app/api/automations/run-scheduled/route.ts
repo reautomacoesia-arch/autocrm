@@ -56,6 +56,42 @@ export async function POST() {
     }
   }
 
+  // ── lead_no_contact ──────────────────────────────────────────────────────
+  const { data: cfgLead } = await supabase
+    .from('automation_configs')
+    .select('*')
+    .eq('automation_key', 'lead_no_contact')
+    .single()
+
+  if (cfgLead?.enabled) {
+    const days = (cfgLead.config?.days_threshold as number) ?? 3
+    const cutoff = new Date(Date.now() - days * 86_400_000).toISOString()
+    const { data: leads } = await supabase
+      .from('leads')
+      .select('id, name, updated_at')
+      .in('stage', ['lead', 'contacted', 'proposal_sent', 'negotiating'])
+      .lte('updated_at', cutoff)
+
+    for (const lead of leads ?? []) {
+      const yesterday = new Date(Date.now() - 86_400_000).toISOString()
+      const { data: existing } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('lead_id', lead.id)
+        .eq('title', cfgLead.config?.task_title ?? 'Retomar contato com lead')
+        .gte('created_at', yesterday)
+        .limit(1)
+
+      if (existing && existing.length > 0) continue
+
+      await createTaskLocal(supabase, cfgLead.config, { leadId: lead.id })
+      await createNotifLocal(supabase, cfgLead.config,
+        `Sem contato: ${lead.name}`,
+        '/pipeline'
+      )
+    }
+  }
+
   // ── client_no_contact ───────────────────────────────────────────────────
   const { data: cfg2 } = await supabase
     .from('automation_configs')
