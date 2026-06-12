@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { proposalItemCreateSchema, proposalItemDeleteSchema } from '@/lib/api/schemas'
 
 export async function POST(
   request: Request,
@@ -7,7 +9,9 @@ export async function POST(
 ) {
   const supabase = await createClient()
   const { id } = await params
-  const body = await request.json()
+  const parsed = await parseBody(request, proposalItemCreateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const { data, error } = await supabase
     .from('proposal_items')
@@ -30,7 +34,9 @@ export async function DELETE(
 ) {
   const supabase = await createClient()
   await params
-  const body = await request.json()
+  const parsed = await parseBody(request, proposalItemDeleteSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const { error } = await supabase
     .from('proposal_items')

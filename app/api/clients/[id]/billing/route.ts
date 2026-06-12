@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { billingSchema } from '@/lib/api/schemas'
 
 /**
  * PATCH /api/clients/[id]/billing
@@ -15,15 +17,9 @@ export async function PATCH(
 ) {
   const supabase = await createClient()
   const { id } = await params
-  const body = await request.json()
-  const billingDay: number | null = body.billing_day ?? null
-
-  if (billingDay !== null && (billingDay < 1 || billingDay > 28 || !Number.isInteger(billingDay))) {
-    return NextResponse.json(
-      { error: 'billing_day deve ser um inteiro entre 1 e 28' },
-      { status: 400 },
-    )
-  }
+  const parsed = await parseBody(request, billingSchema)
+  if (!parsed.ok) return parsed.response
+  const billingDay: number | null = parsed.data.billing_day ?? null
 
   const { error } = await supabase
     .from('clients')

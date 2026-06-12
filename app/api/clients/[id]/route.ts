@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { runAutomation } from '@/lib/automation-engine'
+import { runWorkflows } from '@/lib/workflow-engine'
+import { parseBody } from '@/lib/api/validation'
+import { clientUpdateSchema } from '@/lib/api/schemas'
 
 export async function GET(
   _request: Request,
@@ -20,7 +23,9 @@ export async function PATCH(
 ) {
   const supabase = await createClient()
   const { id } = await params
-  const body = await request.json()
+  const parsed = await parseBody(request, clientUpdateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   // Read previous status
   const { data: prev } = await supabase
@@ -55,6 +60,17 @@ export async function PATCH(
     void runAutomation(supabase, 'client_churned', {
       clientId: id,
       clientName: data?.name ?? prev?.name,
+    })
+  }
+
+  if (body.status !== undefined && prev?.status !== body.status) {
+    void runWorkflows(supabase, 'client.status_changed', {
+      clientId: id,
+      clientName: data?.name ?? prev?.name,
+      fromStatus: prev?.status,
+      toStatus: body.status,
+      monthlyValue: data?.monthly_value ?? undefined,
+      phone: data?.phone ?? undefined,
     })
   }
 

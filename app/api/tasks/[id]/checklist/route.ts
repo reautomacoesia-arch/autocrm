@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { checklistCreateSchema } from '@/lib/api/schemas'
 
 export async function GET(
   _request: Request,
@@ -25,7 +27,9 @@ export async function POST(
 ) {
   const supabase = await createClient()
   const { id } = await params
-  const body = await request.json()
+  const parsed = await parseBody(request, checklistCreateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const { count } = await supabase
     .from('task_checklist_items')

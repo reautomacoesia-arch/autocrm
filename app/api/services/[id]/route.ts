@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { serviceUpdateSchema } from '@/lib/api/schemas'
 
 export async function PATCH(
   request: Request,
@@ -7,11 +9,12 @@ export async function PATCH(
 ) {
   const supabase = await createClient()
   const { id } = await params
-  const body = await request.json()
+  const parsed = await parseBody(request, serviceUpdateSchema)
+  if (!parsed.ok) return parsed.response
 
   const { data, error } = await supabase
     .from('services')
-    .update({ ...body, updated_at: new Date().toISOString() })
+    .update({ ...parsed.data, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
     .single()

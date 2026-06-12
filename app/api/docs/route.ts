@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { docCreateSchema } from '@/lib/api/schemas'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -25,7 +27,9 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-  const body = await request.json().catch(() => ({}))
+  const parsed = await parseBody(request, docCreateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const { data, error } = await supabase
     .from('workspace_docs')

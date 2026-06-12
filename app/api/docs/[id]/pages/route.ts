@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { docPageCreateSchema, docPagesReorderSchema } from '@/lib/api/schemas'
 
 // Lista páginas de um caderno
 export async function GET(
@@ -32,7 +34,9 @@ export async function POST(
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
   const { id } = await params
-  const body = await request.json().catch(() => ({}))
+  const parsed = await parseBody(request, docPageCreateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   // Herda a visibilidade do caderno pai
   const { data: parent } = await supabase
@@ -67,8 +71,9 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
   const { id } = await params
-  const { order } = await request.json()
-  if (!Array.isArray(order)) return NextResponse.json({ error: 'order deve ser um array' }, { status: 400 })
+  const parsedOrder = await parseBody(request, docPagesReorderSchema)
+  if (!parsedOrder.ok) return parsedOrder.response
+  const { order } = parsedOrder.data
 
   // Atualiza position de cada página em paralelo
   await Promise.all(

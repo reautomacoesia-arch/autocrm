@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { profileUpdateSchema } from '@/lib/api/schemas'
 
 export async function GET(
   _request: Request,
@@ -24,7 +26,9 @@ export async function PATCH(
 ) {
   const supabase = await createClient()
   const { id } = await params
-  const body = await request.json()
+  const parsed = await parseBody(request, profileUpdateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
@@ -48,7 +52,13 @@ export async function PATCH(
   if (body.bio !== undefined)          fields.bio = body.bio ?? null
   if (body.birth_date !== undefined)   fields.birth_date = body.birth_date ?? null
   if (body.phone !== undefined)        fields.phone = body.phone ?? null
-  if (body.role !== undefined)         fields.role = body.role
+  if (body.role !== undefined) {
+    // Apenas admins podem alterar papéis — impede auto-promoção a admin
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Apenas admins podem alterar papéis.' }, { status: 403 })
+    }
+    fields.role = body.role
+  }
 
   const { data, error } = await supabase
     .from('profiles')

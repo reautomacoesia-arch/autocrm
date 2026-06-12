@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { projectCreateSchema } from '@/lib/api/schemas'
 
 export async function GET(
   _request: Request,
@@ -24,11 +26,18 @@ export async function POST(
 ) {
   const supabase = await createClient()
   const { id } = await params
-  const body = await request.json()
+  const parsed = await parseBody(request, projectCreateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const { data, error } = await supabase
     .from('projects')
-    .insert({ client_id: id, ...body })
+    .insert({
+      client_id: id,
+      name: body.name,
+      description: body.description ?? null,
+      status: body.status ?? 'in_progress',
+    })
     .select()
     .single()
 

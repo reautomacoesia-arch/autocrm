@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { leadConvertSchema } from '@/lib/api/schemas'
 
 export async function POST(
   request: Request,
@@ -18,7 +20,9 @@ export async function POST(
     return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
   }
 
-  const body = await request.json()
+  const parsed = await parseBody(request, leadConvertSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const { data: client, error: clientError } = await supabase
     .from('clients')

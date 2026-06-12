@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { automationUpdateSchema } from '@/lib/api/schemas'
 
 export async function PUT(
   request: Request,
@@ -7,7 +9,9 @@ export async function PUT(
 ) {
   const { key } = await params
   const supabase = await createClient()
-  const body = await request.json()
+  const parsed = await parseBody(request, automationUpdateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const { data, error } = await supabase
     .from('automation_configs')

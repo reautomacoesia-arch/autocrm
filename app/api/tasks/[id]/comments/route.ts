@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { commentCreateSchema } from '@/lib/api/schemas'
 
 export async function GET(
   _request: Request,
@@ -24,7 +26,9 @@ export async function POST(
 ) {
   const supabase = await createClient()
   const { id } = await params
-  const body = await request.json()
+  const parsed = await parseBody(request, commentCreateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const { data: { user } } = await supabase.auth.getUser()
   const author = body.author ?? user?.email ?? 'Usuário'

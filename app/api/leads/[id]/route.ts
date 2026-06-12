@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { runAutomation } from '@/lib/automation-engine'
+import { runWorkflows } from '@/lib/workflow-engine'
+import { parseBody } from '@/lib/api/validation'
+import { leadUpdateSchema } from '@/lib/api/schemas'
 
 export async function PATCH(
   request: Request,
@@ -8,7 +11,9 @@ export async function PATCH(
 ) {
   const supabase = await createClient()
   const { id } = await params
-  const body = await request.json()
+  const parsed = await parseBody(request, leadUpdateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   // Read previous state to detect stage change
   const { data: prev } = await supabase
@@ -51,10 +56,19 @@ export async function PATCH(
     }).then(() => {}, () => {})
     const context = { leadId: id, leadName }
     if (body.stage === 'won') {
-      void runAutomation(supabase, 'lead_won', { ...context, clientId: body.clientId })
+      void runAutomation(supabase, 'lead_won', { ...context, clientId: body.clientId ?? undefined })
     } else if (body.stage === 'lost') {
       void runAutomation(supabase, 'lead_lost', context)
     }
+    void runWorkflows(supabase, 'lead.stage_changed', {
+      leadId: id,
+      leadName,
+      fromStage: prev.stage,
+      toStage: body.stage,
+      estimatedValue: data?.estimated_value ?? undefined,
+      source: data?.source ?? undefined,
+      phone: data?.phone ?? undefined,
+    })
   }
 
   return NextResponse.json(data)

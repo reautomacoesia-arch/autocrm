@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { inviteSchema } from '@/lib/api/schemas'
+import { rateLimit } from '@/lib/api/rate-limit'
 
 export async function POST(request: Request) {
   // Verify caller is authenticated
@@ -19,13 +22,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Apenas admins podem convidar colaboradores.' }, { status: 403 })
   }
 
-  const body = await request.json()
-  const email: string = (body.email ?? '').trim().toLowerCase()
-  const name: string = (body.name ?? '').trim()
+  const limited = rateLimit(request, 'invite', { limit: 10, windowMs: 60_000 })
+  if (limited) return limited
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ error: 'E-mail inválido.' }, { status: 400 })
-  }
+  const parsed = await parseBody(request, inviteSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
+  const email: string = body.email.trim().toLowerCase()
+  const name: string = (body.name ?? '').trim()
 
   // mode: 'email' (padrão) — Supabase envia e-mail automaticamente
   //        'link'          — gera link sem enviar e-mail; retorna URL para copiar

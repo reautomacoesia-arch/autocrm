@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { checklistUpdateSchema } from '@/lib/api/schemas'
 
 export async function PATCH(
   request: Request,
@@ -7,7 +9,9 @@ export async function PATCH(
 ) {
   const supabase = await createClient()
   const { itemId } = await params
-  const body = await request.json()
+  const parsed = await parseBody(request, checklistUpdateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const fields: Record<string, unknown> = {}
   if (body.done !== undefined) fields.done = body.done

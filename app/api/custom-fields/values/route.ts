@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { FieldWithValue } from '@/lib/types'
+import { parseBody } from '@/lib/api/validation'
+import { customFieldValuesSchema } from '@/lib/api/schemas'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -41,12 +43,9 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   const supabase = await createClient()
-  const body = await request.json()
-  const { entity_id, values } = body
-
-  if (!entity_id || !Array.isArray(values)) {
-    return NextResponse.json({ error: 'entity_id and values required' }, { status: 400 })
-  }
+  const parsed = await parseBody(request, customFieldValuesSchema)
+  if (!parsed.ok) return parsed.response
+  const { entity_id, values } = parsed.data
 
   for (const item of values) {
     if (item.value === null || item.value === '') {

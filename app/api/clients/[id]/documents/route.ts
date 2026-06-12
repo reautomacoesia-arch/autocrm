@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { documentConfirmSchema, isAllowedMimeType } from '@/lib/api/upload'
 
 // Lista documentos do cliente
 export async function GET(
@@ -34,10 +36,12 @@ export async function POST(
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
   const { id } = await params
-  const { r2_key, name, size, mime_type } = await request.json()
+  const parsed = await parseBody(request, documentConfirmSchema)
+  if (!parsed.ok) return parsed.response
+  const { r2_key, name, size, mime_type } = parsed.data
 
-  if (!r2_key || !name || !size || !mime_type) {
-    return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 })
+  if (!isAllowedMimeType(mime_type)) {
+    return NextResponse.json({ error: 'Tipo de arquivo não permitido.' }, { status: 415 })
   }
 
   const { data, error } = await supabase

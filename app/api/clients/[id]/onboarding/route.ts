@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { onboardingSchema } from '@/lib/api/schemas'
 
 export async function GET(
   _request: Request,
@@ -23,7 +25,9 @@ export async function PUT(
 ) {
   const supabase = await createClient()
   const { id } = await params
-  const body = await request.json()
+  const parsed = await parseBody(request, onboardingSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const { data: existing } = await supabase
     .from('onboarding')

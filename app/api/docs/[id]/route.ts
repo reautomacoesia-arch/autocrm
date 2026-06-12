@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { docUpdateSchema } from '@/lib/api/schemas'
 
 export async function GET(
   _req: Request,
@@ -29,11 +31,11 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
   const { id } = await params
-  const body = await request.json()
-  const allowed = ['title', 'content', 'visibility']
+  const parsed = await parseBody(request, docUpdateSchema)
+  if (!parsed.ok) return parsed.response
   const updates: Record<string, unknown> = {}
-  for (const key of allowed) {
-    if (key in body) updates[key] = body[key]
+  for (const [key, value] of Object.entries(parsed.data)) {
+    if (value !== undefined) updates[key] = value
   }
 
   const { data, error } = await supabase

@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { runAutomation } from '@/lib/automation-engine'
+import { runWorkflows } from '@/lib/workflow-engine'
+import { parseBody } from '@/lib/api/validation'
+import { proposalUpdateSchema } from '@/lib/api/schemas'
 
 export async function GET(
   _request: Request,
@@ -25,7 +28,9 @@ export async function PATCH(
 ) {
   const supabase = await createClient()
   const { id } = await params
-  const body = await request.json()
+  const parsed = await parseBody(request, proposalUpdateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   // Read previous status
   const { data: prev } = await supabase
@@ -54,6 +59,17 @@ export async function PATCH(
     void runAutomation(supabase, 'proposal_approved', {
       proposalId: id,
       clientId: data?.client_id ?? prev?.client_id ?? undefined,
+    })
+  }
+
+  if (body.status !== undefined && prev?.status !== body.status) {
+    void runWorkflows(supabase, 'proposal.status_changed', {
+      proposalId: id,
+      clientId: data?.client_id ?? undefined,
+      leadId: data?.lead_id ?? undefined,
+      fromStatus: prev?.status,
+      toStatus: body.status,
+      value: data?.value ?? undefined,
     })
   }
 

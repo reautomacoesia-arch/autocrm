@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { transactionCreateSchema } from '@/lib/api/schemas'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -22,7 +24,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  const body = await request.json()
+  const parsed = await parseBody(request, transactionCreateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const { data, error } = await supabase
     .from('transactions')

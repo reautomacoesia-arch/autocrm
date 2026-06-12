@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { serviceCreateSchema } from '@/lib/api/schemas'
 
 export async function GET() {
   const supabase = await createClient()
@@ -14,7 +16,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  const body = await request.json()
+  const parsed = await parseBody(request, serviceCreateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const { data, error } = await supabase
     .from('services')

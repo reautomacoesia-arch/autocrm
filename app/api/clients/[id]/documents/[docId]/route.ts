@@ -3,6 +3,8 @@ import { r2, R2_BUCKET } from '@/lib/r2'
 import { DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { documentDescriptionSchema } from '@/lib/api/schemas'
 
 // Gera URL assinada para download ou preview
 // ?preview=true → disposition inline (para exibir no browser)
@@ -50,7 +52,9 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
   const { docId } = await params
-  const { description } = await request.json()
+  const parsed = await parseBody(request, documentDescriptionSchema)
+  if (!parsed.ok) return parsed.response
+  const { description } = parsed.data
 
   const { data, error } = await supabase
     .from('client_documents')

@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { taskUpdateSchema } from '@/lib/api/schemas'
 
 const STATUS_LABELS: Record<string, string> = {
   pending:     'Pendente',
@@ -13,7 +15,9 @@ export async function PATCH(
 ) {
   const supabase = await createClient()
   const { id } = await params
-  const body = await request.json()
+  const parsed = await parseBody(request, taskUpdateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const fields: Record<string, unknown> = { updated_at: new Date().toISOString() }
   if (body.title !== undefined)       fields.title = body.title
