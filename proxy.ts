@@ -27,8 +27,11 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // If not authenticated and not on login page, redirect to login
-  if (!user && !request.nextUrl.pathname.startsWith('/login')) {
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api/')
+
+  // If not authenticated and not on login page, redirect to login.
+  // Rotas de API (webhooks, cron) fazem sua própria validação (secret/rate limit/RLS).
+  if (!user && !isApiRoute && !request.nextUrl.pathname.startsWith('/login')) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
