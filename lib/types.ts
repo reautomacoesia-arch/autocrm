@@ -1,3 +1,5 @@
+import type { WorkflowTriggerType, WorkflowCondition, WorkflowAction } from './workflow-catalog'
+
 export type LeadStage = 'lead' | 'contacted' | 'proposal_sent' | 'negotiating' | 'won' | 'lost'
 export type ClientStatus = 'active' | 'inactive' | 'churned'
 export type ProposalStatus = 'draft' | 'sent' | 'approved' | 'rejected'
@@ -217,6 +219,17 @@ export interface AutomationConfig {
   updated_at: string
 }
 
+export interface AutomationWorkflow {
+  id: string
+  name: string
+  trigger_type: WorkflowTriggerType
+  enabled: boolean
+  conditions: WorkflowCondition[]
+  actions: WorkflowAction[]
+  created_at: string
+  updated_at: string
+}
+
 export interface Notification {
   id: string
   key: string | null
@@ -238,6 +251,7 @@ export interface InboxConversation {
   assigned_to: string | null
   last_message_at: string | null
   last_message_preview: string | null
+  ai_enabled: boolean
   created_at: string
   updated_at: string
 }
@@ -252,5 +266,6 @@ export interface InboxMessage {
   attachment_mime_type: string | null
   attachment_size: number | null
   sender_id: string | null
+  is_ai: boolean
   created_at: string
 }

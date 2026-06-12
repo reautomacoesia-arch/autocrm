@@ -3,6 +3,9 @@ import { r2, R2_BUCKET } from '@/lib/r2'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { presignSchema, isAllowedMimeType, sanitizeFileName } from '@/lib/api/upload'
+import { rateLimit } from '@/lib/api/rate-limit'
 
 export async function POST(
   request: Request,
@@ -12,19 +15,19 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
+  const limited = rateLimit(request, 'inbox-presign', { limit: 30, windowMs: 60_000 })
+  if (limited) return limited
+
   const { id } = await params
-  const { name, size, mime_type } = await request.json()
+  const parsed = await parseBody(request, presignSchema)
+  if (!parsed.ok) return parsed.response
+  const { name, mime_type } = parsed.data
 
-  if (!name || !size || !mime_type) {
-    return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 })
+  if (!isAllowedMimeType(mime_type)) {
+    return NextResponse.json({ error: 'Tipo de arquivo não permitido.' }, { status: 415 })
   }
 
-  const MAX_SIZE = 500 * 1024 * 1024 // 500 MB
-  if (size > MAX_SIZE) {
-    return NextResponse.json({ error: 'Arquivo muito grande. Máximo 500 MB.' }, { status: 413 })
-  }
-
-  const safeName = name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const safeName = sanitizeFileName(name)
   const r2_key = `inbox/${id}/${crypto.randomUUID()}-${safeName}`
 
   const upload_url = await getSignedUrl(

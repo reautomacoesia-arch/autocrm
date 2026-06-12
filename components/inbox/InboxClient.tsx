@@ -212,6 +212,21 @@ export default function InboxClient({
     setConversations((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
   }
 
+  async function handleToggleAi(aiEnabled: boolean) {
+    if (!selectedId) return
+    const res = await fetch(`/api/inbox/conversations/${selectedId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ai_enabled: aiEnabled }),
+    })
+    if (!res.ok) {
+      toast('Erro ao atualizar agente de IA.', 'error')
+      return
+    }
+    const updated: InboxConversation = await res.json()
+    setConversations((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+  }
+
   async function handleUpdateAssignee(assignedTo: string | null) {
     if (!selectedId) return
     const res = await fetch(`/api/inbox/conversations/${selectedId}`, {
@@ -289,6 +304,7 @@ export default function InboxClient({
             onSendMessage={handleSendMessage}
             onUpdateStatus={handleUpdateStatus}
             onUpdateAssignee={handleUpdateAssignee}
+            onToggleAi={handleToggleAi}
             onLinkClick={() => setIsLinkModalOpen(true)}
             onCreateLead={handleCreateLead}
           />

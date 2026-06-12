@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import type { InboxMessage } from '@/lib/types'
 import { formatFileSize } from '@/lib/inbox'
-import { File, Download, X } from 'lucide-react'
+import { File, Download, X, Bot } from 'lucide-react'
 
 interface MessageBubbleProps {
   message: InboxMessage
@@ -101,6 +101,11 @@ export default function MessageBubble({ message, senderName, attachmentUrl }: Me
         {message.content && <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
 
         <div className="flex items-center gap-1.5 mt-1">
+          {message.is_ai && (
+            <span className="flex items-center gap-1 text-[10px] opacity-70">
+              <Bot size={10} /> IA
+            </span>
+          )}
           <span className="text-[10px] opacity-60">{formatTime(message.created_at)}</span>
           {isOutbound && senderName && <span className="text-[10px] opacity-60">· {senderName}</span>}
         </div>

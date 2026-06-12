@@ -153,6 +153,16 @@ export default function AutomationCard({ definition, config }: AutomationCardPro
                       className={inputCls}
                     />
                   </div>
+                ) : field.type === 'textarea' ? (
+                  <div className="flex-1">
+                    <label className="block text-xs text-slate-500 mb-1">{field.label}</label>
+                    <textarea
+                      value={String(values[field.key] ?? '')}
+                      onChange={(e) => setValue(field.key, e.target.value)}
+                      rows={6}
+                      className={`${inputCls} resize-y`}
+                    />
+                  </div>
                 ) : field.type === 'number' ? (
                   <div className="flex-1">
                     <label className="block text-xs text-slate-500 mb-1">{field.label}</label>

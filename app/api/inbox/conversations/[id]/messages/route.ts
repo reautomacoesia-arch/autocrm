@@ -1,5 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { inboxMessageCreateSchema } from '@/lib/api/schemas'
+import { rateLimit } from '@/lib/api/rate-limit'
+import { sendWhatsAppText } from '@/lib/zapi'
 
 export async function GET(
   _request: Request,
@@ -28,16 +32,13 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
+  const limited = rateLimit(request, 'inbox-messages', { limit: 60, windowMs: 60_000 })
+  if (limited) return limited
+
   const { id } = await params
-  const body = await request.json()
-
-  if (!body.direction || (!body.content && !body.attachment_r2_key)) {
-    return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 })
-  }
-
-  if (!['inbound', 'outbound'].includes(body.direction)) {
-    return NextResponse.json({ error: 'Direção de mensagem inválida.' }, { status: 400 })
-  }
+  const parsed = await parseBody(request, inboxMessageCreateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const { data: message, error } = await supabase
     .from('inbox_messages')
@@ -69,6 +70,18 @@ export async function POST(
         body: message.content ?? '[Anexo]',
         link: `/inbox?conversation=${id}`,
       })
+    }
+  }
+
+  if (body.direction === 'outbound' && body.content) {
+    const { data: conversation } = await supabase
+      .from('inbox_conversations')
+      .select('channel, contact_handle')
+      .eq('id', id)
+      .single()
+
+    if (conversation?.channel === 'whatsapp' && conversation.contact_handle) {
+      void sendWhatsAppText(conversation.contact_handle, body.content)
     }
   }
 

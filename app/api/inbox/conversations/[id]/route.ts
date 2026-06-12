@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { inboxConversationUpdateSchema } from '@/lib/api/schemas'
 
 export async function GET(
   _request: Request,
@@ -29,13 +31,16 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
   const { id } = await params
-  const body = await request.json()
+  const parsed = await parseBody(request, inboxConversationUpdateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const update: Record<string, unknown> = {}
-  if ('status' in body) update.status = body.status
-  if ('assigned_to' in body) update.assigned_to = body.assigned_to
-  if ('lead_id' in body) update.lead_id = body.lead_id
-  if ('client_id' in body) update.client_id = body.client_id
+  if (body.status !== undefined) update.status = body.status
+  if (body.assigned_to !== undefined) update.assigned_to = body.assigned_to
+  if (body.lead_id !== undefined) update.lead_id = body.lead_id
+  if (body.client_id !== undefined) update.client_id = body.client_id
+  if (body.ai_enabled !== undefined) update.ai_enabled = body.ai_enabled
 
   const { data, error } = await supabase
     .from('inbox_conversations')

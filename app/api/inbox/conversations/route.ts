@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { parseBody } from '@/lib/api/validation'
+import { inboxConversationCreateSchema } from '@/lib/api/schemas'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -34,11 +36,9 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-  const body = await request.json()
-
-  if (!body.channel || !body.contact_name) {
-    return NextResponse.json({ error: 'Dados inválidos.' }, { status: 400 })
-  }
+  const parsed = await parseBody(request, inboxConversationCreateSchema)
+  if (!parsed.ok) return parsed.response
+  const body = parsed.data
 
   const { data, error } = await supabase
     .from('inbox_conversations')

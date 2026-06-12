@@ -13,7 +13,7 @@ import type {
 import { CHANNEL_LABELS, STATUS_LABELS } from '@/lib/inbox'
 import MessageBubble from './MessageBubble'
 import { getInitials } from '@/components/team/ProfileAvatar'
-import { Paperclip, Send, X, MessageCircle, Camera, ThumbsUp, type LucideIcon } from 'lucide-react'
+import { Paperclip, Send, X, MessageCircle, Camera, ThumbsUp, Bot, type LucideIcon } from 'lucide-react'
 
 const CHANNEL_ICONS: Record<InboxChannel, LucideIcon> = {
   whatsapp: MessageCircle,
@@ -44,6 +44,7 @@ interface ConversationThreadProps {
   onUpdateAssignee: (assignedTo: string | null) => void
   onLinkClick: () => void
   onCreateLead: () => void
+  onToggleAi: (aiEnabled: boolean) => void
 }
 
 export default function ConversationThread({
@@ -57,6 +58,7 @@ export default function ConversationThread({
   onUpdateAssignee,
   onLinkClick,
   onCreateLead,
+  onToggleAi,
 }: ConversationThreadProps) {
   const [direction, setDirection] = useState<MessageDirection>('outbound')
   const [content, setContent] = useState('')
@@ -129,6 +131,21 @@ export default function ConversationThread({
                 + Criar Lead
               </button>
             </>
+          )}
+
+          {conversation.channel === 'whatsapp' && (
+            <button
+              onClick={() => onToggleAi(!conversation.ai_enabled)}
+              title={conversation.ai_enabled ? 'Desligar agente de IA nesta conversa' : 'Ligar agente de IA nesta conversa'}
+              className={`flex items-center gap-1.5 text-xs rounded-full px-3 py-1 border transition-colors ${
+                conversation.ai_enabled
+                  ? 'text-indigo-400 border-indigo-700/50 bg-indigo-600/10 hover:bg-indigo-600/20'
+                  : 'text-slate-400 border-slate-700 hover:border-slate-600'
+              }`}
+            >
+              <Bot size={12} />
+              IA {conversation.ai_enabled ? 'ativa' : 'desativada'}
+            </button>
           )}
 
           <select
