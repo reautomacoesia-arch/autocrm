@@ -10,15 +10,20 @@ import { SOURCE_LABELS } from '@/lib/types'
 
 // ── types ──────────────────────────────────────────────────────────────────────
 interface Transaction { amount: number; type: 'received' | 'pending'; date: string }
-interface Lead { stage: string; estimated_value: number; source: string | null; created_at: string }
+interface Lead { id: string; stage: string; estimated_value: number; source: string | null; created_at: string }
 interface Proposal { status: string; value: number; created_at: string }
+interface PipelineEvent { lead_id: string; from_stage: string; to_stage: string; happened_at: string }
 
 interface Props {
   transactions: Transaction[]
   leads: Lead[]
   proposals: Proposal[]
+  pipelineEvents: PipelineEvent[]
   mrr: number
   activeClients: number
+  churnedClients: number
+  churnedMrr: number
+  churnRate: number
 }
 
 type Range = '3m' | '6m' | '12m' | 'all'
@@ -76,6 +81,20 @@ const STAGE_COLORS: Record<string, string> = {
   won: '#22c55e',
   lost: '#ef4444',
 }
+// Probabilidade de fechamento por estágio, usada no forecast ponderado
+const STAGE_PROBABILITY: Record<string, number> = {
+  lead: 0.1,
+  contacted: 0.25,
+  proposal_sent: 0.5,
+  negotiating: 0.75,
+}
+const OPEN_STAGES = Object.keys(STAGE_PROBABILITY)
+
+function fmtDays(v: number) {
+  if (v < 1) return `${Math.round(v * 24)}h`
+  return `${v.toFixed(1)}d`
+}
+
 const PROPOSAL_COLORS: Record<string, string> = {
   draft: '#64748b',
   sent: '#3b82f6',
@@ -97,7 +116,9 @@ const tooltipStyle = {
 }
 
 // ── main component ─────────────────────────────────────────────────────────────
-export default function ReportsClient({ transactions, leads, proposals, mrr, activeClients }: Props) {
+export default function ReportsClient({
+  transactions, leads, proposals, pipelineEvents, mrr, activeClients, churnedClients, churnedMrr, churnRate,
+}: Props) {
   const [range, setRange] = useState<Range>('6m')
 
   const monthCount = range === 'all' ? 24 : range === '12m' ? 12 : range === '6m' ? 6 : 3
@@ -170,6 +191,54 @@ export default function ReportsClient({ transactions, leads, proposals, mrr, act
       .filter((d) => d.count > 0)
   , [leads])
 
+  // ── Forecast (valor × probabilidade do estágio) ─────────────────────────────
+  const forecastValue = useMemo(() =>
+    leads
+      .filter((l) => OPEN_STAGES.includes(l.stage))
+      .reduce((sum, l) => sum + (l.estimated_value ?? 0) * STAGE_PROBABILITY[l.stage], 0)
+  , [leads])
+
+  const openPipelineValue = useMemo(() =>
+    leads
+      .filter((l) => OPEN_STAGES.includes(l.stage))
+      .reduce((sum, l) => sum + (l.estimated_value ?? 0), 0)
+  , [leads])
+
+  // ── Tempo médio por etapa ────────────────────────────────────────────────────
+  const stageTimeData = useMemo(() => {
+    const byLead: Record<string, PipelineEvent[]> = {}
+    pipelineEvents.forEach((e) => {
+      (byLead[e.lead_id] ??= []).push(e)
+    })
+    Object.values(byLead).forEach((arr) =>
+      arr.sort((a, b) => new Date(a.happened_at).getTime() - new Date(b.happened_at).getTime())
+    )
+
+    const durations: Record<string, number[]> = {}
+
+    leads.forEach((lead) => {
+      const events = byLead[lead.id] ?? []
+      let prevTime = new Date(lead.created_at).getTime()
+      events.forEach((e) => {
+        const eventTime = new Date(e.happened_at).getTime()
+        const days = (eventTime - prevTime) / 86_400_000
+        if (days >= 0) {
+          (durations[e.from_stage] ??= []).push(days)
+        }
+        prevTime = eventTime
+      })
+    })
+
+    return STAGE_ORDER
+      .filter((s) => durations[s]?.length)
+      .map((stage) => ({
+        stage: STAGE_LABELS[stage],
+        avgDays: durations[stage].reduce((a, b) => a + b, 0) / durations[stage].length,
+        count: durations[stage].length,
+        fill: STAGE_COLORS[stage],
+      }))
+  }, [leads, pipelineEvents])
+
   // ── Proposals by status ─────────────────────────────────────────────────────
   const proposalData = useMemo(() => {
     const map: Record<string, { count: number; value: number }> = {}
@@ -228,7 +297,7 @@ export default function ReportsClient({ transactions, leads, proposals, mrr, act
       </div>
 
       {/* ── KPI cards ── */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-4 mb-6">
         <KPICard
           label="MRR atual"
           value={fmtCurrency(mrr)}
@@ -253,6 +322,19 @@ export default function ReportsClient({ transactions, leads, proposals, mrr, act
           value={String(approvedCount)}
           sub={approvedValue > 0 ? fmtCurrency(approvedValue) + ' em contratos' : 'nenhuma ainda'}
           color="indigo"
+        />
+        <KPICard
+          label="Previsão de receita"
+          value={fmtCurrency(forecastValue)}
+          sub={`pipeline em aberto: ${fmtCurrency(openPipelineValue)}`}
+          color="amber"
+        />
+        <KPICard
+          label="Taxa de churn"
+          value={`${churnRate.toFixed(1)}%`}
+          sub={`${churnedClients} cliente${churnedClients !== 1 ? 's' : ''} perdido${churnedClients !== 1 ? 's' : ''}${churnedMrr > 0 ? ` · -${fmtCurrency(churnedMrr)}/mês` : ''}`}
+          color={churnRate <= 5 ? 'emerald' : churnRate <= 15 ? 'amber' : 'red'}
+          icon={churnRate <= 5 ? 'up' : churnRate <= 15 ? 'flat' : 'down'}
         />
       </div>
 
@@ -348,55 +430,94 @@ export default function ReportsClient({ transactions, leads, proposals, mrr, act
         </div>
       </div>
 
-      {/* ── Proposals donut ── */}
-      <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl p-5">
-        <h2 className="text-slate-300 text-sm font-semibold mb-1">Propostas por status</h2>
-        <p className="text-slate-500 text-xs mb-4">Distribuição atual de todas as propostas</p>
-        {proposalData.length === 0 ? (
-          <EmptyChart message="Nenhuma proposta criada ainda." />
-        ) : (
-          <div className="flex items-center gap-8">
-            <ResponsiveContainer width={200} height={200}>
-              <PieChart>
-                <Pie
-                  data={proposalData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={80}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {proposalData.map((entry, i) => (
-                    <Cell key={i} fill={entry.fill} />
-                  ))}
-                </Pie>
+      {/* ── Tempo médio por etapa + Proposals donut ── */}
+      <div className="grid grid-cols-2 gap-5">
+        {/* Tempo médio por etapa */}
+        <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl p-5">
+          <h2 className="text-slate-300 text-sm font-semibold mb-1">Tempo médio por etapa</h2>
+          <p className="text-slate-500 text-xs mb-4">Quanto tempo os leads ficam em cada estágio antes de avançar</p>
+          {stageTimeData.length === 0 ? (
+            <EmptyChart message="Ainda não há transições de estágio registradas." />
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={stageTimeData} layout="vertical" barCategoryGap="20%">
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+                <XAxis type="number" tickFormatter={fmtDays} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis
+                  type="category"
+                  dataKey="stage"
+                  tick={{ fill: '#94a3b8', fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={110}
+                />
                 <Tooltip
                   {...tooltipStyle}
-                  formatter={(count: unknown, _: unknown, entry: any) => {
-                    const n = Number(count)
-                    return [`${n} proposta${n !== 1 ? 's' : ''} · ${fmtCurrency(entry.payload.totalValue)}`, entry.payload.name]
+                  formatter={(value: unknown, _: unknown, entry: { payload?: { count: number } }) => {
+                    const n = entry.payload?.count ?? 0
+                    return [`${fmtDays(Number(value))} (média de ${n} lead${n !== 1 ? 's' : ''})`, '']
                   }}
                 />
-              </PieChart>
+                <Bar dataKey="avgDays" radius={[0, 3, 3, 0]}>
+                  {stageTimeData.map((entry, i) => (
+                    <Cell key={i} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
+          )}
+        </div>
 
-            {/* Legend + stats */}
-            <div className="flex-1 grid grid-cols-2 gap-3">
-              {proposalData.map((item) => (
-                <div key={item.name} className="flex items-center gap-2.5">
-                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: item.fill }} />
-                  <div>
-                    <p className="text-slate-300 text-sm font-medium">{item.name}</p>
-                    <p className="text-slate-500 text-xs">
-                      {item.value} · {fmtCurrency(item.totalValue)}
-                    </p>
+        {/* Proposals donut */}
+        <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl p-5">
+          <h2 className="text-slate-300 text-sm font-semibold mb-1">Propostas por status</h2>
+          <p className="text-slate-500 text-xs mb-4">Distribuição atual de todas as propostas</p>
+          {proposalData.length === 0 ? (
+            <EmptyChart message="Nenhuma proposta criada ainda." />
+          ) : (
+            <div className="flex items-center gap-8">
+              <ResponsiveContainer width={200} height={200}>
+                <PieChart>
+                  <Pie
+                    data={proposalData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={80}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {proposalData.map((entry, i) => (
+                      <Cell key={i} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    {...tooltipStyle}
+                    formatter={(count: unknown, _: unknown, entry: any) => {
+                      const n = Number(count)
+                      return [`${n} proposta${n !== 1 ? 's' : ''} · ${fmtCurrency(entry.payload.totalValue)}`, entry.payload.name]
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+
+              {/* Legend + stats */}
+              <div className="flex-1 grid grid-cols-2 gap-3">
+                {proposalData.map((item) => (
+                  <div key={item.name} className="flex items-center gap-2.5">
+                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: item.fill }} />
+                    <div>
+                      <p className="text-slate-300 text-sm font-medium">{item.name}</p>
+                      <p className="text-slate-500 text-xs">
+                        {item.value} · {fmtCurrency(item.totalValue)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
