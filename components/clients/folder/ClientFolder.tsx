@@ -11,6 +11,7 @@ import TasksTab from './TasksTab'
 import ProposalsTab from './ProposalsTab'
 import FinancialTab from './FinancialTab'
 import CustomFieldsTab from './CustomFieldsTab'
+import ClientSummaryButton from './ClientSummaryButton'
 import DocumentsTab from './DocumentsTab'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
@@ -262,6 +263,7 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
                 ? 'Churned'
                 : 'Inativo'}
             </Badge>
+            <ClientSummaryButton clientId={client.id} />
             <button
               onClick={handleToggleInternal}
               title={client.is_internal ? 'Remover de "Nossa empresa"' : 'Marcar como nossa empresa'}
