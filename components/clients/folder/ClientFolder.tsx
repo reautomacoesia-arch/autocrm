@@ -335,9 +335,7 @@ export default function ClientFolder({ client: initialClient, activeTab }: Clien
       {activeTab === 'data' && <DataTab client={client} onClientUpdated={setClient} />}
       {activeTab === 'onboarding' && <OnboardingTab clientId={client.id} />}
       {activeTab === 'projects' && <ProjectsTab clientId={client.id} />}
-      {activeTab === 'proposals' && (
-        <ProposalsTab clientId={client.id} clientName={client.name} />
-      )}
+      {activeTab === 'proposals' && <ProposalsTab client={client} />}
       {activeTab === 'financial' && (
         <FinancialTab clientId={client.id} monthlyValue={client.monthly_value} />
       )}

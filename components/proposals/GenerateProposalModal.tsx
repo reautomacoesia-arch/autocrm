@@ -20,11 +20,18 @@ export default function GenerateProposalModal({
   clients,
   leads,
 }: GenerateProposalModalProps) {
-  const [selected, setSelected] = useState('')
+  const onlyOption =
+    clients.length === 1 && leads.length === 0
+      ? `client:${clients[0].id}`
+      : leads.length === 1 && clients.length === 0
+        ? `lead:${leads[0].id}`
+        : ''
+
+  const [selected, setSelected] = useState(onlyOption)
   const [error, setError] = useState<string | null>(null)
 
   function handleClose() {
-    setSelected('')
+    setSelected(onlyOption)
     setError(null)
     onClose()
   }

@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import type { Proposal, ProposalStatus, Service } from '@/lib/types'
+import type { Client, Proposal, ProposalStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
-import CreateProposalModal from '@/components/proposals/CreateProposalModal'
+import GenerateProposalModal from '@/components/proposals/GenerateProposalModal'
 import { formatCurrency } from '@/lib/pipeline'
 import { Plus, ChevronRight } from 'lucide-react'
 
@@ -19,26 +19,22 @@ const STATUS_BADGE: Record<
 }
 
 interface ProposalsTabProps {
-  clientId: string
-  clientName: string
+  client: Client
 }
 
-export default function ProposalsTab({ clientId, clientName }: ProposalsTabProps) {
+export default function ProposalsTab({ client }: ProposalsTabProps) {
   const [proposals, setProposals] = useState<Proposal[]>([])
-  const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
-    Promise.all([
-      fetch(`/api/proposals?client_id=${clientId}`).then((r) => r.json()),
-      fetch('/api/services').then((r) => r.json()),
-    ]).then(([proposalsData, servicesData]) => {
-      setProposals(proposalsData ?? [])
-      setServices(servicesData ?? [])
-      setLoading(false)
-    })
-  }, [clientId])
+    fetch(`/api/proposals?client_id=${client.id}`)
+      .then((r) => r.json())
+      .then((proposalsData) => {
+        setProposals(proposalsData ?? [])
+        setLoading(false)
+      })
+  }, [client.id])
 
   function formatDate(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString('pt-BR')
@@ -97,12 +93,11 @@ export default function ProposalsTab({ clientId, clientName }: ProposalsTabProps
         )}
       </div>
 
-      <CreateProposalModal
+      <GenerateProposalModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        clients={[{ id: clientId, name: clientName } as any]}
-        services={services}
-        defaultClientId={clientId}
+        clients={[client]}
+        leads={[]}
       />
     </div>
   )
