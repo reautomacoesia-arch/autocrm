@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { AUTOMATION_DEFINITIONS, AUTOMATION_DEFAULTS } from '@/lib/automations'
-import type { AutomationConfig } from '@/lib/types'
+import type { AutomationConfig, AutomationWorkflow } from '@/lib/types'
 import AutomationCard from '@/components/automations/AutomationCard'
+import WorkflowsSection from '@/components/automations/WorkflowsSection'
 import { Zap } from 'lucide-react'
 
 async function runScheduledAutomations() {
@@ -29,12 +30,18 @@ export default async function AutomationsPage() {
     configMap[(c as AutomationConfig).automation_key] = c as AutomationConfig
   }
 
+  const { data: workflows } = await supabase
+    .from('automation_workflows')
+    .select('*')
+    .order('created_at', { ascending: true })
+
   const eventBased = AUTOMATION_DEFINITIONS.filter((d) =>
     ['lead_won', 'proposal_approved', 'lead_lost', 'client_churned'].includes(d.key)
   )
   const timeBased = AUTOMATION_DEFINITIONS.filter((d) =>
-    ['proposal_no_response', 'client_no_contact', 'task_overdue'].includes(d.key)
+    ['proposal_no_response', 'lead_no_contact', 'client_no_contact', 'task_overdue'].includes(d.key)
   )
+  const aiBased = AUTOMATION_DEFINITIONS.filter((d) => ['ai_sdr'].includes(d.key))
 
   return (
     <div>
@@ -56,6 +63,9 @@ export default async function AutomationsPage() {
         </form>
       </div>
 
+      {/* Custom workflows */}
+      <WorkflowsSection initialWorkflows={(workflows ?? []) as AutomationWorkflow[]} />
+
       {/* Event-based */}
       <div className="mb-8">
         <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
@@ -73,12 +83,28 @@ export default async function AutomationsPage() {
       </div>
 
       {/* Time-based */}
-      <div>
+      <div className="mb-8">
         <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
           Baseadas em tempo
         </h2>
         <div className="grid grid-cols-1 gap-3 max-w-2xl">
           {timeBased.map((def) => (
+            <AutomationCard
+              key={def.key}
+              definition={def}
+              config={configMap[def.key] ?? null}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* AI */}
+      <div>
+        <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+          Inteligência artificial
+        </h2>
+        <div className="grid grid-cols-1 gap-3 max-w-2xl">
+          {aiBased.map((def) => (
             <AutomationCard
               key={def.key}
               definition={def}
