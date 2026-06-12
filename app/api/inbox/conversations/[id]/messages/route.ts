@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { parseBody } from '@/lib/api/validation'
 import { inboxMessageCreateSchema } from '@/lib/api/schemas'
 import { rateLimit } from '@/lib/api/rate-limit'
-import { sendWhatsAppText } from '@/lib/zapi'
+import { sendWhatsAppText } from '@/lib/uazapi'
 
 export async function GET(
   _request: Request,

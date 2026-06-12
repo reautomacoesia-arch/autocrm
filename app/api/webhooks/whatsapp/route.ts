@@ -1,11 +1,15 @@
 /**
- * Webhook do Z-API — recebe mensagens do WhatsApp.
+ * Webhook da UAZAPI — recebe mensagens do WhatsApp.
  *
- * Configure no painel da Z-API a URL "Ao receber" (on-message-received) como:
+ * Configure no painel da UAZAPI o webhook de "Mensagens Recebidas" como:
  *   https://SEU_DOMINIO/api/webhooks/whatsapp?secret=WHATSAPP_WEBHOOK_SECRET
  *
- * Variáveis de ambiente necessárias: WHATSAPP_WEBHOOK_SECRET (ver lib/zapi.ts e lib/ai-sdr.ts
+ * Variáveis de ambiente necessárias: WHATSAPP_WEBHOOK_SECRET (ver lib/uazapi.ts e lib/ai-sdr.ts
  * para as demais variáveis usadas pelo agente de IA e pelo envio de respostas).
+ *
+ * Observação: o formato exato do payload pode variar por versão da UAZAPI. O schema
+ * (whatsappWebhookSchema) é "loose" e a extração abaixo tenta os campos mais comuns
+ * (message.text/content, message.sender/chatid). Ajuste conforme o payload real recebido.
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -13,7 +17,7 @@ import { NextResponse } from 'next/server'
 import { parseBody } from '@/lib/api/validation'
 import { whatsappWebhookSchema } from '@/lib/api/schemas'
 import { rateLimit } from '@/lib/api/rate-limit'
-import { sendWhatsAppText } from '@/lib/zapi'
+import { sendWhatsAppText } from '@/lib/uazapi'
 import { DEFAULT_SDR_SYSTEM_PROMPT, generateSdrReply, type SdrHistoryMessage } from '@/lib/ai-sdr'
 
 export const dynamic = 'force-dynamic'
@@ -32,11 +36,18 @@ export async function POST(request: Request) {
   if (!parsed.ok) return parsed.response
   const body = parsed.data
 
-  // Ignora mensagens enviadas por nós mesmos (eco do próprio número conectado)
-  if (body.fromMe) return NextResponse.json({ ok: true })
+  const message = body.message
+  if (!message) return NextResponse.json({ ok: true })
 
-  const messageText =
-    body.text?.message ?? body.image?.caption ?? body.video?.caption ?? body.document?.caption ?? null
+  // Ignora mensagens enviadas por nós mesmos (eco do próprio número conectado) e de grupos
+  if (message.fromMe || message.isGroup) return NextResponse.json({ ok: true })
+
+  const rawId = message.sender || message.chatid || ''
+  const phone = rawId.split('@')[0]
+  if (!phone) return NextResponse.json({ ok: true })
+
+  const messageText = message.text ?? message.content ?? null
+  const senderName = message.senderName || message.pushName || phone
 
   const supabase = createAdminClient()
 
@@ -44,7 +55,7 @@ export async function POST(request: Request) {
     .from('inbox_conversations')
     .select('*')
     .eq('channel', 'whatsapp')
-    .eq('contact_handle', body.phone)
+    .eq('contact_handle', phone)
     .maybeSingle()
 
   let conversation = existing
@@ -53,8 +64,8 @@ export async function POST(request: Request) {
       .from('inbox_conversations')
       .insert({
         channel: 'whatsapp',
-        contact_name: body.senderName || body.chatName || body.phone,
-        contact_handle: body.phone,
+        contact_name: senderName,
+        contact_handle: phone,
       })
       .select()
       .single()
@@ -115,7 +126,7 @@ export async function POST(request: Request) {
           content: result.reply,
           is_ai: true,
         })
-        await sendWhatsAppText(body.phone, result.reply)
+        await sendWhatsAppText(phone, result.reply)
       }
 
       if (result.lead && !conversation.lead_id) {
@@ -125,7 +136,7 @@ export async function POST(request: Request) {
             name: result.lead.name,
             company: result.lead.company ?? null,
             email: result.lead.email ?? null,
-            phone: body.phone,
+            phone,
             estimated_value: result.lead.estimated_value ?? 0,
             notes: result.lead.notes,
             source: 'whatsapp',

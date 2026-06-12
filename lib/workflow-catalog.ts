@@ -149,7 +149,7 @@ export const ACTION_DEFINITIONS: ActionDefinition[] = [
   {
     type: 'send_whatsapp',
     label: 'Enviar WhatsApp',
-    description: 'Envia uma mensagem de WhatsApp para o contato do evento (via Z-API). Só funciona se o lead/cliente tiver telefone cadastrado.',
+    description: 'Envia uma mensagem de WhatsApp para o contato do evento (via UAZAPI). Só funciona se o lead/cliente tiver telefone cadastrado.',
     params: [
       { key: 'message', label: 'Mensagem', type: 'textarea', placeholder: 'Ex: Olá {{leadName}}, tudo certo?' },
     ],

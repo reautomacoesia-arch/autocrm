@@ -7,7 +7,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { sendEmail } from '@/lib/email'
-import { sendWhatsAppText } from '@/lib/zapi'
+import { sendWhatsAppText } from '@/lib/uazapi'
 import type { WorkflowCondition, WorkflowAction } from '@/lib/workflow-catalog'
 
 export type WorkflowContext = Record<string, string | number | undefined>

@@ -3,16 +3,13 @@
  * Agente de IA (SDR virtual) que responde mensagens do WhatsApp na inbox.
  *
  * Variável de ambiente necessária:
- *   ANTHROPIC_API_KEY — chave da API da Anthropic (console.anthropic.com)
+ *   GEMINI_API_KEY — chave da API do Gemini (aistudio.google.com/apikey)
  *
  * Se a variável não estiver configurada, generateSdrReply retorna { reply: null, lead: null }
  * sem lançar erro — o webhook continua registrando a mensagem normalmente.
  */
 
-const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
-const ANTHROPIC_VERSION = '2023-06-01'
-const DEFAULT_MODEL = 'claude-sonnet-4-6'
-const MAX_TOKENS = 1024
+import { callGemini, type GeminiFunctionDeclaration, type GeminiMessage } from '@/lib/gemini'
 
 export const DEFAULT_SDR_SYSTEM_PROMPT = `Você é o assistente comercial (SDR) que atende o WhatsApp da empresa.
 Seu objetivo é: entender o que o contato precisa, responder de forma simpática e objetiva,
@@ -23,22 +20,22 @@ Quando já tiver informações suficientes (nome e uma necessidade/contexto clar
 
 Responda sempre em português, em mensagens curtas (estilo WhatsApp), sem markdown.`
 
-const CREATE_LEAD_TOOL = {
+const CREATE_LEAD_TOOL: GeminiFunctionDeclaration = {
   name: 'create_lead',
   description:
     'Registra o contato como lead qualificado no CRM. Use apenas quando já souber o nome do contato e tiver entendido sua necessidade/interesse.',
-  input_schema: {
-    type: 'object',
+  parameters: {
+    type: 'OBJECT',
     properties: {
-      name: { type: 'string', description: 'Nome do contato' },
-      company: { type: 'string', description: 'Empresa do contato, se mencionada' },
-      email: { type: 'string', description: 'E-mail do contato, se informado' },
-      estimated_value: { type: 'number', description: 'Valor estimado do negócio em reais, se houver indício' },
-      notes: { type: 'string', description: 'Resumo da conversa: necessidade, contexto e próximos passos' },
+      name: { type: 'STRING', description: 'Nome do contato' },
+      company: { type: 'STRING', description: 'Empresa do contato, se mencionada' },
+      email: { type: 'STRING', description: 'E-mail do contato, se informado' },
+      estimated_value: { type: 'NUMBER', description: 'Valor estimado do negócio em reais, se houver indício' },
+      notes: { type: 'STRING', description: 'Resumo da conversa: necessidade, contexto e próximos passos' },
     },
     required: ['name', 'notes'],
   },
-} as const
+}
 
 export interface SdrHistoryMessage {
   role: 'user' | 'assistant'
@@ -58,63 +55,43 @@ export interface SdrResult {
   lead: SdrLeadData | null
 }
 
-interface AnthropicContentBlock {
-  type: string
-  text?: string
-  name?: string
-  input?: Record<string, unknown>
-}
-
-interface AnthropicResponse {
-  content?: AnthropicContentBlock[]
-  error?: { message: string }
-}
-
 export async function generateSdrReply(
   history: SdrHistoryMessage[],
   systemPrompt: string
 ): Promise<SdrResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey || history.length === 0) return { reply: null, lead: null }
+  if (history.length === 0) return { reply: null, lead: null }
 
-  const res = await fetch(ANTHROPIC_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': ANTHROPIC_VERSION,
-    },
-    body: JSON.stringify({
-      model: DEFAULT_MODEL,
-      max_tokens: MAX_TOKENS,
-      system: systemPrompt || DEFAULT_SDR_SYSTEM_PROMPT,
-      messages: history,
+  const messages: GeminiMessage[] = history.map((m) => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    text: m.content,
+  }))
+
+  let result
+  try {
+    result = await callGemini({
+      systemPrompt: systemPrompt || DEFAULT_SDR_SYSTEM_PROMPT,
+      messages,
       tools: [CREATE_LEAD_TOOL],
-    }),
-  })
+    })
+  } catch {
+    return { reply: null, lead: null }
+  }
 
-  if (!res.ok) return { reply: null, lead: null }
+  if (!result) return { reply: null, lead: null }
 
-  const data: AnthropicResponse = await res.json()
-  const blocks = data.content ?? []
-
-  const reply = blocks
-    .filter((b) => b.type === 'text' && b.text)
-    .map((b) => b.text)
-    .join('\n')
-    .trim()
-
-  const toolUse = blocks.find((b) => b.type === 'tool_use' && b.name === 'create_lead')
   let lead: SdrLeadData | null = null
-  if (toolUse?.input && typeof toolUse.input.name === 'string' && typeof toolUse.input.notes === 'string') {
-    lead = {
-      name: toolUse.input.name,
-      company: typeof toolUse.input.company === 'string' ? toolUse.input.company : undefined,
-      email: typeof toolUse.input.email === 'string' ? toolUse.input.email : undefined,
-      estimated_value: typeof toolUse.input.estimated_value === 'number' ? toolUse.input.estimated_value : undefined,
-      notes: toolUse.input.notes,
+  if (result.functionCall?.name === 'create_lead') {
+    const args = result.functionCall.args
+    if (typeof args.name === 'string' && typeof args.notes === 'string') {
+      lead = {
+        name: args.name,
+        company: typeof args.company === 'string' ? args.company : undefined,
+        email: typeof args.email === 'string' ? args.email : undefined,
+        estimated_value: typeof args.estimated_value === 'number' ? args.estimated_value : undefined,
+        notes: args.notes,
+      }
     }
   }
 
-  return { reply: reply || null, lead }
+  return { reply: result.text, lead }
 }

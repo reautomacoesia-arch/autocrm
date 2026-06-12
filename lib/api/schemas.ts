@@ -303,18 +303,26 @@ export const inboxMessageCreateSchema = z
     message: 'Mensagem precisa de conteúdo ou anexo.',
   })
 
-// ---------- Webhook WhatsApp (Z-API) ----------
+// ---------- Webhook WhatsApp (UAZAPI) ----------
 export const whatsappWebhookSchema = z
   .object({
-    phone: text(50).min(1),
-    fromMe: z.boolean().optional(),
-    senderName: optText(200),
-    chatName: optText(200),
-    text: z.object({ message: text(10000) }).optional(),
-    image: z.object({ caption: optText(2000) }).optional(),
-    video: z.object({ caption: optText(2000) }).optional(),
-    document: z.object({ caption: optText(2000), fileName: optText(300) }).optional(),
-    audio: z.object({}).optional(),
+    event: optText(50),
+    EventType: optText(50),
+    message: z
+      .object({
+        chatid: optText(150),
+        sender: optText(150),
+        senderName: optText(200),
+        pushName: optText(200),
+        fromMe: z.boolean().optional(),
+        isGroup: z.boolean().optional(),
+        type: optText(50),
+        messageType: optText(50),
+        text: optText(10000),
+        content: optText(10000),
+      })
+      .loose()
+      .optional(),
   })
   .loose()
 
