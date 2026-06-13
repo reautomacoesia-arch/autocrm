@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import ClientList from '@/components/clients/ClientList'
+import { ToastProvider } from '@/components/ui/ToastProvider'
+import { ConfirmProvider } from '@/components/ui/ConfirmModal'
 import type { Client } from '@/lib/types'
 
 vi.mock('next/link', () => ({
@@ -9,6 +11,14 @@ vi.mock('next/link', () => ({
     <a href={href}>{children}</a>
   ),
 }))
+
+function renderWithProviders(ui: React.ReactElement) {
+  return render(
+    <ToastProvider>
+      <ConfirmProvider>{ui}</ConfirmProvider>
+    </ToastProvider>
+  )
+}
 
 const mockClients: Client[] = [
   {
@@ -43,13 +53,13 @@ const mockClients: Client[] = [
 
 describe('ClientList', () => {
   it('renderiza todos os clientes', () => {
-    render(<ClientList clients={mockClients} />)
+    renderWithProviders(<ClientList clients={mockClients} />)
     expect(screen.getByText('João Silva')).toBeInTheDocument()
     expect(screen.getByText('Maria Santos')).toBeInTheDocument()
   })
 
   it('filtra clientes pelo nome', async () => {
-    render(<ClientList clients={mockClients} />)
+    renderWithProviders(<ClientList clients={mockClients} />)
     const input = screen.getByPlaceholderText('Buscar cliente ou empresa...')
     await userEvent.type(input, 'João')
     expect(screen.getByText('João Silva')).toBeInTheDocument()
@@ -57,7 +67,7 @@ describe('ClientList', () => {
   })
 
   it('mostra mensagem quando busca não tem resultados', async () => {
-    render(<ClientList clients={mockClients} />)
+    renderWithProviders(<ClientList clients={mockClients} />)
     const input = screen.getByPlaceholderText('Buscar cliente ou empresa...')
     await userEvent.type(input, 'zzz')
     expect(screen.getByText('Nenhum cliente encontrado.')).toBeInTheDocument()
