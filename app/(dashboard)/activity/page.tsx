@@ -3,6 +3,15 @@ import Link from 'next/link'
 import { STAGE_LABELS } from '@/lib/pipeline'
 import PageHeader from '@/components/ui/PageHeader'
 import type { LeadStage } from '@/lib/types'
+import ActivityExportButton, { type ActivityExportRow } from '@/components/activity/ActivityExportButton'
+
+const TYPE_LABEL: Record<string, string> = {
+  note: 'Nota',
+  meeting: 'Reunião',
+  email: 'E-mail',
+  task_update: 'Tarefa',
+  pipeline: 'Pipeline',
+}
 
 const PAGE_SIZE = 20
 
@@ -49,6 +58,7 @@ export default async function ActivityPage({
   type ActivityItem = {
     id: string
     icon: string
+    type: string
     description: string
     sub: string | null
     link?: string
@@ -59,6 +69,7 @@ export default async function ActivityPage({
     ...(interactionsRes.data ?? []).map((i: any) => ({
       id: `i-${i.id}`,
       icon: TYPE_ICON[i.type] ?? '📝',
+      type: i.type,
       description: i.description,
       sub: i.clients?.name ?? null,
       link: i.clients ? `/clients/${i.clients.id}` : undefined,
@@ -67,6 +78,7 @@ export default async function ActivityPage({
     ...(pipelineEventsRes.data ?? []).map((e: any) => ({
       id: `p-${e.id}`,
       icon: '🔄',
+      type: 'pipeline',
       description: `${e.lead_name} avançou para ${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage}`,
       sub: `${STAGE_LABELS[e.from_stage as LeadStage] ?? e.from_stage} → ${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage}`,
       date: e.happened_at,
@@ -77,6 +89,13 @@ export default async function ActivityPage({
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
   const paged = items.slice(offset, offset + PAGE_SIZE)
 
+  const exportRows: ActivityExportRow[] = items.map((item) => ({
+    Data: formatDatetime(item.date),
+    Tipo: TYPE_LABEL[item.type] ?? item.type,
+    Descrição: item.description,
+    'Cliente/Contexto': item.sub ?? '',
+  }))
+
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
@@ -86,7 +105,11 @@ export default async function ActivityPage({
         <span className="text-slate-600 text-sm">›</span>
         <span className="text-white text-sm">Histórico de Atividades</span>
       </div>
-      <PageHeader title="Histórico de Atividades" subtitle={`${totalCount} registro(s)`} />
+      <PageHeader
+        title="Histórico de Atividades"
+        subtitle={`${totalCount} registro(s)`}
+        action={<ActivityExportButton rows={exportRows} />}
+      />
 
       {paged.length === 0 ? (
         <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl p-12 text-center text-slate-500 text-sm">

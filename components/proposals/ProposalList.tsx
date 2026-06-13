@@ -8,7 +8,8 @@ import Badge from '@/components/ui/Badge'
 import GenerateProposalModal from './GenerateProposalModal'
 import EmptyState from '@/components/ui/EmptyState'
 import { formatCurrency } from '@/lib/pipeline'
-import { Plus, ChevronRight } from 'lucide-react'
+import { Plus, ChevronRight, Download } from 'lucide-react'
+import { exportToExcel } from '@/lib/export-excel'
 
 const STATUS_BADGE: Record<
   ProposalStatus,
@@ -73,6 +74,22 @@ export default function ProposalList({ proposals: initial, clients, leads }: Pro
     return new Date(dateStr).toLocaleDateString('pt-BR')
   }
 
+  function handleExport() {
+    exportToExcel(
+      'propostas',
+      filtered.map((p) => ({
+        'Cliente/Lead': getContactName(p),
+        Valor: p.value,
+        Status: STATUS_BADGE[p.status].label,
+        'Criada em': formatDate(p.created_at),
+        'Válida até': p.valid_until ? formatDate(p.valid_until) : '',
+        'Gerada por IA': p.external_id ? 'Sim' : 'Não',
+        Link: p.external_url ?? '',
+      })),
+      'Propostas',
+    )
+  }
+
   return (
     <>
       {/* PR1 — Cards de resumo */}
@@ -115,13 +132,23 @@ export default function ProposalList({ proposals: initial, clients, leads }: Pro
             </button>
           ))}
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-[#050505] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          <Plus size={14} />
-          Nova Proposta
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            disabled={filtered.length === 0}
+            className="flex items-center gap-1.5 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-3 py-1.5 text-xs transition-colors whitespace-nowrap"
+          >
+            <Download size={13} />
+            Exportar Excel
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-[#050505] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            <Plus size={14} />
+            Nova Proposta
+          </button>
+        </div>
       </div>
 
       <div className="space-y-2">

@@ -4,9 +4,10 @@ import { useState } from 'react'
 import type { Service } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
 import EmptyState from '@/components/ui/EmptyState'
-import { Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, X, Download } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
+import { exportToExcel } from '@/lib/export-excel'
 
 interface ServiceListProps {
   initialServices: Service[]
@@ -80,17 +81,39 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
     })
   }
 
+  function handleExport() {
+    exportToExcel(
+      'servicos',
+      services.map((s) => ({
+        Nome: s.name,
+        Descrição: s.description ?? '',
+        'Preço padrão': s.default_price,
+      })),
+      'Serviços',
+    )
+  }
+
   return (
     <div className="max-w-2xl">
       <div className="flex justify-between items-center mb-4">
         <p className="text-slate-400 text-sm">{services.length} serviço(s)</p>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-[#050505] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          <Plus size={14} />
-          Novo Serviço
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            disabled={services.length === 0}
+            className="flex items-center gap-1.5 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-3 py-1.5 text-xs transition-colors whitespace-nowrap"
+          >
+            <Download size={13} />
+            Exportar Excel
+          </button>
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-[#050505] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            <Plus size={14} />
+            Novo Serviço
+          </button>
+        </div>
       </div>
 
       {showForm && (
