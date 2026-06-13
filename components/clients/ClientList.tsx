@@ -6,9 +6,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import type { Client, ClientStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
-import { Building2, ChevronRight, Plus, Search } from 'lucide-react'
+import { Building2, ChevronRight, Download, Plus, Search } from 'lucide-react'
 import AddClientModal from './AddClientModal'
 import EmptyState from '@/components/ui/EmptyState'
+import { exportToExcel } from '@/lib/export-excel'
 
 const STATUS_BADGE: Record<
   ClientStatus,
@@ -84,6 +85,22 @@ export default function ClientList({ clients: initialClients, lastInteractions =
     setIsAddModalOpen(false)
   }
 
+  function handleExport() {
+    exportToExcel(
+      'clientes',
+      sorted.map((c) => ({
+        Nome: c.name,
+        Empresa: c.company ?? '',
+        'E-mail': c.email ?? '',
+        Telefone: c.phone ?? '',
+        Status: STATUS_BADGE[c.status].label,
+        MRR: c.monthly_value,
+        Início: c.started_at ? new Date(c.started_at).toLocaleDateString('pt-BR') : '',
+      })),
+      'Clientes',
+    )
+  }
+
   return (
     <div>
       <div className="flex gap-3 mb-4">
@@ -100,6 +117,14 @@ export default function ClientList({ clients: initialClients, lastInteractions =
             className="w-full bg-[#1a1a1d] border border-slate-700 text-white rounded-lg pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500"
           />
         </div>
+        <button
+          onClick={handleExport}
+          disabled={sorted.length === 0}
+          className="flex items-center gap-1.5 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-3 py-1.5 text-xs transition-colors whitespace-nowrap"
+        >
+          <Download size={13} />
+          Exportar Excel
+        </button>
         <button
           onClick={() => setIsAddModalOpen(true)}
           className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-[#050505] text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap"

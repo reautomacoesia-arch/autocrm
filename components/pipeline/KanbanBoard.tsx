@@ -4,14 +4,16 @@ import { useState, useCallback, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd'
 import type { Lead, LeadStage } from '@/lib/types'
-import { STAGES } from '@/lib/pipeline'
+import { STAGES, STAGE_LABELS } from '@/lib/pipeline'
 import KanbanColumn from './KanbanColumn'
 import AddLeadModal from './AddLeadModal'
 import ManageLeadFieldsModal from './ManageLeadFieldsModal'
 import EditLeadModal from './EditLeadModal'
 import ConvertToClientModal from './ConvertToClientModal'
 import PageHeader from '@/components/ui/PageHeader'
-import { Plus, Thermometer } from 'lucide-react'
+import { Download, Plus, Thermometer } from 'lucide-react'
+import { exportToExcel } from '@/lib/export-excel'
+import { SOURCE_LABELS } from '@/lib/types'
 
 interface KanbanBoardProps {
   initialLeads: Lead[]
@@ -108,6 +110,23 @@ export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
     (l) => l.stage !== 'won' && l.stage !== 'lost'
   ).length
 
+  function handleExport() {
+    exportToExcel(
+      'leads',
+      leads.map((l) => ({
+        Nome: l.name,
+        Empresa: l.company ?? '',
+        Estágio: STAGE_LABELS[l.stage],
+        'Valor estimado': l.estimated_value,
+        Origem: l.source ? (SOURCE_LABELS[l.source] ?? l.source) : '',
+        Telefone: l.phone ?? '',
+        'E-mail': l.email ?? '',
+        Score: l.score ?? '',
+      })),
+      'Leads',
+    )
+  }
+
   return (
     <>
       <PageHeader
@@ -115,6 +134,14 @@ export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
         subtitle={`${activeCount} leads ativos`}
         action={
           <>
+            <button
+              onClick={handleExport}
+              disabled={leads.length === 0}
+              className="flex items-center gap-1.5 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-3 py-1.5 text-xs transition-colors"
+            >
+              <Download size={13} />
+              Exportar Excel
+            </button>
             <button
               onClick={() => setSortByScore((p) => !p)}
               className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border transition-colors ${

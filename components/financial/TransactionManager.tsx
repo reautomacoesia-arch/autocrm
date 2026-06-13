@@ -4,10 +4,11 @@ import { useState } from 'react'
 import type { TransactionType } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
 import Badge from '@/components/ui/Badge'
-import { Plus, Trash2, RefreshCw, Settings2, X } from 'lucide-react'
+import { Download, Plus, Trash2, RefreshCw, Settings2, X } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 import EmptyState from '@/components/ui/EmptyState'
+import { exportToExcel } from '@/lib/export-excel'
 
 interface TransactionWithClient {
   id: string
@@ -201,6 +202,22 @@ export default function TransactionManager({
       toast('Erro ao salvar configuração', 'error')
     }
     setRecurringLoading(false)
+  }
+
+  function handleExport() {
+    exportToExcel(
+      'financeiro',
+      filteredTransactions.map((t) => ({
+        Data: formatDate(t.date),
+        Tipo: TYPE_BADGE[t.type].label,
+        Descrição: t.description ?? '',
+        Cliente: t.clients?.name ?? '',
+        Empresa: t.clients?.company ?? '',
+        Valor: t.amount,
+        Recorrente: t.recurring_key ? 'Sim' : 'Não',
+      })),
+      'Financeiro',
+    )
   }
 
   function getMonthOptions(): { value: string; label: string }[] {
@@ -481,13 +498,23 @@ export default function TransactionManager({
             <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
               Transações ({filteredTransactions.length})
             </h2>
-            <button
-              onClick={() => setShowAddForm((v) => !v)}
-              className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 text-sm transition-colors"
-            >
-              <Plus size={14} />
-              Registrar transação
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExport}
+                disabled={filteredTransactions.length === 0}
+                className="flex items-center gap-1.5 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-3 py-1.5 text-xs transition-colors"
+              >
+                <Download size={13} />
+                Exportar Excel
+              </button>
+              <button
+                onClick={() => setShowAddForm((v) => !v)}
+                className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 text-sm transition-colors"
+              >
+                <Plus size={14} />
+                Registrar transação
+              </button>
+            </div>
           </div>
 
           {showAddForm && (

@@ -9,9 +9,11 @@ import TaskKanban from './TaskKanban'
 import TaskDrawer from './TaskDrawer'
 import EmptyState from '@/components/ui/EmptyState'
 import ProfileAvatar from '@/components/team/ProfileAvatar'
-import { Plus, LayoutGrid, List, Search, X, SlidersHorizontal } from 'lucide-react'
+import { Download, Plus, LayoutGrid, List, Search, X, SlidersHorizontal } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
+import { createClient } from '@/lib/supabase/client'
+import { exportToExcel } from '@/lib/export-excel'
 
 const PRIORITY_BADGE: Record<TaskPriority, { label: string; variant: 'red' | 'yellow' | 'gray' }> = {
   high: { label: 'Alta', variant: 'red' },
@@ -72,6 +74,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
   const searchParams = useSearchParams()
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [profiles, setProfiles] = useState<Profile[]>([])
+  const [userId, setUserId] = useState<string | null>(null)
   // Auto-abre o modal de nova tarefa quando a URL tem ?new=1 (ex.: launcher de comandos)
   const [isModalOpen, setIsModalOpen] = useState(() => searchParams.get('new') === '1')
   const [modalDefaultStatus, setModalDefaultStatus] = useState<TaskStatus>('pending')
@@ -94,6 +97,34 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
   useEffect(() => {
     fetch('/api/profiles').then((r) => r.json()).then((d) => setProfiles(Array.isArray(d) ? d : []))
   }, [])
+
+  // Carrega o estilo de visualização salvo individualmente por perfil
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      setUserId(user.id)
+      try {
+        const raw = localStorage.getItem(`tasks-view-pref:${user.id}`)
+        if (!raw) return
+        const pref = JSON.parse(raw)
+        if (pref.viewMode === 'list' || pref.viewMode === 'kanban') setViewMode(pref.viewMode)
+        if (['none', 'status', 'priority', 'client'].includes(pref.groupBy)) setGroupBy(pref.groupBy)
+      } catch {
+        // ignora pref corrompida
+      }
+    })
+  }, [])
+
+  // Salva automaticamente o estilo de visualização sempre que mudar
+  useEffect(() => {
+    if (!userId) return
+    try {
+      localStorage.setItem(`tasks-view-pref:${userId}`, JSON.stringify({ viewMode, groupBy }))
+    } catch {
+      // localStorage indisponível
+    }
+  }, [userId, viewMode, groupBy])
 
   // Limpa o ?new=1 da URL para não reabrir o modal em navegações futuras
   useEffect(() => {
@@ -191,6 +222,31 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
   }
 
   const groups = computeGroups(filtered)
+
+  function handleExport() {
+    exportToExcel(
+      'tarefas',
+      filtered.map((t) => {
+        const ids = t.assigned_to_ids?.length
+          ? t.assigned_to_ids
+          : t.assigned_to_id ? [t.assigned_to_id] : []
+        const assigneeNames = ids
+          .map((id) => profiles.find((p) => p.id === id)?.name)
+          .filter(Boolean)
+          .join(', ')
+        return {
+          Título: t.title,
+          Status: STATUS_LABEL[t.status],
+          Prioridade: PRIORITY_BADGE[t.priority].label,
+          Vencimento: formatDate(t.due_date),
+          Cliente: t.client_id ? (clientMap[t.client_id] ?? '') : '',
+          Responsáveis: assigneeNames,
+          Tags: (t.tags ?? []).join(', '),
+        }
+      }),
+      'Tarefas',
+    )
+  }
 
   async function advanceStatus(task: Task) {
     const next = STATUS_NEXT[task.status]
@@ -388,6 +444,15 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
               <option value="client">Por cliente</option>
             </select>
           )}
+
+          <button
+            onClick={handleExport}
+            disabled={filtered.length === 0}
+            className="flex items-center gap-1.5 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-3 py-1.5 text-xs transition-colors"
+          >
+            <Download size={13} />
+            Exportar Excel
+          </button>
 
           <button
             onClick={() => openNewTaskModal()}

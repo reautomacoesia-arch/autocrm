@@ -5,9 +5,10 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, PieChart, Pie, Cell, Legend,
 } from 'recharts'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Download, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { SOURCE_LABELS } from '@/lib/types'
 import PageHeader from '@/components/ui/PageHeader'
+import * as XLSX from 'xlsx'
 
 // ── types ──────────────────────────────────────────────────────────────────────
 interface Transaction { amount: number; type: 'received' | 'pending'; date: string }
@@ -271,6 +272,59 @@ export default function ReportsClient({
 
   const rangeLabel = range === 'all' ? 'todo o período' : `últimos ${range.replace('m', ' meses')}`
 
+  function handleExport() {
+    const kpiRows: Record<string, unknown>[] = [
+      { Indicador: 'MRR atual', Valor: mrr, Detalhe: `${activeClients} cliente(s) ativo(s)` },
+      { Indicador: 'Recebido', Valor: totalReceived, Detalhe: rangeLabel },
+      { Indicador: 'Pendente', Valor: totalPending, Detalhe: rangeLabel },
+      { Indicador: 'Taxa de ganho (%)', Valor: winRate, Detalhe: `${wonCount} fechados · ${lostCount} perdidos` },
+      { Indicador: 'Propostas aprovadas', Valor: approvedCount, Detalhe: fmtCurrency(approvedValue) },
+      { Indicador: 'Previsão de receita', Valor: forecastValue, Detalhe: `pipeline em aberto: ${fmtCurrency(openPipelineValue)}` },
+      { Indicador: 'Taxa de churn (%)', Valor: churnRate, Detalhe: `${churnedClients} cliente(s) perdido(s)` },
+      { Indicador: 'MRR perdido (churn)', Valor: churnedMrr, Detalhe: '' },
+    ]
+
+    const revenueRows: Record<string, unknown>[] = revenueData.map((d) => ({
+      Mês: d.month,
+      Recebido: d.Recebido,
+      Pendente: d.Pendente,
+    }))
+
+    const funnelRows: Record<string, unknown>[] = funnelData.map((d) => ({
+      Estágio: d.stage,
+      Quantidade: d.count,
+      'Valor total': d.value,
+    }))
+
+    const sourceRows: Record<string, unknown>[] = sourceData.map((d) => ({
+      Origem: d.source,
+      Quantidade: d.count,
+    }))
+
+    const stageTimeRows: Record<string, unknown>[] = stageTimeData.map((d) => ({
+      Estágio: d.stage,
+      'Tempo médio (dias)': Number(d.avgDays.toFixed(1)),
+      Amostras: d.count,
+    }))
+
+    const proposalRows: Record<string, unknown>[] = proposalData.map((d) => ({
+      Status: d.name,
+      Quantidade: d.value,
+      'Valor total': d.totalValue,
+    }))
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(kpiRows), 'KPIs')
+    if (revenueRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(revenueRows), 'Receita mensal')
+    if (funnelRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(funnelRows), 'Funil pipeline')
+    if (sourceRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sourceRows), 'Origem dos leads')
+    if (stageTimeRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(stageTimeRows), 'Tempo por etapa')
+    if (proposalRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(proposalRows), 'Propostas')
+
+    const stamp = new Date().toISOString().slice(0, 10)
+    XLSX.writeFile(wb, `relatorios-${stamp}.xlsx`)
+  }
+
   return (
     <div>
       {/* ── Header ── */}
@@ -278,20 +332,29 @@ export default function ReportsClient({
         title="Relatórios"
         subtitle="Evolução e tendências do negócio"
         action={
-          <div className="flex gap-1 bg-[#1a1a1d] border border-slate-700 rounded-lg p-1">
-            {(['3m', '6m', '12m', 'all'] as Range[]).map((r) => (
-              <button
-                key={r}
-                onClick={() => setRange(r)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  range === r
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                {r === 'all' ? 'Tudo' : r.toUpperCase()}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1.5 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 rounded-lg px-3 py-1.5 text-xs transition-colors"
+            >
+              <Download size={13} />
+              Exportar Excel
+            </button>
+            <div className="flex gap-1 bg-[#1a1a1d] border border-slate-700 rounded-lg p-1">
+              {(['3m', '6m', '12m', 'all'] as Range[]).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRange(r)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    range === r
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {r === 'all' ? 'Tudo' : r.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
         }
       />
