@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server'
 import { openConversationForEntity } from '@/lib/inbox/open-conversation'
 
 /**
- * Abre (ou cria) a conversa de WhatsApp do inbox para um lead.
- * Usado pelo botão "WhatsApp" no card do lead, que direciona para o inbox
+ * Abre (ou cria) a conversa de WhatsApp do inbox para um cliente.
+ * Usado pelo botão "WhatsApp" na pasta do cliente, que direciona para o inbox
  * interno em vez de abrir o wa.me externo.
  */
 export async function POST(request: Request) {
@@ -12,17 +12,17 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
 
-  let leadId: string | null = null
+  let clientId: string | null = null
   try {
     const body = await request.json()
-    leadId = typeof body?.leadId === 'string' ? body.leadId : null
+    clientId = typeof body?.clientId === 'string' ? body.clientId : null
   } catch {
-    leadId = null
+    clientId = null
   }
-  if (!leadId) return NextResponse.json({ error: 'leadId obrigatório' }, { status: 400 })
+  if (!clientId) return NextResponse.json({ error: 'clientId obrigatório' }, { status: 400 })
 
-  const result = await openConversationForEntity(supabase, { type: 'lead', id: leadId })
-  if (result.error === 'not_found') return NextResponse.json({ error: 'Lead não encontrado' }, { status: 404 })
+  const result = await openConversationForEntity(supabase, { type: 'client', id: clientId })
+  if (result.error === 'not_found') return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 })
   if (result.error || !result.conversation) {
     return NextResponse.json({ error: result.error ?? 'Erro ao abrir conversa' }, { status: 500 })
   }

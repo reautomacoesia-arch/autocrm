@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Client } from '@/lib/types'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, MessageCircle } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 
 interface DataTabProps {
@@ -24,6 +25,26 @@ export default function DataTab({ client, onClientUpdated }: DataTabProps) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const { toast } = useToast()
+  const router = useRouter()
+
+  async function handleOpenWhatsApp() {
+    // Abre (ou cria) a conversa do cliente no inbox interno de WhatsApp
+    try {
+      const res = await fetch('/api/inbox/conversations/from-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id }),
+      })
+      if (res.ok) {
+        const conv = await res.json()
+        router.push(`/inbox?conversation=${conv.id}`)
+      } else if (form.phone) {
+        window.open(`https://wa.me/55${cleanPhone(form.phone)}`, '_blank')
+      }
+    } catch {
+      if (form.phone) window.open(`https://wa.me/55${cleanPhone(form.phone)}`, '_blank')
+    }
+  }
 
   useEffect(() => {
     setForm({
@@ -84,15 +105,15 @@ export default function DataTab({ client, onClientUpdated }: DataTabProps) {
               placeholder="Ex: (11) 99999-9999"
             />
             {form.phone && (
-              <a
-                href={`https://wa.me/55${cleanPhone(form.phone)}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={handleOpenWhatsApp}
+                title="Abrir conversa no inbox"
                 className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 border border-slate-700 rounded-lg px-3 py-2 text-sm transition-colors"
               >
-                <ExternalLink size={13} />
+                <MessageCircle size={13} />
                 Abrir
-              </a>
+              </button>
             )}
           </div>
         </div>
