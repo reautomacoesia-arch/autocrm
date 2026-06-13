@@ -31,14 +31,27 @@ export async function POST(
   if (!parsed.ok) return parsed.response
   const body = parsed.data
 
+  // Garante que a checklist informada pertence à tarefa.
+  const { data: parentChecklist, error: checklistError } = await supabase
+    .from('task_checklists')
+    .select('id')
+    .eq('id', body.checklist_id)
+    .eq('task_id', id)
+    .maybeSingle()
+
+  if (checklistError) return NextResponse.json({ error: checklistError.message }, { status: 500 })
+  if (!parentChecklist) {
+    return NextResponse.json({ error: 'Checklist não encontrada para esta tarefa.' }, { status: 404 })
+  }
+
   const { count } = await supabase
     .from('task_checklist_items')
     .select('*', { count: 'exact', head: true })
-    .eq('task_id', id)
+    .eq('checklist_id', body.checklist_id)
 
   const { data, error } = await supabase
     .from('task_checklist_items')
-    .insert({ task_id: id, text: body.text, position: count ?? 0 })
+    .insert({ task_id: id, checklist_id: body.checklist_id, text: body.text, position: count ?? 0 })
     .select()
     .single()
 

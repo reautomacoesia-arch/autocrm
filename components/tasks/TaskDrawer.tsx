@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import type { Profile, Task, TaskChecklistItem, TaskComment, TaskPriority, TaskStatus } from '@/lib/types'
+import { useEffect, useState } from 'react'
+import type { Profile, Task, TaskChecklistWithItems, TaskComment, TaskPriority, TaskStatus } from '@/lib/types'
 import { X, Plus, Trash2, Check, Tag } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 import MultiAssigneeSelector from '@/components/team/MultiAssigneeSelector'
 
 const STATUS_LABEL: Record<TaskStatus, string> = {
@@ -45,22 +46,23 @@ export default function TaskDrawer({
   onTaskDeleted,
 }: TaskDrawerProps) {
   const { toast } = useToast()
-  const [checklist, setChecklist] = useState<TaskChecklistItem[]>([])
+  const confirm = useConfirm()
+  const [checklists, setChecklists] = useState<TaskChecklistWithItems[]>([])
+  const [newCheckItem, setNewCheckItem] = useState<Record<string, string>>({})
   const [comments, setComments] = useState<TaskComment[]>([])
-  const [newCheckItem, setNewCheckItem] = useState('')
   const [newComment, setNewComment] = useState('')
   const [editingField, setEditingField] = useState<string | null>(null)
+  const [editingChecklistId, setEditingChecklistId] = useState<string | null>(null)
   const [localTask, setLocalTask] = useState<Task | null>(
     task ? { ...task, tags: task.tags ?? [] } : null
   )
   const [tagInput, setTagInput] = useState('')
-  const checkInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!task) return
     // Normalize tags to [] for rows created before the migration
     setLocalTask({ ...task, tags: task.tags ?? [] })
-    fetch(`/api/tasks/${task.id}/checklist`).then((r) => r.json()).then((d) => setChecklist(Array.isArray(d) ? d : []))
+    fetch(`/api/tasks/${task.id}/checklists`).then((r) => r.json()).then((d) => setChecklists(Array.isArray(d) ? d : []))
     fetch(`/api/tasks/${task.id}/comments`).then((r) => r.json()).then((d) => setComments(Array.isArray(d) ? d : []))
   }, [task?.id])
 
@@ -83,34 +85,98 @@ export default function TaskDrawer({
     }
   }
 
-  async function addChecklistItem() {
-    if (!newCheckItem.trim() || !localTask) return
-    const text = newCheckItem.trim()
-    setNewCheckItem('')
-    const res = await fetch(`/api/tasks/${localTask.id}/checklist`, {
+  async function addChecklist() {
+    if (!localTask) return
+    const res = await fetch(`/api/tasks/${localTask.id}/checklists`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ title: 'Checklist' }),
     })
     if (res.ok) {
-      const item = await res.json()
-      setChecklist((prev) => [...prev, item])
+      const created = await res.json()
+      setChecklists((prev) => [...prev, created])
+      setEditingChecklistId(created.id)
+    } else {
+      toast('Erro ao criar checklist', 'error')
     }
   }
 
-  async function toggleChecklistItem(item: TaskChecklistItem) {
-    const updated = { ...item, done: !item.done }
-    setChecklist((prev) => prev.map((i) => (i.id === item.id ? updated : i)))
-    await fetch(`/api/tasks/${localTask!.id}/checklist/${item.id}`, {
+  async function renameChecklist(checklistId: string, title: string) {
+    const trimmed = title.trim()
+    if (!trimmed || !localTask) return
+    const previous = checklists
+    setChecklists((prev) => prev.map((c) => (c.id === checklistId ? { ...c, title: trimmed } : c)))
+    const res = await fetch(`/api/tasks/${localTask.id}/checklists/${checklistId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ done: !item.done }),
+      body: JSON.stringify({ title: trimmed }),
+    })
+    if (!res.ok) {
+      setChecklists(previous)
+      toast('Erro ao renomear checklist', 'error')
+    }
+  }
+
+  async function deleteChecklist(checklistId: string) {
+    if (!localTask) return
+    const ok = await confirm({
+      title: 'Excluir checklist?',
+      description: 'Todos os itens dessa checklist serão removidos.',
+      confirmLabel: 'Excluir',
+      destructive: true,
+    })
+    if (!ok) return
+    const previous = checklists
+    setChecklists((prev) => prev.filter((c) => c.id !== checklistId))
+    const res = await fetch(`/api/tasks/${localTask.id}/checklists/${checklistId}`, { method: 'DELETE' })
+    if (!res.ok) {
+      setChecklists(previous)
+      toast('Erro ao remover checklist', 'error')
+    }
+  }
+
+  async function addChecklistItem(checklistId: string) {
+    if (!localTask) return
+    const text = (newCheckItem[checklistId] ?? '').trim()
+    if (!text) return
+    setNewCheckItem((prev) => ({ ...prev, [checklistId]: '' }))
+    const res = await fetch(`/api/tasks/${localTask.id}/checklist`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, checklist_id: checklistId }),
+    })
+    if (res.ok) {
+      const item = await res.json()
+      setChecklists((prev) =>
+        prev.map((c) => (c.id === checklistId ? { ...c, items: [...c.items, item] } : c))
+      )
+    } else {
+      toast('Erro ao adicionar item', 'error')
+    }
+  }
+
+  async function toggleChecklistItem(checklistId: string, itemId: string, done: boolean) {
+    setChecklists((prev) =>
+      prev.map((c) =>
+        c.id === checklistId
+          ? { ...c, items: c.items.map((i) => (i.id === itemId ? { ...i, done: !done } : i)) }
+          : c
+      )
+    )
+    await fetch(`/api/tasks/${localTask!.id}/checklist/${itemId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ done: !done }),
     })
   }
 
-  async function deleteChecklistItem(id: string) {
-    setChecklist((prev) => prev.filter((i) => i.id !== id))
-    await fetch(`/api/tasks/${localTask!.id}/checklist/${id}`, { method: 'DELETE' })
+  async function deleteChecklistItem(checklistId: string, itemId: string) {
+    setChecklists((prev) =>
+      prev.map((c) =>
+        c.id === checklistId ? { ...c, items: c.items.filter((i) => i.id !== itemId) } : c
+      )
+    )
+    await fetch(`/api/tasks/${localTask!.id}/checklist/${itemId}`, { method: 'DELETE' })
   }
 
   async function addComment() {
@@ -145,8 +211,6 @@ export default function TaskDrawer({
     const tags = localTask.tags.filter((t) => t !== tag)
     patchTask({ tags })
   }
-
-  const doneCount = checklist.filter((i) => i.done).length
 
   return (
     <>
@@ -292,66 +356,110 @@ export default function TaskDrawer({
             </div>
           </div>
 
-          {/* Checklist */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-slate-500 text-xs flex items-center gap-1">
-                <Check size={10} /> Checklist
-                {checklist.length > 0 && (
-                  <span className="text-slate-600 ml-1">{doneCount}/{checklist.length}</span>
-                )}
-              </p>
-            </div>
-            {checklist.length > 0 && (
-              <div className="w-full bg-slate-800 rounded-full h-1 mb-3">
-                <div
-                  className="bg-emerald-500 h-1 rounded-full transition-all"
-                  style={{ width: `${checklist.length > 0 ? (doneCount / checklist.length) * 100 : 0}%` }}
-                />
-              </div>
-            )}
-            <div className="space-y-1.5 mb-2">
-              {checklist.map((item) => (
-                <div key={item.id} className="flex items-center gap-2 group">
-                  <button
-                    onClick={() => toggleChecklistItem(item)}
-                    className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
-                      item.done
-                        ? 'bg-emerald-600 border-emerald-600'
-                        : 'border-slate-600 hover:border-indigo-500'
-                    }`}
-                  >
-                    {item.done && <Check size={9} className="text-white" />}
-                  </button>
-                  <span className={`flex-1 text-xs ${item.done ? 'line-through text-slate-500' : 'text-slate-300'}`}>
-                    {item.text}
-                  </span>
-                  <button
-                    onClick={() => deleteChecklistItem(item.id)}
-                    className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all"
-                  >
-                    <Trash2 size={11} />
-                  </button>
+          {/* Checklists */}
+          <div className="space-y-4">
+            {checklists.map((cl) => {
+              const doneCount = cl.items.filter((i) => i.done).length
+              const total = cl.items.length
+              return (
+                <div key={cl.id} className="bg-[#050505] border border-slate-800 rounded-lg p-3">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    {editingChecklistId === cl.id ? (
+                      <input
+                        autoFocus
+                        defaultValue={cl.title}
+                        onFocus={(e) => e.target.select()}
+                        onBlur={(e) => {
+                          setEditingChecklistId(null)
+                          if (e.target.value.trim() && e.target.value.trim() !== cl.title) {
+                            renameChecklist(cl.id, e.target.value)
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() }
+                          if (e.key === 'Escape') { e.preventDefault(); setEditingChecklistId(null) }
+                        }}
+                        className="flex-1 bg-[#0a0a0c] border border-indigo-500 text-white rounded px-2 py-0.5 text-xs font-medium focus:outline-none"
+                      />
+                    ) : (
+                      <p
+                        onClick={() => setEditingChecklistId(cl.id)}
+                        className="flex-1 text-slate-300 text-xs font-medium flex items-center gap-1 cursor-pointer hover:text-indigo-300 transition-colors"
+                        title="Clique para renomear"
+                      >
+                        <Check size={10} className="text-slate-500" />
+                        {cl.title}
+                        {total > 0 && (
+                          <span className="text-slate-600 ml-1">{doneCount}/{total}</span>
+                        )}
+                      </p>
+                    )}
+                    <button
+                      onClick={() => deleteChecklist(cl.id)}
+                      className="text-slate-600 hover:text-red-400 transition-colors flex-shrink-0"
+                      title="Remover checklist"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                  {total > 0 && (
+                    <div className="w-full bg-slate-800 rounded-full h-1 mb-3">
+                      <div
+                        className="bg-emerald-500 h-1 rounded-full transition-all"
+                        style={{ width: `${(doneCount / total) * 100}%` }}
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-1.5 mb-2">
+                    {cl.items.map((item) => (
+                      <div key={item.id} className="flex items-center gap-2 group">
+                        <button
+                          onClick={() => toggleChecklistItem(cl.id, item.id, item.done)}
+                          className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
+                            item.done
+                              ? 'bg-emerald-600 border-emerald-600'
+                              : 'border-slate-600 hover:border-indigo-500'
+                          }`}
+                        >
+                          {item.done && <Check size={9} className="text-white" />}
+                        </button>
+                        <span className={`flex-1 text-xs ${item.done ? 'line-through text-slate-500' : 'text-slate-300'}`}>
+                          {item.text}
+                        </span>
+                        <button
+                          onClick={() => deleteChecklistItem(cl.id, item.id)}
+                          className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newCheckItem[cl.id] ?? ''}
+                      onChange={(e) => setNewCheckItem((prev) => ({ ...prev, [cl.id]: e.target.value }))}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addChecklistItem(cl.id) } }}
+                      placeholder="Novo item (Enter)"
+                      className="flex-1 bg-[#0a0a0c] border border-slate-700 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500 placeholder:text-slate-600"
+                    />
+                    <button
+                      onClick={() => addChecklistItem(cl.id)}
+                      className="bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg px-2.5 py-1.5 text-xs transition-colors"
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
                 </div>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                ref={checkInputRef}
-                type="text"
-                value={newCheckItem}
-                onChange={(e) => setNewCheckItem(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addChecklistItem() } }}
-                placeholder="Novo item (Enter)"
-                className="flex-1 bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500 placeholder:text-slate-600"
-              />
-              <button
-                onClick={addChecklistItem}
-                className="bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg px-2.5 py-1.5 text-xs transition-colors"
-              >
-                <Plus size={12} />
-              </button>
-            </div>
+              )
+            })}
+            <button
+              onClick={addChecklist}
+              className="flex items-center gap-1.5 text-slate-400 hover:text-indigo-300 text-xs transition-colors"
+            >
+              <Plus size={12} /> Adicionar checklist
+            </button>
           </div>
 
           {/* Comments */}

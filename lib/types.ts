@@ -163,10 +163,23 @@ export interface Task {
 export interface TaskChecklistItem {
   id: string
   task_id: string
+  checklist_id: string | null
   text: string
   done: boolean
   position: number
   created_at: string
+}
+
+export interface TaskChecklist {
+  id: string
+  task_id: string
+  title: string
+  position: number
+  created_at: string
+}
+
+export interface TaskChecklistWithItems extends TaskChecklist {
+  items: TaskChecklistItem[]
 }
 
 export interface TaskComment {

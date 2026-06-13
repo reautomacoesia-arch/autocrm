@@ -163,11 +163,21 @@ export const taskUpdateSchema = taskCreateSchema.partial()
 
 export const checklistCreateSchema = z.object({
   text: text(500).min(1),
+  checklist_id: uuid,
 })
 
 export const checklistUpdateSchema = z.object({
   done: z.boolean().optional(),
   text: text(500).min(1).optional(),
+})
+
+export const taskChecklistCreateSchema = z.object({
+  title: text(200).min(1).optional(),
+})
+
+export const taskChecklistUpdateSchema = z.object({
+  title: text(200).min(1).optional(),
+  position: z.number().int().min(0).max(10000).optional(),
 })
 
 export const commentCreateSchema = z.object({
