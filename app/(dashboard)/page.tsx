@@ -8,6 +8,7 @@ import FocusToday from '@/components/dashboard/FocusToday'
 import PipelineFunnel from '@/components/dashboard/PipelineFunnel'
 import QuickActions from '@/components/dashboard/QuickActions'
 import type { LeadStage } from '@/lib/types'
+import { formatDate } from '@/lib/format-date'
 
 const OPEN_STAGES: LeadStage[] = ['lead', 'contacted', 'proposal_sent', 'negotiating']
 
@@ -33,15 +34,6 @@ const TYPE_ICON: Record<string, string> = {
   note: '📝',
   meeting: '📞',
   email: '✉️',
-}
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return ''
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    const [year, month, day] = dateStr.split('-').map(Number)
-    return new Date(year, month - 1, day).toLocaleDateString('pt-BR')
-  }
-  return new Date(dateStr).toLocaleDateString('pt-BR')
 }
 
 function formatDatetime(dateStr: string): string {
@@ -100,6 +92,15 @@ function bucketByWeek<T extends Record<string, unknown>>(
   }
 
   return buckets
+}
+
+/**
+ * Delta percentual semana atual vs. semana anterior: se `lastWeek > 0`,
+ * retorna a variação percentual; senão, 100 se `thisWeek > 0`, ou 0.
+ */
+function weekOverWeekDelta(thisWeek: number, lastWeek: number): number {
+  if (lastWeek > 0) return ((thisWeek - lastWeek) / lastWeek) * 100
+  return thisWeek > 0 ? 100 : 0
 }
 
 export default async function DashboardPage() {
@@ -189,23 +190,13 @@ export default async function DashboardPage() {
   const leadsByWeek = bucketByWeek(leadsRes.data ?? [], 'created_at', WEEKS)
   const leadsThisWeek = leadsByWeek[WEEKS - 1] ?? 0
   const leadsLastWeek = leadsByWeek[WEEKS - 2] ?? 0
-  const leadsTrendDelta =
-    leadsLastWeek > 0
-      ? ((leadsThisWeek - leadsLastWeek) / leadsLastWeek) * 100
-      : leadsThisWeek > 0
-      ? 100
-      : 0
+  const leadsTrendDelta = weekOverWeekDelta(leadsThisWeek, leadsLastWeek)
 
   // Propostas abertas: sparkline = valor por semana, delta semana atual vs anterior
   const proposalsByWeek = bucketByWeek(openProposals, 'created_at', WEEKS, (p) => p.value ?? 0)
   const proposalsThisWeek = proposalsByWeek[WEEKS - 1] ?? 0
   const proposalsLastWeek = proposalsByWeek[WEEKS - 2] ?? 0
-  const proposalsTrendDelta =
-    proposalsLastWeek > 0
-      ? ((proposalsThisWeek - proposalsLastWeek) / proposalsLastWeek) * 100
-      : proposalsThisWeek > 0
-      ? 100
-      : 0
+  const proposalsTrendDelta = weekOverWeekDelta(proposalsThisWeek, proposalsLastWeek)
   const allPendingCount = allPendingTasksRes.data?.length ?? 0
   const myTasks = (myTasksRes as any).data ?? []
   const overdueTasks = myTasks.filter((t: any) => isOverdue(t.due_date))

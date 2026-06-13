@@ -9,7 +9,7 @@ import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 import EmptyState from '@/components/ui/EmptyState'
 import { exportToExcel } from '@/lib/export-excel'
-import { useBulkSelection } from '@/lib/hooks/useBulkSelection'
+import { useBulkSelection, bulkRun } from '@/lib/hooks/useBulkSelection'
 import BulkActionBar from '@/components/ui/BulkActionBar'
 
 interface TransactionWithClient {
@@ -197,9 +197,8 @@ export default function TransactionManager({
     })
     if (!ok) return
     setTransactions((prev) => prev.filter((t) => !ids.includes(t.id)))
-    const results = await Promise.all(ids.map((id) => fetch(`/api/transactions/${id}`, { method: 'DELETE' })))
-    const failed = results.filter((r) => !r.ok).length
-    if (failed > 0) toast(`${failed} transação(ões) não puderam ser removidas`, 'error')
+    const { fail } = await bulkRun(ids, (id) => fetch(`/api/transactions/${id}`, { method: 'DELETE' }))
+    if (fail > 0) toast(`${fail} transação(ões) não puderam ser removidas`, 'error')
     else toast(`${ids.length} transação(ões) removida(s)`)
     bulk.clear()
   }

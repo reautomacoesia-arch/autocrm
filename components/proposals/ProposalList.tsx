@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState } from 'react'
 import Link from 'next/link'
 import type { Client, Lead, Proposal, ProposalStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
@@ -10,7 +9,8 @@ import EmptyState from '@/components/ui/EmptyState'
 import { formatCurrency } from '@/lib/pipeline'
 import { Plus, ChevronRight, Download, ChevronDown, Trash2, Flag } from 'lucide-react'
 import { exportToExcel } from '@/lib/export-excel'
-import { useBulkSelection } from '@/lib/hooks/useBulkSelection'
+import { useBulkSelection, bulkRun } from '@/lib/hooks/useBulkSelection'
+import { useNewParamModal } from '@/lib/hooks/useNewParamModal'
 import BulkActionBar from '@/components/ui/BulkActionBar'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
@@ -37,23 +37,14 @@ interface ProposalListProps {
 }
 
 export default function ProposalList({ proposals: initial, clients, leads }: ProposalListProps) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const [proposals, setProposals] = useState<ProposalWithRelations[]>(initial)
   // Auto-abre o modal de nova proposta quando a URL tem ?new=1 (ex.: launcher de comandos)
-  const [isModalOpen, setIsModalOpen] = useState(() => searchParams.get('new') === '1')
+  const [isModalOpen, setIsModalOpen] = useNewParamModal('/proposals')
   const [filter, setFilter] = useState<ProposalStatus | 'all'>('all')
   const { toast } = useToast()
   const confirm = useConfirm()
   const bulk = useBulkSelection()
   const [showBulkStatusMenu, setShowBulkStatusMenu] = useState(false)
-
-  // Limpa o ?new=1 da URL para não reabrir o modal em navegações futuras
-  useEffect(() => {
-    if (searchParams.get('new') === '1') {
-      router.replace('/proposals')
-    }
-  }, [searchParams, router])
 
   // PR1 — totais calculados sobre TODAS as propostas
   const totalApproved = proposals
@@ -103,17 +94,14 @@ export default function ProposalList({ proposals: initial, clients, leads }: Pro
     if (ids.length === 0) return
     setShowBulkStatusMenu(false)
     setProposals((prev) => prev.map((p) => (ids.includes(p.id) ? { ...p, status } : p)))
-    const results = await Promise.all(
-      ids.map((id) =>
-        fetch(`/api/proposals/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status }),
-        }),
-      ),
+    const { fail } = await bulkRun(ids, (id) =>
+      fetch(`/api/proposals/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      }),
     )
-    const failed = results.filter((r) => !r.ok).length
-    if (failed > 0) toast(`${failed} proposta(s) não puderam ser atualizadas`, 'error')
+    if (fail > 0) toast(`${fail} proposta(s) não puderam ser atualizadas`, 'error')
     else toast(`Status de ${ids.length} proposta(s) atualizado para ${STATUS_BADGE[status].label}`)
     bulk.clear()
   }
@@ -129,9 +117,8 @@ export default function ProposalList({ proposals: initial, clients, leads }: Pro
     })
     if (!ok) return
     setProposals((prev) => prev.filter((p) => !ids.includes(p.id)))
-    const results = await Promise.all(ids.map((id) => fetch(`/api/proposals/${id}`, { method: 'DELETE' })))
-    const failed = results.filter((r) => !r.ok).length
-    if (failed > 0) toast(`${failed} proposta(s) não puderam ser removidas`, 'error')
+    const { fail } = await bulkRun(ids, (id) => fetch(`/api/proposals/${id}`, { method: 'DELETE' }))
+    if (fail > 0) toast(`${fail} proposta(s) não puderam ser removidas`, 'error')
     else toast(`${ids.length} proposta(s) removida(s)`)
     bulk.clear()
   }

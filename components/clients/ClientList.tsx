@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
 import type { Client, ClientStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
@@ -10,7 +9,8 @@ import { Building2, ChevronRight, Download, Plus, Search, ChevronDown, Trash2, F
 import AddClientModal from './AddClientModal'
 import EmptyState from '@/components/ui/EmptyState'
 import { exportToExcel } from '@/lib/export-excel'
-import { useBulkSelection } from '@/lib/hooks/useBulkSelection'
+import { useBulkSelection, bulkRun } from '@/lib/hooks/useBulkSelection'
+import { useNewParamModal } from '@/lib/hooks/useNewParamModal'
 import BulkActionBar from '@/components/ui/BulkActionBar'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
@@ -45,25 +45,16 @@ interface ClientListProps {
 }
 
 export default function ClientList({ clients: initialClients, lastInteractions = {} }: ClientListProps) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const [clients, setClients] = useState<Client[]>(initialClients)
   const [search, setSearch] = useState('')
   // Auto-abre o modal de criação quando a URL tem ?new=1 (ex.: launcher de comandos)
-  const [isAddModalOpen, setIsAddModalOpen] = useState(() => searchParams.get('new') === '1')
+  const [isAddModalOpen, setIsAddModalOpen] = useNewParamModal('/clients')
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'churned'>('all')
   const [sortBy, setSortBy] = useState<'default' | 'name' | 'mrr' | 'lastContact'>('default')
   const { toast } = useToast()
   const confirm = useConfirm()
   const bulk = useBulkSelection()
   const [showBulkStatusMenu, setShowBulkStatusMenu] = useState(false)
-
-  // Limpa o ?new=1 da URL para não reabrir o modal em navegações futuras
-  useEffect(() => {
-    if (searchParams.get('new') === '1') {
-      router.replace('/clients')
-    }
-  }, [searchParams, router])
 
   // Separa empresa interna dos clientes reais
   const internalClients = clients.filter((c) => c.is_internal)
@@ -114,17 +105,14 @@ export default function ClientList({ clients: initialClients, lastInteractions =
     if (ids.length === 0) return
     setShowBulkStatusMenu(false)
     setClients((prev) => prev.map((c) => (ids.includes(c.id) ? { ...c, status } : c)))
-    const results = await Promise.all(
-      ids.map((id) =>
-        fetch(`/api/clients/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status }),
-        }),
-      ),
+    const { fail } = await bulkRun(ids, (id) =>
+      fetch(`/api/clients/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      }),
     )
-    const failed = results.filter((r) => !r.ok).length
-    if (failed > 0) toast(`${failed} cliente(s) não puderam ser atualizados`, 'error')
+    if (fail > 0) toast(`${fail} cliente(s) não puderam ser atualizados`, 'error')
     else toast(`Status de ${ids.length} cliente(s) atualizado para ${STATUS_BADGE[status].label}`)
     bulk.clear()
   }
@@ -140,9 +128,8 @@ export default function ClientList({ clients: initialClients, lastInteractions =
     })
     if (!ok) return
     setClients((prev) => prev.filter((c) => !ids.includes(c.id)))
-    const results = await Promise.all(ids.map((id) => fetch(`/api/clients/${id}`, { method: 'DELETE' })))
-    const failed = results.filter((r) => !r.ok).length
-    if (failed > 0) toast(`${failed} cliente(s) não puderam ser removidos`, 'error')
+    const { fail } = await bulkRun(ids, (id) => fetch(`/api/clients/${id}`, { method: 'DELETE' }))
+    if (fail > 0) toast(`${fail} cliente(s) não puderam ser removidos`, 'error')
     else toast(`${ids.length} cliente(s) removido(s)`)
     bulk.clear()
   }

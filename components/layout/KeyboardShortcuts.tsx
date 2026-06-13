@@ -3,22 +3,12 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { X } from 'lucide-react'
+import { NAV_ITEMS } from '@/lib/navigation'
 
-// Mapa de navegação rápida "g" + tecla
-const GO_MAP: Record<string, { href: string; label: string }> = {
-  d: { href: '/', label: 'Dashboard' },
-  i: { href: '/inbox', label: 'Inbox' },
-  p: { href: '/pipeline', label: 'Pipeline' },
-  c: { href: '/clients', label: 'Clientes' },
-  r: { href: '/reports', label: 'Relatórios' },
-  t: { href: '/tasks', label: 'Tarefas' },
-  f: { href: '/financial', label: 'Financeiro' },
-  o: { href: '/docs', label: 'Documentos' },
-  e: { href: '/team', label: 'Equipe' },
-  a: { href: '/automations', label: 'Automações' },
-  s: { href: '/services', label: 'Serviços' },
-  l: { href: '/proposals', label: 'Propostas (Lista)' },
-}
+// Mapa de navegação rápida "g" + tecla, derivado de lib/navigation.ts
+const GO_MAP: Record<string, { href: string; label: string }> = Object.fromEntries(
+  NAV_ITEMS.map((item) => [item.shortcut, { href: item.href, label: item.label }])
+)
 
 const GO_SEQUENCE_TIMEOUT_MS = 1200
 

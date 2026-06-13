@@ -60,3 +60,14 @@ export function useBulkSelection(): UseBulkSelectionResult {
 
   return { selected, count, isSelected, toggle, toggleAll, allSelected, clear }
 }
+
+/**
+ * Executa `fn` para cada `id` em paralelo (best-effort) e retorna a contagem
+ * de sucessos/falhas. Uma falha é uma rejeição da promise OU uma `Response`
+ * com `ok === false`.
+ */
+export async function bulkRun<T>(ids: T[], fn: (id: T) => Promise<unknown>): Promise<{ ok: number; fail: number }> {
+  const results = await Promise.allSettled(ids.map(fn))
+  const fail = results.filter((r) => r.status === 'rejected' || (r.status === 'fulfilled' && (r.value as Response | undefined)?.ok === false)).length
+  return { ok: ids.length - fail, fail }
+}

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { parseBody } from '@/lib/api/validation'
 import { taskUpdateSchema } from '@/lib/api/schemas'
+import { notifyAssignees } from '@/lib/notify-assignees'
 
 const STATUS_LABELS: Record<string, string> = {
   pending:     'Pendente',
@@ -74,36 +75,11 @@ export async function PATCH(
       ...(body.assigned_to_id ? [body.assigned_to_id] : []),
     ]
     const addedIds = Array.from(new Set(newAssigneeIds.filter((newId) => newId && !previousAssigneeIds.includes(newId))))
-    await notifyAssignees(supabase, data.title, addedIds)
+    const { data: { user } } = await supabase.auth.getUser()
+    await notifyAssignees(supabase, { taskTitle: data.title, assigneeIds: addedIds, currentUserId: user?.id })
   }
 
   return NextResponse.json(data)
-}
-
-/** Notifica os novos responsáveis (deduplicados, exceto o usuário logado) que foram atribuídos a uma tarefa. */
-async function notifyAssignees(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  taskTitle: string,
-  assigneeIds: (string | null | undefined)[]
-): Promise<void> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    const ids = Array.from(new Set(assigneeIds.filter((aid): aid is string => !!aid)))
-      .filter((aid) => aid !== user?.id)
-
-    if (ids.length === 0) return
-
-    await supabase.from('notifications').insert(
-      ids.map((userId) => ({
-        user_id: userId,
-        title: `Você foi atribuído à tarefa: ${taskTitle}`,
-        body: null,
-        link: '/tasks',
-      }))
-    )
-  } catch {
-    // best-effort: não derruba a resposta principal
-  }
 }
 
 export async function DELETE(

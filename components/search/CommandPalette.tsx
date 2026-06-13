@@ -10,16 +10,11 @@ import {
   BookOpen,
   Inbox,
   CheckSquare,
-  LayoutDashboard,
-  DollarSign,
-  BarChart2,
-  Users2,
-  Zap,
-  Settings,
   ArrowRight,
   type LucideIcon,
 } from 'lucide-react'
 import type { SearchResultItem } from '@/app/api/search/route'
+import { NAV_ITEMS } from '@/lib/navigation'
 
 const TYPE_ICONS = {
   lead: Target,
@@ -62,21 +57,14 @@ const QUICK_ACTIONS: StaticEntry[] = [
   { key: 'action-client', label: 'Novo cliente', href: '/clients?new=1', icon: Users, typeLabel: 'Ação' },
 ]
 
-// Navegação ("Ir para…") — os 12 destinos do Sidebar
-const NAV_DESTINATIONS: StaticEntry[] = [
-  { key: 'nav-dashboard', label: 'Ir para Dashboard', href: '/', icon: LayoutDashboard, typeLabel: 'Navegação' },
-  { key: 'nav-inbox', label: 'Ir para Inbox', href: '/inbox', icon: Inbox, typeLabel: 'Navegação' },
-  { key: 'nav-pipeline', label: 'Ir para Pipeline', href: '/pipeline', icon: Target, typeLabel: 'Navegação' },
-  { key: 'nav-clients', label: 'Ir para Clientes', href: '/clients', icon: Users, typeLabel: 'Navegação' },
-  { key: 'nav-proposals', label: 'Ir para Propostas', href: '/proposals', icon: FileText, typeLabel: 'Navegação' },
-  { key: 'nav-financial', label: 'Ir para Financeiro', href: '/financial', icon: DollarSign, typeLabel: 'Navegação' },
-  { key: 'nav-reports', label: 'Ir para Relatórios', href: '/reports', icon: BarChart2, typeLabel: 'Navegação' },
-  { key: 'nav-tasks', label: 'Ir para Tarefas', href: '/tasks', icon: CheckSquare, typeLabel: 'Navegação' },
-  { key: 'nav-docs', label: 'Ir para Documentos', href: '/docs', icon: BookOpen, typeLabel: 'Navegação' },
-  { key: 'nav-team', label: 'Ir para Equipe', href: '/team', icon: Users2, typeLabel: 'Navegação' },
-  { key: 'nav-automations', label: 'Ir para Automações', href: '/automations', icon: Zap, typeLabel: 'Navegação' },
-  { key: 'nav-services', label: 'Ir para Serviços', href: '/services', icon: Settings, typeLabel: 'Navegação' },
-]
+// Navegação ("Ir para…") — derivada de lib/navigation.ts (os mesmos destinos do Sidebar)
+const NAV_DESTINATIONS: StaticEntry[] = NAV_ITEMS.map((item) => ({
+  key: `nav-${item.href === '/' ? 'dashboard' : item.href.slice(1)}`,
+  label: `Ir para ${item.label}`,
+  href: item.href,
+  icon: item.icon,
+  typeLabel: 'Navegação',
+}))
 
 const COMMAND_ENTRIES: StaticEntry[] = [...QUICK_ACTIONS, ...NAV_DESTINATIONS]
 

@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useCallback } from 'react'
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd'
 import type { Lead, LeadStage } from '@/lib/types'
 import { STAGES, STAGE_LABELS } from '@/lib/pipeline'
@@ -14,28 +13,20 @@ import PageHeader from '@/components/ui/PageHeader'
 import { Download, Plus, Thermometer } from 'lucide-react'
 import { exportToExcel } from '@/lib/export-excel'
 import { SOURCE_LABELS } from '@/lib/types'
+import { useNewParamModal } from '@/lib/hooks/useNewParamModal'
 
 interface KanbanBoardProps {
   initialLeads: Lead[]
 }
 
 export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
   // Auto-abre o modal de novo lead quando a URL tem ?new=1 (ex.: launcher de comandos)
-  const [isAddModalOpen, setIsAddModalOpen] = useState(() => searchParams.get('new') === '1')
+  const [isAddModalOpen, setIsAddModalOpen] = useNewParamModal('/pipeline')
   const [isLeadFieldsOpen, setIsLeadFieldsOpen] = useState(false)
   const [editLead, setEditLead] = useState<Lead | null>(null)
   const [convertLead, setConvertLead] = useState<Lead | null>(null)
   const [sortByScore, setSortByScore] = useState(false)
-
-  // Limpa o ?new=1 da URL para não reabrir o modal em navegações futuras
-  useEffect(() => {
-    if (searchParams.get('new') === '1') {
-      router.replace('/pipeline')
-    }
-  }, [searchParams, router])
 
   const leadsByStage = STAGES.reduce<Record<LeadStage, Lead[]>>(
     (acc, stage) => {

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Card from '@/components/ui/Card'
 import type { Task } from '@/lib/types'
+import { formatDate } from '@/lib/format-date'
 
 const PRIORITY_COLOR: Record<string, string> = {
   high: 'text-red-400',
@@ -12,15 +13,6 @@ const PRIORITY_LABEL: Record<string, string> = {
   high: 'Alta',
   medium: 'Média',
   low: 'Baixa',
-}
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return ''
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    const [year, month, day] = dateStr.split('-').map(Number)
-    return new Date(year, month - 1, day).toLocaleDateString('pt-BR')
-  }
-  return new Date(dateStr).toLocaleDateString('pt-BR')
 }
 
 interface TaskWithClient extends Task {

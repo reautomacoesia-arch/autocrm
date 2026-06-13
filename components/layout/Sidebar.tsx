@@ -3,53 +3,15 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import {
-  LayoutDashboard,
-  Inbox,
-  Target,
-  Users,
-  Users2,
-  FileText,
-  DollarSign,
-  CheckSquare,
-  Settings,
-  Zap,
-  BarChart2,
-  BookOpen,
-  Search,
-  type LucideIcon,
-} from 'lucide-react'
+import { Search, type LucideIcon } from 'lucide-react'
+import { NAV_ITEMS, NAV_GROUPS } from '@/lib/navigation'
 
-const topItem = { href: '/', icon: LayoutDashboard, label: 'Dashboard' }
+const topItem = NAV_ITEMS.find((item) => item.group === null)!
 
-const navGroups = [
-  {
-    label: 'Operação',
-    items: [
-      { href: '/inbox', icon: Inbox, label: 'Inbox' },
-      { href: '/pipeline', icon: Target, label: 'Pipeline' },
-      { href: '/clients', icon: Users, label: 'Clientes' },
-      { href: '/proposals', icon: FileText, label: 'Propostas' },
-    ],
-  },
-  {
-    label: 'Gestão',
-    items: [
-      { href: '/financial', icon: DollarSign, label: 'Financeiro' },
-      { href: '/reports', icon: BarChart2, label: 'Relatórios' },
-      { href: '/tasks', icon: CheckSquare, label: 'Tarefas' },
-    ],
-  },
-  {
-    label: 'Workspace',
-    items: [
-      { href: '/docs', icon: BookOpen, label: 'Documentos' },
-      { href: '/team', icon: Users2, label: 'Equipe' },
-      { href: '/automations', icon: Zap, label: 'Automações' },
-      { href: '/services', icon: Settings, label: 'Serviços' },
-    ],
-  },
-]
+const navGroups = NAV_GROUPS.map((label) => ({
+  label,
+  items: NAV_ITEMS.filter((item) => item.group === label),
+}))
 
 interface NavLinkProps {
   href: string

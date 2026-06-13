@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { parseBody } from '@/lib/api/validation'
 import { taskCreateSchema } from '@/lib/api/schemas'
+import { notifyAssignees } from '@/lib/notify-assignees'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -48,36 +49,15 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  await notifyAssignees(supabase, data.title, [
-    ...(body.assigned_to_ids ?? []),
-    ...(body.assigned_to_id ? [body.assigned_to_id] : []),
-  ])
+  const { data: { user } } = await supabase.auth.getUser()
+  await notifyAssignees(supabase, {
+    taskTitle: data.title,
+    assigneeIds: [
+      ...(body.assigned_to_ids ?? []),
+      ...(body.assigned_to_id ? [body.assigned_to_id] : []),
+    ],
+    currentUserId: user?.id,
+  })
 
   return NextResponse.json(data, { status: 201 })
-}
-
-/** Notifica os responsáveis (deduplicados, exceto o usuário logado) que foram atribuídos a uma tarefa. */
-async function notifyAssignees(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  taskTitle: string,
-  assigneeIds: (string | null | undefined)[]
-): Promise<void> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    const ids = Array.from(new Set(assigneeIds.filter((id): id is string => !!id)))
-      .filter((id) => id !== user?.id)
-
-    if (ids.length === 0) return
-
-    await supabase.from('notifications').insert(
-      ids.map((userId) => ({
-        user_id: userId,
-        title: `Você foi atribuído à tarefa: ${taskTitle}`,
-        body: null,
-        link: '/tasks',
-      }))
-    )
-  } catch {
-    // best-effort: não derruba a resposta principal
-  }
 }

@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
 import type { Client, Profile, Task, TaskPriority, TaskStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import CreateTaskModal from './CreateTaskModal'
@@ -14,7 +13,8 @@ import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 import { createClient } from '@/lib/supabase/client'
 import { exportToExcel } from '@/lib/export-excel'
-import { useBulkSelection } from '@/lib/hooks/useBulkSelection'
+import { useBulkSelection, bulkRun } from '@/lib/hooks/useBulkSelection'
+import { useNewParamModal } from '@/lib/hooks/useNewParamModal'
 import BulkActionBar from '@/components/ui/BulkActionBar'
 
 const PRIORITY_BADGE: Record<TaskPriority, { label: string; variant: 'red' | 'yellow' | 'gray' }> = {
@@ -72,13 +72,11 @@ interface TaskListProps {
 }
 
 export default function TaskList({ initialTasks, clients, onTaskAdded = () => {} }: TaskListProps) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [userId, setUserId] = useState<string | null>(null)
   // Auto-abre o modal de nova tarefa quando a URL tem ?new=1 (ex.: launcher de comandos)
-  const [isModalOpen, setIsModalOpen] = useState(() => searchParams.get('new') === '1')
+  const [isModalOpen, setIsModalOpen] = useNewParamModal('/tasks')
   const [modalDefaultStatus, setModalDefaultStatus] = useState<TaskStatus>('pending')
   const [filter, setFilter] = useState<TaskStatus | 'all'>('all')
   const [viewMode, setViewMode] = useState<ViewMode>('list')
@@ -127,13 +125,6 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
       // localStorage indisponível
     }
   }, [userId, viewMode, groupBy])
-
-  // Limpa o ?new=1 da URL para não reabrir o modal em navegações futuras
-  useEffect(() => {
-    if (searchParams.get('new') === '1') {
-      router.replace('/tasks')
-    }
-  }, [searchParams, router])
 
   const { toast } = useToast()
   const confirm = useConfirm()
@@ -279,17 +270,14 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
     const ids = Array.from(bulk.selected)
     if (ids.length === 0) return
     setTasks((prev) => prev.map((t) => (ids.includes(t.id) ? { ...t, status: 'done' } : t)))
-    const results = await Promise.all(
-      ids.map((id) =>
-        fetch(`/api/tasks/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'done' }),
-        }),
-      ),
+    const { fail } = await bulkRun(ids, (id) =>
+      fetch(`/api/tasks/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'done' }),
+      }),
     )
-    const failed = results.filter((r) => !r.ok).length
-    if (failed > 0) toast(`${failed} tarefa(s) não puderam ser concluídas`, 'error')
+    if (fail > 0) toast(`${fail} tarefa(s) não puderam ser concluídas`, 'error')
     else toast(`${ids.length} tarefa(s) concluída(s)`)
     bulk.clear()
   }
@@ -299,17 +287,14 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
     if (ids.length === 0) return
     setShowBulkPriorityMenu(false)
     setTasks((prev) => prev.map((t) => (ids.includes(t.id) ? { ...t, priority } : t)))
-    const results = await Promise.all(
-      ids.map((id) =>
-        fetch(`/api/tasks/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ priority }),
-        }),
-      ),
+    const { fail } = await bulkRun(ids, (id) =>
+      fetch(`/api/tasks/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priority }),
+      }),
     )
-    const failed = results.filter((r) => !r.ok).length
-    if (failed > 0) toast(`${failed} tarefa(s) não puderam ser atualizadas`, 'error')
+    if (fail > 0) toast(`${fail} tarefa(s) não puderam ser atualizadas`, 'error')
     else toast(`Prioridade de ${ids.length} tarefa(s) atualizada para ${PRIORITY_BADGE[priority].label}`)
     bulk.clear()
   }
@@ -325,9 +310,8 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
     })
     if (!ok) return
     setTasks((prev) => prev.filter((t) => !ids.includes(t.id)))
-    const results = await Promise.all(ids.map((id) => fetch(`/api/tasks/${id}`, { method: 'DELETE' })))
-    const failed = results.filter((r) => !r.ok).length
-    if (failed > 0) toast(`${failed} tarefa(s) não puderam ser removidas`, 'error')
+    const { fail } = await bulkRun(ids, (id) => fetch(`/api/tasks/${id}`, { method: 'DELETE' }))
+    if (fail > 0) toast(`${fail} tarefa(s) não puderam ser removidas`, 'error')
     else toast(`${ids.length} tarefa(s) removida(s)`)
     bulk.clear()
   }
