@@ -5,10 +5,11 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, PieChart, Pie, Cell, Legend,
 } from 'recharts'
-import { Download, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Download, FileText, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { SOURCE_LABELS } from '@/lib/types'
 import PageHeader from '@/components/ui/PageHeader'
 import * as XLSX from 'xlsx'
+import { newReportDoc, addKpiGrid, addSection, saveReportDoc } from '@/lib/export-pdf'
 
 // ── types ──────────────────────────────────────────────────────────────────────
 interface Transaction { amount: number; type: 'received' | 'pending'; date: string }
@@ -325,6 +326,60 @@ export default function ReportsClient({
     XLSX.writeFile(wb, `relatorios-${stamp}.xlsx`)
   }
 
+  function handleExportPdf() {
+    const periodLabel = range === 'all' ? 'Todo o período' : `Últimos ${range.replace('m', ' meses')}`
+    const report = newReportDoc('Relatório', `Período: ${periodLabel}`)
+
+    addKpiGrid(report, [
+      { label: 'MRR atual', value: fmtCurrency(mrr) },
+      { label: 'Recebido', value: fmtCurrency(totalReceived) },
+      { label: 'Pendente', value: fmtCurrency(totalPending) },
+      { label: 'Taxa de ganho', value: `${winRate}%` },
+      { label: 'Propostas aprovadas', value: `${approvedCount} (${fmtCurrency(approvedValue)})` },
+      { label: 'Previsão de receita', value: fmtCurrency(forecastValue) },
+      { label: 'Pipeline em aberto', value: fmtCurrency(openPipelineValue) },
+      { label: 'Taxa de churn', value: `${churnRate.toFixed(1)}%` },
+      { label: 'MRR perdido (churn)', value: fmtCurrency(churnedMrr) },
+    ])
+
+    addSection(
+      report,
+      'Receita mensal',
+      ['Mês', 'Recebido', 'Pendente'],
+      revenueData.map((d) => [d.month, fmtCurrency(d.Recebido), fmtCurrency(d.Pendente)]),
+    )
+
+    addSection(
+      report,
+      'Funil do pipeline',
+      ['Estágio', 'Qtd', 'Valor'],
+      funnelData.map((d) => [d.stage, d.count, fmtCurrency(d.value)]),
+    )
+
+    addSection(
+      report,
+      'Origem dos leads',
+      ['Origem', 'Qtd'],
+      sourceData.map((d) => [d.source, d.count]),
+    )
+
+    addSection(
+      report,
+      'Tempo médio por etapa',
+      ['Estágio', 'Dias', 'Amostras'],
+      stageTimeData.map((d) => [d.stage, fmtDays(d.avgDays), d.count]),
+    )
+
+    addSection(
+      report,
+      'Propostas',
+      ['Status', 'Qtd', 'Valor'],
+      proposalData.map((d) => [d.name, d.value, fmtCurrency(d.totalValue)]),
+    )
+
+    saveReportDoc(report, 'relatorio')
+  }
+
   return (
     <div>
       {/* ── Header ── */}
@@ -339,6 +394,13 @@ export default function ReportsClient({
             >
               <Download size={13} />
               Exportar Excel
+            </button>
+            <button
+              onClick={handleExportPdf}
+              className="flex items-center gap-1.5 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 rounded-lg px-3 py-1.5 text-xs transition-colors"
+            >
+              <FileText size={13} />
+              Exportar PDF
             </button>
             <div className="flex gap-1 bg-[#1a1a1d] border border-slate-700 rounded-lg p-1">
               {(['3m', '6m', '12m', 'all'] as Range[]).map((r) => (
