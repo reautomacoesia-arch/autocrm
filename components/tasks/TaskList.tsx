@@ -9,11 +9,13 @@ import TaskKanban from './TaskKanban'
 import TaskDrawer from './TaskDrawer'
 import EmptyState from '@/components/ui/EmptyState'
 import ProfileAvatar from '@/components/team/ProfileAvatar'
-import { Download, Plus, LayoutGrid, List, Search, X, SlidersHorizontal } from 'lucide-react'
+import { Download, Plus, LayoutGrid, List, Search, X, SlidersHorizontal, Check, Flag, Trash2, ChevronDown } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 import { createClient } from '@/lib/supabase/client'
 import { exportToExcel } from '@/lib/export-excel'
+import { useBulkSelection } from '@/lib/hooks/useBulkSelection'
+import BulkActionBar from '@/components/ui/BulkActionBar'
 
 const PRIORITY_BADGE: Record<TaskPriority, { label: string; variant: 'red' | 'yellow' | 'gray' }> = {
   high: { label: 'Alta', variant: 'red' },
@@ -135,6 +137,8 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
 
   const { toast } = useToast()
   const confirm = useConfirm()
+  const bulk = useBulkSelection()
+  const [showBulkPriorityMenu, setShowBulkPriorityMenu] = useState(false)
 
   const clientMap = Object.fromEntries(clients.map((c) => [c.id, c.name]))
 
@@ -271,6 +275,63 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
     toast('Tarefa removida')
   }
 
+  async function bulkComplete() {
+    const ids = Array.from(bulk.selected)
+    if (ids.length === 0) return
+    setTasks((prev) => prev.map((t) => (ids.includes(t.id) ? { ...t, status: 'done' } : t)))
+    const results = await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/tasks/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'done' }),
+        }),
+      ),
+    )
+    const failed = results.filter((r) => !r.ok).length
+    if (failed > 0) toast(`${failed} tarefa(s) não puderam ser concluídas`, 'error')
+    else toast(`${ids.length} tarefa(s) concluída(s)`)
+    bulk.clear()
+  }
+
+  async function bulkSetPriority(priority: TaskPriority) {
+    const ids = Array.from(bulk.selected)
+    if (ids.length === 0) return
+    setShowBulkPriorityMenu(false)
+    setTasks((prev) => prev.map((t) => (ids.includes(t.id) ? { ...t, priority } : t)))
+    const results = await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/tasks/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ priority }),
+        }),
+      ),
+    )
+    const failed = results.filter((r) => !r.ok).length
+    if (failed > 0) toast(`${failed} tarefa(s) não puderam ser atualizadas`, 'error')
+    else toast(`Prioridade de ${ids.length} tarefa(s) atualizada para ${PRIORITY_BADGE[priority].label}`)
+    bulk.clear()
+  }
+
+  async function bulkDelete() {
+    const ids = Array.from(bulk.selected)
+    if (ids.length === 0) return
+    const ok = await confirm({
+      title: `Remover ${ids.length} tarefa${ids.length !== 1 ? 's' : ''}?`,
+      description: 'Esta ação não pode ser desfeita.',
+      destructive: true,
+      confirmLabel: 'Remover',
+    })
+    if (!ok) return
+    setTasks((prev) => prev.filter((t) => !ids.includes(t.id)))
+    const results = await Promise.all(ids.map((id) => fetch(`/api/tasks/${id}`, { method: 'DELETE' })))
+    const failed = results.filter((r) => !r.ok).length
+    if (failed > 0) toast(`${failed} tarefa(s) não puderam ser removidas`, 'error')
+    else toast(`${ids.length} tarefa(s) removida(s)`)
+    bulk.clear()
+  }
+
   function handleTaskCreated(task: Task) {
     setTasks((prev) => [task, ...prev])
     onTaskAdded(task)
@@ -316,6 +377,14 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
           overdue ? 'border-red-800 hover:border-red-700' : 'border-slate-700'
         }`}
       >
+        <input
+          type="checkbox"
+          checked={bulk.isSelected(task.id)}
+          onChange={() => bulk.toggle(task.id)}
+          onClick={(e) => e.stopPropagation()}
+          className="mt-1 flex-shrink-0 w-4 h-4 rounded border-slate-600 bg-[#050505] text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+          aria-label="Selecionar tarefa"
+        />
         <button
           onClick={(e) => { e.stopPropagation(); advanceStatus(task) }}
           title={task.status === 'done' ? 'Reabrir tarefa' : `Avançar para ${STATUS_LABEL[STATUS_NEXT[task.status]]}`}
@@ -579,7 +648,60 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
           onNewTask={openNewTaskModal}
         />
       ) : (
-        <div className="space-y-2">
+        <div>
+          <BulkActionBar count={bulk.count} onClear={bulk.clear}>
+            <button
+              onClick={bulkComplete}
+              className="border border-slate-700 text-slate-300 hover:text-white rounded-md px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors"
+            >
+              <Check size={13} />
+              Concluir
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowBulkPriorityMenu((v) => !v)}
+                className="border border-slate-700 text-slate-300 hover:text-white rounded-md px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors"
+              >
+                <Flag size={13} />
+                Prioridade
+                <ChevronDown size={12} />
+              </button>
+              {showBulkPriorityMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-[#1a1a1d] border border-slate-700 rounded-md shadow-lg z-10 min-w-[120px] overflow-hidden">
+                  {(['high', 'medium', 'low'] as TaskPriority[]).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => bulkSetPriority(p)}
+                      className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors"
+                    >
+                      {PRIORITY_BADGE[p].label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={bulkDelete}
+              className="border border-red-800/60 text-red-400 hover:text-red-300 rounded-md px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors"
+            >
+              <Trash2 size={13} />
+              Excluir
+            </button>
+          </BulkActionBar>
+
+          {filtered.length > 0 && (
+            <label className="flex items-center gap-2 mb-2 text-xs text-slate-500 cursor-pointer select-none w-fit">
+              <input
+                type="checkbox"
+                checked={bulk.allSelected(filtered.map((t) => t.id))}
+                onChange={() => bulk.toggleAll(filtered.map((t) => t.id))}
+                className="w-4 h-4 rounded border-slate-600 bg-[#050505] text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+              Selecionar todos
+            </label>
+          )}
+
+          <div className="space-y-2">
           {filtered.length === 0 ? (
             filter === 'all' ? (
               <EmptyState
@@ -618,6 +740,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
           ) : (
             filtered.map((task) => renderTask(task))
           )}
+          </div>
         </div>
       )}
 

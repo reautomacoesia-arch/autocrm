@@ -9,6 +9,8 @@ import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 import EmptyState from '@/components/ui/EmptyState'
 import { exportToExcel } from '@/lib/export-excel'
+import { useBulkSelection } from '@/lib/hooks/useBulkSelection'
+import BulkActionBar from '@/components/ui/BulkActionBar'
 
 interface TransactionWithClient {
   id: string
@@ -56,6 +58,7 @@ export default function TransactionManager({
 }: TransactionManagerProps) {
   const { toast } = useToast()
   const confirm = useConfirm()
+  const bulk = useBulkSelection()
   const [transactions, setTransactions] = useState<TransactionWithClient[]>(initialTransactions)
   const [showAddForm, setShowAddForm] = useState(false)
   const [addForm, setAddForm] = useState({
@@ -181,6 +184,24 @@ export default function TransactionManager({
     setTransactions((prev) => prev.filter((t) => t.id !== id))
     await fetch(`/api/transactions/${id}`, { method: 'DELETE' })
     toast('Transação removida')
+  }
+
+  async function bulkDeleteTransactions() {
+    const ids = Array.from(bulk.selected)
+    if (ids.length === 0) return
+    const ok = await confirm({
+      title: `Remover ${ids.length} transaç${ids.length !== 1 ? 'ões' : 'ão'}?`,
+      description: 'Esta ação não pode ser desfeita.',
+      destructive: true,
+      confirmLabel: 'Remover',
+    })
+    if (!ok) return
+    setTransactions((prev) => prev.filter((t) => !ids.includes(t.id)))
+    const results = await Promise.all(ids.map((id) => fetch(`/api/transactions/${id}`, { method: 'DELETE' })))
+    const failed = results.filter((r) => !r.ok).length
+    if (failed > 0) toast(`${failed} transação(ões) não puderam ser removidas`, 'error')
+    else toast(`${ids.length} transação(ões) removida(s)`)
+    bulk.clear()
   }
 
   async function handleSaveRecurring(clientId: string, day: number | null) {
@@ -517,6 +538,28 @@ export default function TransactionManager({
             </div>
           </div>
 
+          <BulkActionBar count={bulk.count} onClear={bulk.clear}>
+            <button
+              onClick={bulkDeleteTransactions}
+              className="border border-red-800/60 text-red-400 hover:text-red-300 rounded-md px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors"
+            >
+              <Trash2 size={13} />
+              Excluir
+            </button>
+          </BulkActionBar>
+
+          {filteredTransactions.length > 0 && (
+            <label className="flex items-center gap-2 mb-2 text-xs text-slate-500 cursor-pointer select-none w-fit">
+              <input
+                type="checkbox"
+                checked={bulk.allSelected(filteredTransactions.map((t) => t.id))}
+                onChange={() => bulk.toggleAll(filteredTransactions.map((t) => t.id))}
+                className="w-4 h-4 rounded border-slate-600 bg-[#050505] text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+              Selecionar todos
+            </label>
+          )}
+
           {showAddForm && (
             <form
               onSubmit={handleAdd}
@@ -693,6 +736,15 @@ export default function TransactionManager({
                   onClick={() => startEdit(t)}
                   className="flex items-center justify-between bg-[#1a1a1d] border border-slate-700 rounded-lg px-4 py-3 cursor-pointer hover:border-slate-500 transition-colors"
                 >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={bulk.isSelected(t.id)}
+                      onChange={() => bulk.toggle(t.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex-shrink-0 w-4 h-4 rounded border-slate-600 bg-[#050505] text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      aria-label="Selecionar transação"
+                    />
                   <div>
                     <p className="text-white text-sm font-medium">{formatCurrency(t.amount)}</p>
                     <div className="flex items-center gap-2 mt-0.5">
@@ -707,6 +759,7 @@ export default function TransactionManager({
                       )}
                     </div>
                     <p className="text-slate-500 text-xs mt-0.5">{formatDate(t.date)}</p>
+                  </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {t.recurring_key && (

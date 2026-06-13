@@ -6,10 +6,14 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import type { Client, ClientStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
-import { Building2, ChevronRight, Download, Plus, Search } from 'lucide-react'
+import { Building2, ChevronRight, Download, Plus, Search, ChevronDown, Trash2, Flag } from 'lucide-react'
 import AddClientModal from './AddClientModal'
 import EmptyState from '@/components/ui/EmptyState'
 import { exportToExcel } from '@/lib/export-excel'
+import { useBulkSelection } from '@/lib/hooks/useBulkSelection'
+import BulkActionBar from '@/components/ui/BulkActionBar'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 
 const STATUS_BADGE: Record<
   ClientStatus,
@@ -49,6 +53,10 @@ export default function ClientList({ clients: initialClients, lastInteractions =
   const [isAddModalOpen, setIsAddModalOpen] = useState(() => searchParams.get('new') === '1')
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'churned'>('all')
   const [sortBy, setSortBy] = useState<'default' | 'name' | 'mrr' | 'lastContact'>('default')
+  const { toast } = useToast()
+  const confirm = useConfirm()
+  const bulk = useBulkSelection()
+  const [showBulkStatusMenu, setShowBulkStatusMenu] = useState(false)
 
   // Limpa o ?new=1 da URL para não reabrir o modal em navegações futuras
   useEffect(() => {
@@ -99,6 +107,44 @@ export default function ClientList({ clients: initialClients, lastInteractions =
       })),
       'Clientes',
     )
+  }
+
+  async function bulkSetStatus(status: ClientStatus) {
+    const ids = Array.from(bulk.selected)
+    if (ids.length === 0) return
+    setShowBulkStatusMenu(false)
+    setClients((prev) => prev.map((c) => (ids.includes(c.id) ? { ...c, status } : c)))
+    const results = await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/clients/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        }),
+      ),
+    )
+    const failed = results.filter((r) => !r.ok).length
+    if (failed > 0) toast(`${failed} cliente(s) não puderam ser atualizados`, 'error')
+    else toast(`Status de ${ids.length} cliente(s) atualizado para ${STATUS_BADGE[status].label}`)
+    bulk.clear()
+  }
+
+  async function bulkDelete() {
+    const ids = Array.from(bulk.selected)
+    if (ids.length === 0) return
+    const ok = await confirm({
+      title: `Remover ${ids.length} cliente${ids.length !== 1 ? 's' : ''}?`,
+      description: 'Esta ação não pode ser desfeita.',
+      destructive: true,
+      confirmLabel: 'Remover',
+    })
+    if (!ok) return
+    setClients((prev) => prev.filter((c) => !ids.includes(c.id)))
+    const results = await Promise.all(ids.map((id) => fetch(`/api/clients/${id}`, { method: 'DELETE' })))
+    const failed = results.filter((r) => !r.ok).length
+    if (failed > 0) toast(`${failed} cliente(s) não puderam ser removidos`, 'error')
+    else toast(`${ids.length} cliente(s) removido(s)`)
+    bulk.clear()
   }
 
   return (
@@ -195,6 +241,51 @@ export default function ClientList({ clients: initialClients, lastInteractions =
         </div>
       )}
 
+      <BulkActionBar count={bulk.count} onClear={bulk.clear}>
+        <div className="relative">
+          <button
+            onClick={() => setShowBulkStatusMenu((v) => !v)}
+            className="border border-slate-700 text-slate-300 hover:text-white rounded-md px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors"
+          >
+            <Flag size={13} />
+            Mudar status
+            <ChevronDown size={12} />
+          </button>
+          {showBulkStatusMenu && (
+            <div className="absolute right-0 top-full mt-1 bg-[#1a1a1d] border border-slate-700 rounded-md shadow-lg z-10 min-w-[120px] overflow-hidden">
+              {(['active', 'inactive', 'churned'] as ClientStatus[]).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => bulkSetStatus(s)}
+                  className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors"
+                >
+                  {STATUS_BADGE[s].label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={bulkDelete}
+          className="border border-red-800/60 text-red-400 hover:text-red-300 rounded-md px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors"
+        >
+          <Trash2 size={13} />
+          Excluir
+        </button>
+      </BulkActionBar>
+
+      {sorted.length > 0 && (
+        <label className="flex items-center gap-2 mb-2 text-xs text-slate-500 cursor-pointer select-none w-fit">
+          <input
+            type="checkbox"
+            checked={bulk.allSelected(sorted.map((c) => c.id))}
+            onChange={() => bulk.toggleAll(sorted.map((c) => c.id))}
+            className="w-4 h-4 rounded border-slate-600 bg-[#050505] text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+          />
+          Selecionar todos
+        </label>
+      )}
+
       <div className="space-y-2">
         {sorted.length === 0 ? (
           search || filterStatus !== 'all' ? (
@@ -224,6 +315,14 @@ export default function ClientList({ clients: initialClients, lastInteractions =
                 }`}
               >
                 <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={bulk.isSelected(client.id)}
+                    onChange={() => {}}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); bulk.toggle(client.id) }}
+                    className="flex-shrink-0 w-4 h-4 rounded border-slate-600 bg-[#050505] text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    aria-label="Selecionar cliente"
+                  />
                   <div className="w-9 h-9 bg-indigo-600/20 rounded-full flex items-center justify-center text-indigo-400 font-semibold text-sm flex-shrink-0">
                     {client.name.charAt(0).toUpperCase()}
                   </div>

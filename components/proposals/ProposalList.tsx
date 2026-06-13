@@ -8,8 +8,12 @@ import Badge from '@/components/ui/Badge'
 import GenerateProposalModal from './GenerateProposalModal'
 import EmptyState from '@/components/ui/EmptyState'
 import { formatCurrency } from '@/lib/pipeline'
-import { Plus, ChevronRight, Download } from 'lucide-react'
+import { Plus, ChevronRight, Download, ChevronDown, Trash2, Flag } from 'lucide-react'
 import { exportToExcel } from '@/lib/export-excel'
+import { useBulkSelection } from '@/lib/hooks/useBulkSelection'
+import BulkActionBar from '@/components/ui/BulkActionBar'
+import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 
 const STATUS_BADGE: Record<
   ProposalStatus,
@@ -35,10 +39,14 @@ interface ProposalListProps {
 export default function ProposalList({ proposals: initial, clients, leads }: ProposalListProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [proposals] = useState<ProposalWithRelations[]>(initial)
+  const [proposals, setProposals] = useState<ProposalWithRelations[]>(initial)
   // Auto-abre o modal de nova proposta quando a URL tem ?new=1 (ex.: launcher de comandos)
   const [isModalOpen, setIsModalOpen] = useState(() => searchParams.get('new') === '1')
   const [filter, setFilter] = useState<ProposalStatus | 'all'>('all')
+  const { toast } = useToast()
+  const confirm = useConfirm()
+  const bulk = useBulkSelection()
+  const [showBulkStatusMenu, setShowBulkStatusMenu] = useState(false)
 
   // Limpa o ?new=1 da URL para não reabrir o modal em navegações futuras
   useEffect(() => {
@@ -88,6 +96,44 @@ export default function ProposalList({ proposals: initial, clients, leads }: Pro
       })),
       'Propostas',
     )
+  }
+
+  async function bulkSetStatus(status: ProposalStatus) {
+    const ids = Array.from(bulk.selected)
+    if (ids.length === 0) return
+    setShowBulkStatusMenu(false)
+    setProposals((prev) => prev.map((p) => (ids.includes(p.id) ? { ...p, status } : p)))
+    const results = await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/proposals/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        }),
+      ),
+    )
+    const failed = results.filter((r) => !r.ok).length
+    if (failed > 0) toast(`${failed} proposta(s) não puderam ser atualizadas`, 'error')
+    else toast(`Status de ${ids.length} proposta(s) atualizado para ${STATUS_BADGE[status].label}`)
+    bulk.clear()
+  }
+
+  async function bulkDelete() {
+    const ids = Array.from(bulk.selected)
+    if (ids.length === 0) return
+    const ok = await confirm({
+      title: `Remover ${ids.length} proposta${ids.length !== 1 ? 's' : ''}?`,
+      description: 'Esta ação não pode ser desfeita.',
+      destructive: true,
+      confirmLabel: 'Remover',
+    })
+    if (!ok) return
+    setProposals((prev) => prev.filter((p) => !ids.includes(p.id)))
+    const results = await Promise.all(ids.map((id) => fetch(`/api/proposals/${id}`, { method: 'DELETE' })))
+    const failed = results.filter((r) => !r.ok).length
+    if (failed > 0) toast(`${failed} proposta(s) não puderam ser removidas`, 'error')
+    else toast(`${ids.length} proposta(s) removida(s)`)
+    bulk.clear()
   }
 
   return (
@@ -151,6 +197,51 @@ export default function ProposalList({ proposals: initial, clients, leads }: Pro
         </div>
       </div>
 
+      <BulkActionBar count={bulk.count} onClear={bulk.clear}>
+        <div className="relative">
+          <button
+            onClick={() => setShowBulkStatusMenu((v) => !v)}
+            className="border border-slate-700 text-slate-300 hover:text-white rounded-md px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors"
+          >
+            <Flag size={13} />
+            Mudar status
+            <ChevronDown size={12} />
+          </button>
+          {showBulkStatusMenu && (
+            <div className="absolute right-0 top-full mt-1 bg-[#1a1a1d] border border-slate-700 rounded-md shadow-lg z-10 min-w-[120px] overflow-hidden">
+              {(['draft', 'sent', 'approved', 'rejected'] as ProposalStatus[]).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => bulkSetStatus(s)}
+                  className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors"
+                >
+                  {STATUS_BADGE[s].label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={bulkDelete}
+          className="border border-red-800/60 text-red-400 hover:text-red-300 rounded-md px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors"
+        >
+          <Trash2 size={13} />
+          Excluir
+        </button>
+      </BulkActionBar>
+
+      {filtered.length > 0 && (
+        <label className="flex items-center gap-2 mb-2 text-xs text-slate-500 cursor-pointer select-none w-fit">
+          <input
+            type="checkbox"
+            checked={bulk.allSelected(filtered.map((p) => p.id))}
+            onChange={() => bulk.toggleAll(filtered.map((p) => p.id))}
+            className="w-4 h-4 rounded border-slate-600 bg-[#050505] text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+          />
+          Selecionar todos
+        </label>
+      )}
+
       <div className="space-y-2">
         {filtered.length === 0 ? (
           filter === 'all' ? (
@@ -174,9 +265,19 @@ export default function ProposalList({ proposals: initial, clients, leads }: Pro
                 href={`/proposals/${proposal.id}`}
                 className="flex items-center justify-between bg-[#1a1a1d] hover:bg-slate-700/50 border border-slate-700 hover:border-slate-600 rounded-lg px-4 py-3 transition-colors group"
               >
-                <div>
-                  <p className="text-white text-sm font-medium">{getContactName(proposal)}</p>
-                  <p className="text-slate-400 text-xs mt-0.5">{formatDate(proposal.created_at)}</p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={bulk.isSelected(proposal.id)}
+                    onChange={() => {}}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); bulk.toggle(proposal.id) }}
+                    className="flex-shrink-0 w-4 h-4 rounded border-slate-600 bg-[#050505] text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    aria-label="Selecionar proposta"
+                  />
+                  <div>
+                    <p className="text-white text-sm font-medium">{getContactName(proposal)}</p>
+                    <p className="text-slate-400 text-xs mt-0.5">{formatDate(proposal.created_at)}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-emerald-400 text-sm font-semibold hidden sm:block">
