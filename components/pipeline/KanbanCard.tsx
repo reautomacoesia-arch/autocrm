@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Draggable } from '@hello-pangea/dnd'
 import type { Lead } from '@/lib/types'
 import type { FieldWithValue } from '@/lib/types'
@@ -24,6 +25,7 @@ function cleanPhone(phone: string): string {
 
 export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdated }: KanbanCardProps) {
   const confirm = useConfirm()
+  const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     name: lead.name,
@@ -54,11 +56,24 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
     }
   }
 
-  function handleWhatsApp(e: React.MouseEvent) {
+  async function handleWhatsApp(e: React.MouseEvent) {
     e.stopPropagation()
-    if (lead.phone) {
-      const number = cleanPhone(lead.phone)
-      window.open(`https://wa.me/55${number}`, '_blank')
+    // Abre (ou cria) a conversa do lead no inbox interno de WhatsApp
+    try {
+      const res = await fetch('/api/inbox/conversations/from-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: lead.id }),
+      })
+      if (res.ok) {
+        const conv = await res.json()
+        router.push(`/inbox?conversation=${conv.id}`)
+      } else if (lead.phone) {
+        // fallback: WhatsApp externo se algo der errado
+        window.open(`https://wa.me/55${cleanPhone(lead.phone)}`, '_blank')
+      }
+    } catch {
+      if (lead.phone) window.open(`https://wa.me/55${cleanPhone(lead.phone)}`, '_blank')
     }
   }
 
@@ -349,7 +364,7 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
                   <button
                     onClick={handleWhatsApp}
                     className="flex items-center gap-1 text-emerald-600 hover:text-emerald-400 transition-colors"
-                    title={`WhatsApp: ${lead.phone}`}
+                    title={`Abrir conversa no inbox · ${lead.phone}`}
                   >
                     <MessageCircle size={13} />
                     <span className="text-xs">WhatsApp</span>
