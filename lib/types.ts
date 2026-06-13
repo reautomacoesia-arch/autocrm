@@ -25,6 +25,9 @@ export interface Lead {
   website: string | null
   source: string | null
   next_step: string | null
+  score?: number | null
+  score_reason?: string | null
+  scored_at?: string | null
   created_at: string
   updated_at: string
 }

@@ -10,7 +10,7 @@ import ManageLeadFieldsModal from './ManageLeadFieldsModal'
 import EditLeadModal from './EditLeadModal'
 import ConvertToClientModal from './ConvertToClientModal'
 import PageHeader from '@/components/ui/PageHeader'
-import { Plus } from 'lucide-react'
+import { Plus, Thermometer } from 'lucide-react'
 
 interface KanbanBoardProps {
   initialLeads: Lead[]
@@ -22,10 +22,19 @@ export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
   const [isLeadFieldsOpen, setIsLeadFieldsOpen] = useState(false)
   const [editLead, setEditLead] = useState<Lead | null>(null)
   const [convertLead, setConvertLead] = useState<Lead | null>(null)
+  const [sortByScore, setSortByScore] = useState(false)
 
   const leadsByStage = STAGES.reduce<Record<LeadStage, Lead[]>>(
     (acc, stage) => {
-      acc[stage] = leads.filter((l) => l.stage === stage)
+      const stageLeads = leads.filter((l) => l.stage === stage)
+      if (sortByScore) {
+        stageLeads.sort((a, b) => {
+          const scoreA = a.score ?? -1
+          const scoreB = b.score ?? -1
+          return scoreB - scoreA
+        })
+      }
+      acc[stage] = stageLeads
       return acc
     },
     {} as Record<LeadStage, Lead[]>
@@ -95,6 +104,18 @@ export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
         subtitle={`${activeCount} leads ativos`}
         action={
           <>
+            <button
+              onClick={() => setSortByScore((p) => !p)}
+              className={`flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border transition-colors ${
+                sortByScore
+                  ? 'text-indigo-300 border-indigo-700 bg-indigo-900/30'
+                  : 'text-slate-400 hover:text-slate-200 border-slate-700 hover:border-slate-600'
+              }`}
+              title="Ordenar leads por temperatura (score)"
+            >
+              <Thermometer size={15} />
+              Ordenar por temperatura
+            </button>
             <button
               onClick={() => setIsLeadFieldsOpen(true)}
               className="flex items-center gap-1.5 text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-600 text-sm px-3 py-2 rounded-lg transition-colors"

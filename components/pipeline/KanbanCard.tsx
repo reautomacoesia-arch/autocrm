@@ -6,8 +6,9 @@ import type { Lead } from '@/lib/types'
 import type { FieldWithValue } from '@/lib/types'
 import { SOURCE_LABELS } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
-import { Building2, DollarSign, X, MessageCircle, ChevronRight } from 'lucide-react'
+import { Building2, DollarSign, X, MessageCircle, ChevronRight, Thermometer } from 'lucide-react'
 import { useConfirm } from '@/components/ui/ConfirmModal'
+import LeadScoreBadge from './LeadScoreBadge'
 
 interface KanbanCardProps {
   lead: Lead
@@ -33,6 +34,8 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
     next_step: lead.next_step ?? '',
   })
   const [saving, setSaving] = useState(false)
+  const [scoring, setScoring] = useState(false)
+  const [scoreError, setScoreError] = useState(false)
   const [showCustomFields, setShowCustomFields] = useState(false)
   const [leadCustomFields, setLeadCustomFields] = useState<FieldWithValue[]>([])
   const [customValues, setCustomValues] = useState<Record<string, string>>({})
@@ -57,6 +60,22 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
       const number = cleanPhone(lead.phone)
       window.open(`https://wa.me/55${number}`, '_blank')
     }
+  }
+
+  async function handleScore(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (scoring) return
+    setScoring(true)
+    setScoreError(false)
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/score`, { method: 'POST' })
+      if (!res.ok) throw new Error('Falha ao pontuar')
+      const updated = await res.json()
+      onLeadUpdated(updated)
+    } catch {
+      setScoreError(true)
+    }
+    setScoring(false)
   }
 
   function handleCardClick() {
@@ -305,7 +324,10 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
                 <X size={13} />
               </button>
 
-              <p className="text-white text-sm font-medium truncate pr-5">{lead.name}</p>
+              <div className="flex items-center gap-1.5 pr-5">
+                <p className="text-white text-sm font-medium truncate">{lead.name}</p>
+                <LeadScoreBadge score={lead.score} reason={lead.score_reason} />
+              </div>
               {lead.company && (
                 <div className="flex items-center gap-1 mt-1">
                   <Building2 size={11} className="text-slate-500 flex-shrink-0" />
@@ -345,6 +367,22 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
                   <p className="text-amber-100 text-xs leading-tight">{lead.next_step}</p>
                 </div>
               )}
+              <div className="mt-2 flex justify-end items-center gap-1.5">
+                {scoreError && (
+                  <span className="text-red-400 text-[10px]">Erro ao pontuar</span>
+                )}
+                <button
+                  onClick={handleScore}
+                  disabled={scoring}
+                  className="flex items-center gap-1 text-slate-500 hover:text-indigo-400 disabled:opacity-50 transition-colors"
+                  title="Pontuar lead com IA"
+                >
+                  <Thermometer size={13} />
+                  <span className="text-xs">
+                    {scoring ? '...' : lead.score != null ? 'Repontuar' : 'Pontuar'}
+                  </span>
+                </button>
+              </div>
             </>
           )}
         </div>
