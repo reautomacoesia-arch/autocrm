@@ -325,8 +325,10 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
               </button>
 
               <div className="flex items-center gap-1.5 pr-5">
-                <p className="text-white text-sm font-medium truncate">{lead.name}</p>
-                <LeadScoreBadge score={lead.score} reason={lead.score_reason} />
+                <p className="text-white text-sm font-medium truncate min-w-0 flex-1">{lead.name}</p>
+                <span className="flex-shrink-0">
+                  <LeadScoreBadge score={lead.score} reason={lead.score_reason} />
+                </span>
               </div>
               {lead.company && (
                 <div className="flex items-center gap-1 mt-1">

@@ -178,9 +178,12 @@ export default async function DashboardPage() {
     mrrCumulative[i] = acc + v
     return mrrCumulative[i]
   }, 0)
+  // delta consistente com a própria série da sparkline (cumulativa da janela),
+  // não com o MRR total — senão o percentual fica sem sentido p/ clientes antigos
+  const mrrLatest = mrrCumulative[WEEKS - 1] ?? 0
   const mrr4WeeksAgo = mrrCumulative[WEEKS - 5] ?? 0
   const mrrTrendDelta =
-    mrr4WeeksAgo > 0 ? ((mrr - mrr4WeeksAgo) / mrr4WeeksAgo) * 100 : 0
+    mrr4WeeksAgo > 0 ? ((mrrLatest - mrr4WeeksAgo) / mrr4WeeksAgo) * 100 : 0
 
   // Leads ativos: sparkline = contagem por semana, delta semana atual vs anterior
   const leadsByWeek = bucketByWeek(leadsRes.data ?? [], 'created_at', WEEKS)
