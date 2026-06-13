@@ -37,5 +37,16 @@ export async function POST(request: Request) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Registra a criação no histórico de atividades (from_stage 'new' = lead criado)
+  if (data) {
+    void supabase.from('pipeline_events').insert({
+      lead_id: data.id,
+      lead_name: data.name,
+      from_stage: 'new',
+      to_stage: data.stage,
+    }).then(() => {}, () => {})
+  }
+
   return NextResponse.json(data, { status: 201 })
 }

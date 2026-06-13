@@ -224,13 +224,20 @@ export default async function DashboardPage() {
     sub: i.clients?.name ?? null,
     date: i.happened_at,
   }))
-  const pipelineEvents = (pipelineEventsRes.data ?? []).map((e: any) => ({
-    id: e.id,
-    icon: '🔄',
-    description: `${e.lead_name} avançou para ${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage}`,
-    sub: `Pipeline: ${STAGE_LABELS[e.from_stage as LeadStage] ?? e.from_stage} → ${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage}`,
-    date: e.happened_at,
-  }))
+  const pipelineEvents = (pipelineEventsRes.data ?? []).map((e: any) => {
+    const isNew = e.from_stage === 'new'
+    return {
+      id: e.id,
+      icon: isNew ? '✨' : '🔄',
+      description: isNew
+        ? `Novo lead: ${e.lead_name}`
+        : `${e.lead_name} avançou para ${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage}`,
+      sub: isNew
+        ? `Adicionado ao pipeline (${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage})`
+        : `Pipeline: ${STAGE_LABELS[e.from_stage as LeadStage] ?? e.from_stage} → ${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage}`,
+      date: e.happened_at,
+    }
+  })
   const recentActivity = [...interactions, ...pipelineEvents]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5)

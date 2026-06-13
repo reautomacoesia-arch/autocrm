@@ -75,14 +75,21 @@ export default async function ActivityPage({
       link: i.clients ? `/clients/${i.clients.id}` : undefined,
       date: i.happened_at,
     })),
-    ...(pipelineEventsRes.data ?? []).map((e: any) => ({
-      id: `p-${e.id}`,
-      icon: '🔄',
-      type: 'pipeline',
-      description: `${e.lead_name} avançou para ${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage}`,
-      sub: `${STAGE_LABELS[e.from_stage as LeadStage] ?? e.from_stage} → ${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage}`,
-      date: e.happened_at,
-    })),
+    ...(pipelineEventsRes.data ?? []).map((e: any) => {
+      const isNew = e.from_stage === 'new'
+      return {
+        id: `p-${e.id}`,
+        icon: isNew ? '✨' : '🔄',
+        type: 'pipeline',
+        description: isNew
+          ? `Novo lead: ${e.lead_name}`
+          : `${e.lead_name} avançou para ${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage}`,
+        sub: isNew
+          ? `Adicionado ao pipeline (${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage})`
+          : `${STAGE_LABELS[e.from_stage as LeadStage] ?? e.from_stage} → ${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage}`,
+        date: e.happened_at,
+      }
+    }),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   const totalCount = items.length
