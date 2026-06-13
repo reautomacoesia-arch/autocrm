@@ -19,26 +19,69 @@ import {
   BarChart2,
   BookOpen,
   Search,
+  type LucideIcon,
 } from 'lucide-react'
 import NotificationBell from '@/components/automations/NotificationBell'
 import ProfileAvatar from '@/components/team/ProfileAvatar'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types'
 
-const navItems = [
-  { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/inbox', icon: Inbox, label: 'Inbox' },
-  { href: '/pipeline', icon: Target, label: 'Pipeline' },
-  { href: '/clients', icon: Users, label: 'Clientes' },
-  { href: '/proposals', icon: FileText, label: 'Propostas' },
-  { href: '/financial', icon: DollarSign, label: 'Financeiro' },
-  { href: '/reports', icon: BarChart2, label: 'Relatórios' },
-  { href: '/tasks', icon: CheckSquare, label: 'Tarefas' },
-  { href: '/docs', icon: BookOpen, label: 'Documentos' },
-  { href: '/team', icon: Users2, label: 'Equipe' },
-  { href: '/automations', icon: Zap, label: 'Automações' },
-  { href: '/services', icon: Settings, label: 'Serviços' },
+const topItem = { href: '/', icon: LayoutDashboard, label: 'Dashboard' }
+
+const navGroups = [
+  {
+    label: 'Operação',
+    items: [
+      { href: '/inbox', icon: Inbox, label: 'Inbox' },
+      { href: '/pipeline', icon: Target, label: 'Pipeline' },
+      { href: '/clients', icon: Users, label: 'Clientes' },
+      { href: '/proposals', icon: FileText, label: 'Propostas' },
+    ],
+  },
+  {
+    label: 'Gestão',
+    items: [
+      { href: '/financial', icon: DollarSign, label: 'Financeiro' },
+      { href: '/reports', icon: BarChart2, label: 'Relatórios' },
+      { href: '/tasks', icon: CheckSquare, label: 'Tarefas' },
+    ],
+  },
+  {
+    label: 'Workspace',
+    items: [
+      { href: '/docs', icon: BookOpen, label: 'Documentos' },
+      { href: '/team', icon: Users2, label: 'Equipe' },
+      { href: '/automations', icon: Zap, label: 'Automações' },
+      { href: '/services', icon: Settings, label: 'Serviços' },
+    ],
+  },
 ]
+
+interface NavLinkProps {
+  href: string
+  icon: LucideIcon
+  label: string
+  isActive: boolean
+}
+
+function NavLink({ href, icon: Icon, label, isActive }: NavLinkProps) {
+  return (
+    <Link
+      href={href}
+      className={`relative flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
+        isActive
+          ? 'bg-indigo-600/20 text-indigo-400 font-medium'
+          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+      }`}
+    >
+      {isActive && (
+        <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] bg-[#d4af37] rounded-r" />
+      )}
+      <Icon size={15} />
+      {label}
+    </Link>
+  )
+}
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -104,26 +147,32 @@ export default function Sidebar() {
       </div>
 
       {/* Navegação */}
-      <nav className="flex-1 px-2 py-4 space-y-0.5">
-        {navItems.map(({ href, icon: Icon, label }) => {
-          const isActive =
-            href === '/' ? pathname === '/' : pathname.startsWith(href)
+      <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
+        {/* Dashboard (solto no topo) */}
+        <NavLink
+          href={topItem.href}
+          icon={topItem.icon}
+          label={topItem.label}
+          isActive={pathname === '/'}
+        />
 
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
-                isActive
-                  ? 'bg-indigo-600/20 text-indigo-400 font-medium'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-              }`}
-            >
-              <Icon size={15} />
-              {label}
-            </Link>
-          )
-        })}
+        {/* Grupos */}
+        {navGroups.map((group) => (
+          <div key={group.label}>
+            <p className="text-slate-600 text-[10px] uppercase tracking-wider px-3 mb-1 mt-4">
+              {group.label}
+            </p>
+            {group.items.map(({ href, icon: Icon, label }) => (
+              <NavLink
+                key={href}
+                href={href}
+                icon={Icon}
+                label={label}
+                isActive={pathname.startsWith(href)}
+              />
+            ))}
+          </div>
+        ))}
       </nav>
 
       {/* User profile + actions */}

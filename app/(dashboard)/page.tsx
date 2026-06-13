@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { formatCurrency, STAGE_LABELS } from '@/lib/pipeline'
 import MetricCard from '@/components/dashboard/MetricCard'
+import PageHeader from '@/components/ui/PageHeader'
 import Link from 'next/link'
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar'
 import type { LeadStage } from '@/lib/types'
@@ -64,6 +65,38 @@ function getGreeting(utcHour: number): string {
   return 'Boa noite'
 }
 
+/**
+ * Agrupa registros em `weeks` baldes semanais terminando hoje.
+ * Cada balde soma `valueFn(row)` (ou conta 1 se ausente) para os
+ * registros cuja data em `dateField` cai naquela semana.
+ */
+function bucketByWeek<T extends Record<string, unknown>>(
+  rows: T[],
+  dateField: keyof T,
+  weeks = 8,
+  valueFn?: (row: T) => number
+): number[] {
+  const buckets = new Array(weeks).fill(0)
+  const now = new Date()
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000
+
+  for (const row of rows) {
+    const raw = row[dateField]
+    if (!raw) continue
+    const date = new Date(raw as string)
+    if (isNaN(date.getTime())) continue
+
+    const diffWeeks = Math.floor((now.getTime() - date.getTime()) / msPerWeek)
+    const bucketIndex = weeks - 1 - diffWeeks
+
+    if (bucketIndex < 0 || bucketIndex >= weeks) continue
+
+    buckets[bucketIndex] += valueFn ? valueFn(row) : 1
+  }
+
+  return buckets
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient()
 
@@ -88,14 +121,14 @@ export default async function DashboardPage() {
     interactionsRes,
     pipelineEventsRes,
   ] = await Promise.all([
-    supabase.from('clients').select('id, monthly_value').eq('status', 'active').eq('is_internal', false),
+    supabase.from('clients').select('id, monthly_value, created_at').eq('status', 'active').eq('is_internal', false),
     supabase
       .from('leads')
-      .select('id')
+      .select('id, created_at')
       .not('stage', 'in', '("won","lost")'),
     supabase
       .from('proposals')
-      .select('id, value')
+      .select('id, value, created_at')
       .in('status', ['draft', 'sent']),
     // Todas as tarefas da equipe (só contagem para o card)
     supabase
@@ -129,6 +162,42 @@ export default async function DashboardPage() {
   const leadsCount = leadsRes.data?.length ?? 0
   const openProposals = proposalsRes.data ?? []
   const openProposalsValue = openProposals.reduce((sum: number, p: any) => sum + (p.value ?? 0), 0)
+
+  // ── Tendências/sparklines (dados reais derivados de created_at) ────────
+  const WEEKS = 8
+
+  // MRR: sparkline = soma cumulativa de monthly_value por semana de entrada
+  const mrrByWeek = bucketByWeek(clients, 'created_at', WEEKS, (c) => c.monthly_value ?? 0)
+  const mrrCumulative: number[] = []
+  mrrByWeek.reduce((acc, v, i) => {
+    mrrCumulative[i] = acc + v
+    return mrrCumulative[i]
+  }, 0)
+  const mrr4WeeksAgo = mrrCumulative[WEEKS - 5] ?? 0
+  const mrrTrendDelta =
+    mrr4WeeksAgo > 0 ? ((mrr - mrr4WeeksAgo) / mrr4WeeksAgo) * 100 : 0
+
+  // Leads ativos: sparkline = contagem por semana, delta semana atual vs anterior
+  const leadsByWeek = bucketByWeek(leadsRes.data ?? [], 'created_at', WEEKS)
+  const leadsThisWeek = leadsByWeek[WEEKS - 1] ?? 0
+  const leadsLastWeek = leadsByWeek[WEEKS - 2] ?? 0
+  const leadsTrendDelta =
+    leadsLastWeek > 0
+      ? ((leadsThisWeek - leadsLastWeek) / leadsLastWeek) * 100
+      : leadsThisWeek > 0
+      ? 100
+      : 0
+
+  // Propostas abertas: sparkline = valor por semana, delta semana atual vs anterior
+  const proposalsByWeek = bucketByWeek(openProposals, 'created_at', WEEKS, (p) => p.value ?? 0)
+  const proposalsThisWeek = proposalsByWeek[WEEKS - 1] ?? 0
+  const proposalsLastWeek = proposalsByWeek[WEEKS - 2] ?? 0
+  const proposalsTrendDelta =
+    proposalsLastWeek > 0
+      ? ((proposalsThisWeek - proposalsLastWeek) / proposalsLastWeek) * 100
+      : proposalsThisWeek > 0
+      ? 100
+      : 0
   const allPendingCount = allPendingTasksRes.data?.length ?? 0
   const myTasks = (myTasksRes as any).data ?? []
   const myOverdueCount = myTasks.filter((t: any) => isOverdue(t.due_date)).length
@@ -156,20 +225,18 @@ export default async function DashboardPage() {
   return (
     <div>
       {/* Cabeçalho personalizado */}
-      <div className="mb-6">
-        <h1 className="text-white text-2xl font-bold">
-          {firstName ? `${greeting}, ${firstName}! 👋` : 'Dashboard'}
-        </h1>
-        <p className="text-slate-400 text-sm mt-1">
-          {myOverdueCount > 0
+      <PageHeader
+        title={firstName ? `${greeting}, ${firstName}! 👋` : 'Dashboard'}
+        subtitle={
+          myOverdueCount > 0
             ? `Você tem ${myOverdueCount} tarefa${myOverdueCount > 1 ? 's' : ''} em atraso`
             : myDueTodayCount > 0
             ? `${myDueTodayCount} tarefa${myDueTodayCount > 1 ? 's' : ''} para hoje`
             : myTasks.length > 0
             ? `${myTasks.length} tarefa${myTasks.length > 1 ? 's' : ''} na sua fila`
-            : 'Visão geral do seu negócio'}
-        </p>
-      </div>
+            : 'Visão geral do seu negócio'
+        }
+      />
 
       {/* Metric cards */}
       <div className="grid grid-cols-4 gap-4 mb-8">
@@ -178,18 +245,24 @@ export default async function DashboardPage() {
           value={formatCurrency(mrr)}
           sub={`${clients.length} cliente(s) ativo(s)`}
           color="green"
+          trend={{ delta: mrrTrendDelta }}
+          spark={mrrCumulative}
         />
         <MetricCard
           label="Leads ativos"
           value={String(leadsCount)}
           sub="no pipeline"
           color="indigo"
+          trend={{ delta: leadsTrendDelta }}
+          spark={leadsByWeek}
         />
         <MetricCard
           label="Propostas abertas"
           value={String(openProposals.length)}
           sub={openProposalsValue > 0 ? `${formatCurrency(openProposalsValue)} em jogo` : undefined}
           color="amber"
+          trend={{ delta: proposalsTrendDelta }}
+          spark={proposalsByWeek}
         />
         <MetricCard
           label="Tarefas da equipe"

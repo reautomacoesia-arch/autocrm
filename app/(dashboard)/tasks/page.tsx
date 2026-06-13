@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import TaskList from '@/components/tasks/TaskList'
+import PageHeader from '@/components/ui/PageHeader'
 import type { Client, Task } from '@/lib/types'
 
 export default async function TasksPage() {
@@ -16,10 +17,7 @@ export default async function TasksPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-white text-2xl font-bold">Tarefas</h1>
-        <p className="text-slate-400 text-sm mt-1">{pendingCount} pendente(s)</p>
-      </div>
+      <PageHeader title="Tarefas" subtitle={`${pendingCount} pendente(s)`} />
       <TaskList initialTasks={tasks} clients={clients} />
     </div>
   )

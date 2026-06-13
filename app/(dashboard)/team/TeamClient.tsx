@@ -6,6 +6,7 @@ import ProfileAvatar from '@/components/team/ProfileAvatar'
 import { useToast } from '@/components/ui/ToastProvider'
 import { Pencil, Check, X, UserPlus, Mail, Send, Loader2, Link2, Copy, CheckCheck, UserMinus } from 'lucide-react'
 import { useConfirm } from '@/components/ui/ConfirmModal'
+import PageHeader from '@/components/ui/PageHeader'
 
 const COLORS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
@@ -205,23 +206,21 @@ export default function TeamClient({ profiles: initial, currentUserId }: TeamCli
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-white text-2xl font-bold">Equipe</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            {profiles.length} colaborador{profiles.length !== 1 ? 'es' : ''}
-          </p>
-        </div>
-        {isAdmin && (
-          <button
-            onClick={openInvite}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-[#050505] font-medium text-sm px-4 py-2 rounded-lg transition-colors"
-          >
-            <UserPlus size={15} />
-            Convidar colaborador
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Equipe"
+        subtitle={`${profiles.length} colaborador${profiles.length !== 1 ? 'es' : ''}`}
+        action={
+          isAdmin && (
+            <button
+              onClick={openInvite}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-[#050505] font-medium text-sm px-4 py-2 rounded-lg transition-colors"
+            >
+              <UserPlus size={15} />
+              Convidar colaborador
+            </button>
+          )
+        }
+      />
 
       {/* Invite modal */}
       {showInvite && (

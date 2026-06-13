@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import ProposalList from '@/components/proposals/ProposalList'
+import PageHeader from '@/components/ui/PageHeader'
 import type { Client, Lead, Proposal } from '@/lib/types'
 
 export default async function ProposalsPage() {
@@ -21,10 +22,7 @@ export default async function ProposalsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-white text-2xl font-bold">Propostas</h1>
-        <p className="text-slate-400 text-sm mt-1">{proposals.length} proposta(s)</p>
-      </div>
+      <PageHeader title="Propostas" subtitle={`${proposals.length} proposta(s)`} />
       <ProposalList
         proposals={proposals}
         clients={(clientsRes.data as Client[]) ?? []}

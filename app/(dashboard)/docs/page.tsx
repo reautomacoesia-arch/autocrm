@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { FileText, Globe, Lock, Plus, Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
+import PageHeader from '@/components/ui/PageHeader'
 import { createClient } from '@/lib/supabase/client'
 
 interface Doc {
@@ -122,28 +123,28 @@ export default function DocsPage() {
   return (
     <div className="max-w-3xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-white text-2xl font-bold font-display">Documentos</h1>
-          <p className="text-slate-500 text-sm mt-1">Notas, wikis e documentos do time</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleCreate('personal')}
-            disabled={creating}
-            className="flex items-center gap-1.5 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white rounded-lg px-3 py-2 text-sm transition-colors"
-          >
-            <Lock size={13} /> Pessoal
-          </button>
-          <button
-            onClick={() => handleCreate('shared')}
-            disabled={creating}
-            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-[#050505] font-medium rounded-lg px-3 py-2 text-sm transition-colors"
-          >
-            <Plus size={14} /> Novo documento
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Documentos"
+        subtitle="Notas, wikis e documentos do time"
+        action={
+          <>
+            <button
+              onClick={() => handleCreate('personal')}
+              disabled={creating}
+              className="flex items-center gap-1.5 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white rounded-lg px-3 py-2 text-sm transition-colors"
+            >
+              <Lock size={13} /> Pessoal
+            </button>
+            <button
+              onClick={() => handleCreate('shared')}
+              disabled={creating}
+              className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-[#050505] font-medium rounded-lg px-3 py-2 text-sm transition-colors"
+            >
+              <Plus size={14} /> Novo documento
+            </button>
+          </>
+        }
+      />
 
       {loading ? (
         <div className="text-center text-slate-500 text-sm py-12">Carregando…</div>

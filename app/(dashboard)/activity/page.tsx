@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { STAGE_LABELS } from '@/lib/pipeline'
+import PageHeader from '@/components/ui/PageHeader'
 import type { LeadStage } from '@/lib/types'
 
 const PAGE_SIZE = 20
@@ -78,17 +79,14 @@ export default async function ActivityPage({
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <Link href="/" className="text-slate-400 hover:text-white text-sm transition-colors">
-            Dashboard
-          </Link>
-          <span className="text-slate-600 text-sm">›</span>
-          <span className="text-white text-sm">Histórico de Atividades</span>
-        </div>
-        <h1 className="text-white text-2xl font-bold">Histórico de Atividades</h1>
-        <p className="text-slate-400 text-sm mt-1">{totalCount} registro(s)</p>
+      <div className="flex items-center gap-2 mb-1">
+        <Link href="/" className="text-slate-400 hover:text-white text-sm transition-colors">
+          Dashboard
+        </Link>
+        <span className="text-slate-600 text-sm">›</span>
+        <span className="text-white text-sm">Histórico de Atividades</span>
       </div>
+      <PageHeader title="Histórico de Atividades" subtitle={`${totalCount} registro(s)`} />
 
       {paged.length === 0 ? (
         <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl p-12 text-center text-slate-500 text-sm">

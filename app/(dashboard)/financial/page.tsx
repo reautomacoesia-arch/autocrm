@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import TransactionManager from '@/components/financial/TransactionManager'
+import PageHeader from '@/components/ui/PageHeader'
 
 export default async function FinancialPage() {
   const supabase = await createClient()
@@ -30,10 +31,7 @@ export default async function FinancialPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-white text-2xl font-bold">Financeiro</h1>
-        <p className="text-slate-400 text-sm mt-1">Visão geral do fluxo de caixa</p>
-      </div>
+      <PageHeader title="Financeiro" subtitle="Visão geral do fluxo de caixa" />
 
       <TransactionManager
         initialTransactions={transactions as any}

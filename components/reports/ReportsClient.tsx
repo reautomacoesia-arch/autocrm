@@ -7,6 +7,7 @@ import {
 } from 'recharts'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { SOURCE_LABELS } from '@/lib/types'
+import PageHeader from '@/components/ui/PageHeader'
 
 // ── types ──────────────────────────────────────────────────────────────────────
 interface Transaction { amount: number; type: 'received' | 'pending'; date: string }
@@ -273,28 +274,27 @@ export default function ReportsClient({
   return (
     <div>
       {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-white text-2xl font-bold">Relatórios</h1>
-          <p className="text-slate-400 text-sm mt-1">Evolução e tendências do negócio</p>
-        </div>
-        {/* Range selector */}
-        <div className="flex gap-1 bg-[#1a1a1d] border border-slate-700 rounded-lg p-1">
-          {(['3m', '6m', '12m', 'all'] as Range[]).map((r) => (
-            <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                range === r
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              {r === 'all' ? 'Tudo' : r.toUpperCase()}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        title="Relatórios"
+        subtitle="Evolução e tendências do negócio"
+        action={
+          <div className="flex gap-1 bg-[#1a1a1d] border border-slate-700 rounded-lg p-1">
+            {(['3m', '6m', '12m', 'all'] as Range[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  range === r
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                {r === 'all' ? 'Tudo' : r.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {/* ── KPI cards ── */}
       <div className="grid grid-cols-3 gap-4 mb-6">

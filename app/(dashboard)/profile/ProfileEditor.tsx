@@ -6,6 +6,7 @@ import ProfileAvatar from '@/components/team/ProfileAvatar'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/ui/ToastProvider'
 import { Camera, Loader2, Check, Phone, FileText, Palette, User, Cake, KeyRound, Eye, EyeOff } from 'lucide-react'
+import PageHeader from '@/components/ui/PageHeader'
 
 const COLORS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
@@ -183,10 +184,7 @@ export default function ProfileEditor({ profile: initial, userId }: ProfileEdito
 
   return (
     <div className="max-w-2xl">
-      <div className="mb-6">
-        <h1 className="text-white text-2xl font-bold">Meu Perfil</h1>
-        <p className="text-slate-400 text-sm mt-1">Gerencie suas informações pessoais</p>
-      </div>
+      <PageHeader title="Meu Perfil" subtitle="Gerencie suas informações pessoais" />
 
       {/* ── Foto + identidade ── */}
       <div className="bg-[#1a1a1d] border border-slate-700 rounded-xl px-6 py-6 mb-4">

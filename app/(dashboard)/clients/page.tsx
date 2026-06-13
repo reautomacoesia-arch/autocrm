@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import ClientList from '@/components/clients/ClientList'
+import PageHeader from '@/components/ui/PageHeader'
 import type { Client } from '@/lib/types'
 
 export default async function ClientsPage() {
@@ -25,12 +26,7 @@ export default async function ClientsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-white text-2xl font-bold">Clientes</h1>
-          <p className="text-slate-400 text-sm mt-1">{activeCount} ativo(s)</p>
-        </div>
-      </div>
+      <PageHeader title="Clientes" subtitle={`${activeCount} ativo(s)`} />
       <ClientList clients={(clients as Client[]) ?? []} lastInteractions={lastInteractionMap} />
     </div>
   )

@@ -9,6 +9,7 @@ import AddLeadModal from './AddLeadModal'
 import ManageLeadFieldsModal from './ManageLeadFieldsModal'
 import EditLeadModal from './EditLeadModal'
 import ConvertToClientModal from './ConvertToClientModal'
+import PageHeader from '@/components/ui/PageHeader'
 import { Plus } from 'lucide-react'
 
 interface KanbanBoardProps {
@@ -89,27 +90,27 @@ export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-white text-2xl font-bold">Pipeline</h1>
-          <p className="text-slate-400 text-sm mt-1">{activeCount} leads ativos</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsLeadFieldsOpen(true)}
-            className="flex items-center gap-1.5 text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-600 text-sm px-3 py-2 rounded-lg transition-colors"
-          >
-            ⚙️ Campos
-          </button>
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-[#050505] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            <Plus size={15} />
-            Novo Lead
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Pipeline"
+        subtitle={`${activeCount} leads ativos`}
+        action={
+          <>
+            <button
+              onClick={() => setIsLeadFieldsOpen(true)}
+              className="flex items-center gap-1.5 text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-600 text-sm px-3 py-2 rounded-lg transition-colors"
+            >
+              ⚙️ Campos
+            </button>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-[#050505] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              <Plus size={15} />
+              Novo Lead
+            </button>
+          </>
+        }
+      />
 
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex gap-4 overflow-x-auto pb-4">

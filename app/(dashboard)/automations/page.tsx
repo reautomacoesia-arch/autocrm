@@ -3,6 +3,7 @@ import { AUTOMATION_DEFINITIONS, AUTOMATION_DEFAULTS } from '@/lib/automations'
 import type { AutomationConfig, AutomationWorkflow } from '@/lib/types'
 import AutomationCard from '@/components/automations/AutomationCard'
 import WorkflowsSection from '@/components/automations/WorkflowsSection'
+import PageHeader from '@/components/ui/PageHeader'
 import { Zap } from 'lucide-react'
 
 async function runScheduledAutomations() {
@@ -45,23 +46,21 @@ export default async function AutomationsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-white text-2xl font-bold">Automações</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Configure o que acontece automaticamente quando eventos ocorrem
-          </p>
-        </div>
-        <form action={runScheduledAutomations}>
-          <button
-            type="submit"
-            className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            <Zap size={14} />
-            Executar agendadas agora
-          </button>
-        </form>
-      </div>
+      <PageHeader
+        title="Automações"
+        subtitle="Configure o que acontece automaticamente quando eventos ocorrem"
+        action={
+          <form action={runScheduledAutomations}>
+            <button
+              type="submit"
+              className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              <Zap size={14} />
+              Executar agendadas agora
+            </button>
+          </form>
+        }
+      />
 
       {/* Custom workflows */}
       <WorkflowsSection initialWorkflows={(workflows ?? []) as AutomationWorkflow[]} />
