@@ -2,8 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   Inbox,
@@ -15,16 +14,11 @@ import {
   CheckSquare,
   Settings,
   Zap,
-  LogOut,
   BarChart2,
   BookOpen,
   Search,
   type LucideIcon,
 } from 'lucide-react'
-import NotificationBell from '@/components/automations/NotificationBell'
-import ProfileAvatar from '@/components/team/ProfileAvatar'
-import { createClient } from '@/lib/supabase/client'
-import type { Profile } from '@/lib/types'
 
 const topItem = { href: '/', icon: LayoutDashboard, label: 'Dashboard' }
 
@@ -85,27 +79,6 @@ function NavLink({ href, icon: Icon, label, isActive }: NavLinkProps) {
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const router = useRouter()
-  const [profile, setProfile] = useState<Profile | null>(null)
-
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
-      supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-        .then(({ data }) => { if (data) setProfile(data) })
-    })
-  }, [])
-
-  async function handleLogout() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-  }
 
   return (
     <aside className="w-52 min-h-screen bg-[#1a1a1d] flex flex-col fixed left-0 top-0">
@@ -174,46 +147,6 @@ export default function Sidebar() {
           </div>
         ))}
       </nav>
-
-      {/* User profile + actions */}
-      <div className="border-t border-slate-700">
-        {/* Profile link */}
-        <Link
-          href="/profile"
-          className={`flex items-center gap-2.5 px-3 py-3 transition-colors hover:bg-slate-700/50 ${
-            pathname === '/profile' ? 'bg-indigo-600/10' : ''
-          }`}
-        >
-          {profile ? (
-            <ProfileAvatar
-              name={profile.name || '?'}
-              color={profile.avatar_color}
-              avatarUrl={profile.avatar_url}
-              size="sm"
-            />
-          ) : (
-            <div className="w-6 h-6 rounded-full bg-slate-700 flex-shrink-0" />
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-slate-300 text-xs font-medium truncate">
-              {profile?.name || '...'}
-            </p>
-            <p className="text-slate-600 text-[10px] truncate">Meu perfil</p>
-          </div>
-        </Link>
-
-        {/* Notifications + Logout */}
-        <div className="px-3 py-2 flex items-center justify-between border-t border-slate-800">
-          <NotificationBell />
-          <button
-            onClick={handleLogout}
-            title="Sair da conta"
-            className="text-slate-500 hover:text-red-400 transition-colors p-1.5"
-          >
-            <LogOut size={15} />
-          </button>
-        </div>
-      </div>
     </aside>
   )
 }

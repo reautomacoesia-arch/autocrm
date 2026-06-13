@@ -75,7 +75,7 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute left-full ml-2 top-0 w-80 bg-[#1a1a1d] border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-[#1a1a1d] border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
             <p className="text-white text-sm font-semibold">Notificações</p>
             {unread > 0 && (
