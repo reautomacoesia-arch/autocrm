@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { Client, ClientStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency } from '@/lib/pipeline'
@@ -39,11 +40,21 @@ interface ClientListProps {
 }
 
 export default function ClientList({ clients: initialClients, lastInteractions = {} }: ClientListProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [clients, setClients] = useState<Client[]>(initialClients)
   const [search, setSearch] = useState('')
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  // Auto-abre o modal de criação quando a URL tem ?new=1 (ex.: launcher de comandos)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(() => searchParams.get('new') === '1')
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'churned'>('all')
   const [sortBy, setSortBy] = useState<'default' | 'name' | 'mrr' | 'lastContact'>('default')
+
+  // Limpa o ?new=1 da URL para não reabrir o modal em navegações futuras
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      router.replace('/clients')
+    }
+  }, [searchParams, router])
 
   // Separa empresa interna dos clientes reais
   const internalClients = clients.filter((c) => c.is_internal)

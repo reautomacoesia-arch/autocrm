@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import type { Client, Lead, Proposal, ProposalStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
@@ -31,9 +32,19 @@ interface ProposalListProps {
 }
 
 export default function ProposalList({ proposals: initial, clients, leads }: ProposalListProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [proposals] = useState<ProposalWithRelations[]>(initial)
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  // Auto-abre o modal de nova proposta quando a URL tem ?new=1 (ex.: launcher de comandos)
+  const [isModalOpen, setIsModalOpen] = useState(() => searchParams.get('new') === '1')
   const [filter, setFilter] = useState<ProposalStatus | 'all'>('all')
+
+  // Limpa o ?new=1 da URL para não reabrir o modal em navegações futuras
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      router.replace('/proposals')
+    }
+  }, [searchParams, router])
 
   // PR1 — totais calculados sobre TODAS as propostas
   const totalApproved = proposals

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { Client, Profile, Task, TaskPriority, TaskStatus } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import CreateTaskModal from './CreateTaskModal'
@@ -67,9 +68,12 @@ interface TaskListProps {
 }
 
 export default function TaskList({ initialTasks, clients, onTaskAdded = () => {} }: TaskListProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [profiles, setProfiles] = useState<Profile[]>([])
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  // Auto-abre o modal de nova tarefa quando a URL tem ?new=1 (ex.: launcher de comandos)
+  const [isModalOpen, setIsModalOpen] = useState(() => searchParams.get('new') === '1')
   const [modalDefaultStatus, setModalDefaultStatus] = useState<TaskStatus>('pending')
   const [filter, setFilter] = useState<TaskStatus | 'all'>('all')
   const [viewMode, setViewMode] = useState<ViewMode>('list')
@@ -90,6 +94,14 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
   useEffect(() => {
     fetch('/api/profiles').then((r) => r.json()).then((d) => setProfiles(Array.isArray(d) ? d : []))
   }, [])
+
+  // Limpa o ?new=1 da URL para não reabrir o modal em navegações futuras
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      router.replace('/tasks')
+    }
+  }, [searchParams, router])
+
   const { toast } = useToast()
   const confirm = useConfirm()
 

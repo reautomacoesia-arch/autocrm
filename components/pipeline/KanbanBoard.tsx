@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd'
 import type { Lead, LeadStage } from '@/lib/types'
 import { STAGES } from '@/lib/pipeline'
@@ -17,12 +18,22 @@ interface KanbanBoardProps {
 }
 
 export default function KanbanBoard({ initialLeads }: KanbanBoardProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  // Auto-abre o modal de novo lead quando a URL tem ?new=1 (ex.: launcher de comandos)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(() => searchParams.get('new') === '1')
   const [isLeadFieldsOpen, setIsLeadFieldsOpen] = useState(false)
   const [editLead, setEditLead] = useState<Lead | null>(null)
   const [convertLead, setConvertLead] = useState<Lead | null>(null)
   const [sortByScore, setSortByScore] = useState(false)
+
+  // Limpa o ?new=1 da URL para não reabrir o modal em navegações futuras
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      router.replace('/pipeline')
+    }
+  }, [searchParams, router])
 
   const leadsByStage = STAGES.reduce<Record<LeadStage, Lead[]>>(
     (acc, stage) => {
