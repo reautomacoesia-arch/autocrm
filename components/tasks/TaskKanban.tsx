@@ -127,7 +127,7 @@ export default function TaskKanban({ tasks, clientMap, profiles, onTaskClick, on
                   >
                     <div className="flex items-start gap-2 mb-1.5">
                       <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1 ${PRIORITY_DOT[task.priority]}`} />
-                      <p className={`text-xs font-medium leading-snug flex-1 ${
+                      <p className={`text-xs font-medium leading-snug flex-1 min-w-0 break-words ${
                         task.status === 'done' ? 'line-through text-slate-500' : 'text-slate-200'
                       }`}>
                         {task.title}

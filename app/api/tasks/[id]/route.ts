@@ -30,18 +30,24 @@ export async function PATCH(
   if (body.assigned_to_ids !== undefined) fields.assigned_to_ids = body.assigned_to_ids ?? []
   if (body.tags !== undefined)            fields.tags = body.tags
 
-  // Busca status atual antes de atualizar (para detectar mudança real)
+  // Busca status/responsáveis atuais antes de atualizar (para detectar mudanças reais)
   let previousStatus: string | null = null
-  if (body.status !== undefined) {
+  let previousAssigneeIds: string[] = []
+  const needsAssigneeDiff = body.assigned_to_id !== undefined || body.assigned_to_ids !== undefined
+  if (body.status !== undefined || needsAssigneeDiff) {
     const { data: current } = await supabase
       .from('tasks')
-      .select('status, client_id, title')
+      .select('status, client_id, title, assigned_to_id, assigned_to_ids')
       .eq('id', id)
       .single()
     previousStatus = current?.status ?? null
+    previousAssigneeIds = [
+      ...(current?.assigned_to_ids ?? []),
+      ...(current?.assigned_to_id ? [current.assigned_to_id] : []),
+    ]
 
     // Se status realmente mudou e tarefa tem cliente, registra no histórico
-    if (current && current.client_id && current.status !== body.status) {
+    if (current && current.client_id && body.status !== undefined && current.status !== body.status) {
       const from = STATUS_LABELS[current.status] ?? current.status
       const to   = STATUS_LABELS[body.status]    ?? body.status
       await supabase.from('interactions').insert({
@@ -61,7 +67,43 @@ export async function PATCH(
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  if (needsAssigneeDiff) {
+    const newAssigneeIds = [
+      ...(body.assigned_to_ids ?? []),
+      ...(body.assigned_to_id ? [body.assigned_to_id] : []),
+    ]
+    const addedIds = Array.from(new Set(newAssigneeIds.filter((newId) => newId && !previousAssigneeIds.includes(newId))))
+    await notifyAssignees(supabase, data.title, addedIds)
+  }
+
   return NextResponse.json(data)
+}
+
+/** Notifica os novos responsáveis (deduplicados, exceto o usuário logado) que foram atribuídos a uma tarefa. */
+async function notifyAssignees(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  taskTitle: string,
+  assigneeIds: (string | null | undefined)[]
+): Promise<void> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const ids = Array.from(new Set(assigneeIds.filter((aid): aid is string => !!aid)))
+      .filter((aid) => aid !== user?.id)
+
+    if (ids.length === 0) return
+
+    await supabase.from('notifications').insert(
+      ids.map((userId) => ({
+        user_id: userId,
+        title: `Você foi atribuído à tarefa: ${taskTitle}`,
+        body: null,
+        link: '/tasks',
+      }))
+    )
+  } catch {
+    // best-effort: não derruba a resposta principal
+  }
 }
 
 export async function DELETE(

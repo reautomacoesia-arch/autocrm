@@ -65,8 +65,11 @@ export default function NotificationBell() {
       >
         <Bell size={16} />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-            {unread > 9 ? '9+' : unread}
+          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4">
+            <span className="absolute inline-flex w-full h-full bg-red-500 rounded-full opacity-75 animate-ping" />
+            <span className="relative flex items-center justify-center w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full">
+              {unread > 9 ? '9+' : unread}
+            </span>
           </span>
         )}
       </button>

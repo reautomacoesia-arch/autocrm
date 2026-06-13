@@ -287,7 +287,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
             />
           ) : (
             <p
-              className={`text-sm font-medium ${
+              className={`text-sm font-medium break-words ${
                 task.status === 'done' ? 'line-through text-slate-500' : 'text-white'
               }`}
             >
@@ -295,7 +295,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
             </p>
           )}
           {task.description && (
-            <p className="text-slate-400 text-xs mt-0.5 truncate">{task.description}</p>
+            <p className="text-slate-400 text-xs mt-0.5 break-words line-clamp-2">{task.description}</p>
           )}
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
             {task.due_date && (
