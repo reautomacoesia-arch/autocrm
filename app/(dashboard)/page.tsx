@@ -4,7 +4,12 @@ import MetricCard from '@/components/dashboard/MetricCard'
 import PageHeader from '@/components/ui/PageHeader'
 import Link from 'next/link'
 import DashboardCalendar from '@/components/dashboard/DashboardCalendar'
+import FocusToday from '@/components/dashboard/FocusToday'
+import PipelineFunnel from '@/components/dashboard/PipelineFunnel'
+import QuickActions from '@/components/dashboard/QuickActions'
 import type { LeadStage } from '@/lib/types'
+
+const OPEN_STAGES: LeadStage[] = ['lead', 'contacted', 'proposal_sent', 'negotiating']
 
 const PRIORITY_COLOR: Record<string, string> = {
   high: 'text-red-400',
@@ -124,7 +129,7 @@ export default async function DashboardPage() {
     supabase.from('clients').select('id, monthly_value, created_at').eq('status', 'active').eq('is_internal', false),
     supabase
       .from('leads')
-      .select('id, created_at')
+      .select('id, stage, estimated_value, created_at')
       .not('stage', 'in', '("won","lost")'),
     supabase
       .from('proposals')
@@ -200,8 +205,22 @@ export default async function DashboardPage() {
       : 0
   const allPendingCount = allPendingTasksRes.data?.length ?? 0
   const myTasks = (myTasksRes as any).data ?? []
-  const myOverdueCount = myTasks.filter((t: any) => isOverdue(t.due_date)).length
-  const myDueTodayCount = myTasks.filter((t: any) => isDueToday(t.due_date, today)).length
+  const overdueTasks = myTasks.filter((t: any) => isOverdue(t.due_date))
+  const dueTodayTasks = myTasks.filter((t: any) => isDueToday(t.due_date, today))
+  const myOverdueCount = overdueTasks.length
+  const myDueTodayCount = dueTodayTasks.length
+
+  // ── Funil do pipeline: agrupa leads abertos por estágio ─────────────────
+  const openLeads: { stage: LeadStage; estimated_value: number | null }[] = leadsRes.data ?? []
+  const pipelineStages = OPEN_STAGES.map((stage) => {
+    const leadsInStage = openLeads.filter((l) => l.stage === stage)
+    return {
+      stage,
+      label: STAGE_LABELS[stage],
+      count: leadsInStage.length,
+      value: leadsInStage.reduce((sum, l) => sum + (l.estimated_value ?? 0), 0),
+    }
+  })
 
   // Merge interactions + pipeline events, sorted by date
   const interactions = (interactionsRes.data ?? []).map((i: any) => ({
@@ -236,6 +255,7 @@ export default async function DashboardPage() {
             ? `${myTasks.length} tarefa${myTasks.length > 1 ? 's' : ''} na sua fila`
             : 'Visão geral do seu negócio'
         }
+        action={<QuickActions />}
       />
 
       {/* Metric cards */}
@@ -274,6 +294,12 @@ export default async function DashboardPage() {
           }
           color={myOverdueCount > 0 ? 'amber' : 'white'}
         />
+      </div>
+
+      {/* Foco do dia + Funil do pipeline */}
+      <div className="grid grid-cols-2 gap-6 mb-8">
+        <FocusToday overdueTasks={overdueTasks} dueTodayTasks={dueTodayTasks} />
+        <PipelineFunnel stages={pipelineStages} />
       </div>
 
       <DashboardCalendar />
