@@ -646,6 +646,7 @@ export default function ReportsClient({
               <YAxis tickFormatter={fmtShort} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} width={60} />
               <Tooltip
                 {...tooltipStyle}
+                cursor={{ fill: 'rgba(148,163,184,0.06)' }}
                 formatter={(value: unknown, name: unknown) => [fmtCurrency(Number(value)), String(name)]}
               />
               <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8', paddingTop: 8 }} />
