@@ -21,6 +21,8 @@ export const leadCreateSchema = z.object({
   stage: leadStageEnum.optional(),
   estimated_value: money.nullish(),
   notes: optText(5000),
+  instagram: optText(200),
+  website: optText(500),
   source: optText(200),
   next_step: optText(500),
 })

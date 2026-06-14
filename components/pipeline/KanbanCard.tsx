@@ -7,7 +7,7 @@ import type { Lead } from '@/lib/types'
 import type { FieldWithValue } from '@/lib/types'
 import { SOURCE_LABELS } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
-import { Building2, DollarSign, X, MessageCircle, ChevronRight, Thermometer } from 'lucide-react'
+import { Building2, DollarSign, X, MessageCircle, ChevronRight, Thermometer, Mail, AtSign, Globe } from 'lucide-react'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 import LeadScoreBadge from './LeadScoreBadge'
 
@@ -351,6 +351,46 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
                   <p className="text-slate-400 text-xs truncate">{lead.company}</p>
                 </div>
               )}
+              {lead.email && (
+                <div className="flex items-center gap-1 mt-1">
+                  <Mail size={11} className="text-slate-500 flex-shrink-0" />
+                  <a
+                    href={`mailto:${lead.email}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-slate-400 hover:text-indigo-400 text-xs truncate transition-colors"
+                  >
+                    {lead.email}
+                  </a>
+                </div>
+              )}
+              {lead.instagram && (
+                <div className="flex items-center gap-1 mt-1">
+                  <AtSign size={11} className="text-slate-500 flex-shrink-0" />
+                  <a
+                    href={`https://instagram.com/${lead.instagram.replace(/^@/, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-slate-400 hover:text-indigo-400 text-xs truncate transition-colors"
+                  >
+                    {lead.instagram.startsWith('@') ? lead.instagram : `@${lead.instagram}`}
+                  </a>
+                </div>
+              )}
+              {lead.website && (
+                <div className="flex items-center gap-1 mt-1">
+                  <Globe size={11} className="text-slate-500 flex-shrink-0" />
+                  <a
+                    href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-slate-400 hover:text-indigo-400 text-xs truncate transition-colors"
+                  >
+                    {lead.website.replace(/^https?:\/\//, '')}
+                  </a>
+                </div>
+              )}
               {lead.estimated_value > 0 && (
                 <div className="flex items-center gap-1 mt-2">
                   <DollarSign size={11} className="text-emerald-500 flex-shrink-0" />
@@ -382,6 +422,13 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
                 <div className="mt-2 border-l-2 border-amber-500 pl-2 bg-amber-950/20 rounded-r py-1">
                   <p className="text-amber-400 text-[10px] font-semibold uppercase tracking-wide mb-0.5">Próximo passo</p>
                   <p className="text-amber-100 text-xs leading-tight">{lead.next_step}</p>
+                </div>
+              )}
+              {lead.notes && (
+                <div className="mt-2 border-t border-slate-800 pt-1.5">
+                  <p className="text-slate-500 text-xs leading-tight whitespace-pre-wrap break-words line-clamp-3">
+                    {lead.notes}
+                  </p>
                 </div>
               )}
               <div className="mt-2 flex justify-end items-center gap-1.5">
