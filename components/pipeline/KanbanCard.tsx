@@ -32,6 +32,10 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
     company: lead.company ?? '',
     estimated_value: String(lead.estimated_value),
     phone: lead.phone ?? '',
+    email: lead.email ?? '',
+    instagram: lead.instagram ?? '',
+    website: lead.website ?? '',
+    notes: lead.notes ?? '',
     source: lead.source ?? '',
     next_step: lead.next_step ?? '',
   })
@@ -102,6 +106,10 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
         company: lead.company ?? '',
         estimated_value: String(lead.estimated_value),
         phone: lead.phone ?? '',
+        email: lead.email ?? '',
+        instagram: lead.instagram ?? '',
+        website: lead.website ?? '',
+        notes: lead.notes ?? '',
         source: lead.source ?? '',
         next_step: lead.next_step ?? '',
       })
@@ -122,11 +130,11 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
         company: editForm.company || null,
         estimated_value: parseFloat(editForm.estimated_value) || 0,
         phone: editForm.phone || null,
-        email: lead.email,
+        email: editForm.email || null,
         stage: lead.stage,
-        notes: lead.notes,
-        instagram: lead.instagram,
-        website: lead.website,
+        notes: editForm.notes || null,
+        instagram: editForm.instagram || null,
+        website: editForm.website || null,
         source: editForm.source || null,
         next_step: editForm.next_step || null,
       }),
@@ -256,6 +264,27 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
                   placeholder="Telefone"
                 />
               </div>
+              <input
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
+                className="w-full bg-[#1a1a1d] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs mb-2 focus:outline-none focus:border-indigo-500"
+                placeholder="Email"
+              />
+              <div className="grid grid-cols-2 gap-1.5 mb-2">
+                <input
+                  value={editForm.instagram}
+                  onChange={(e) => setEditForm((p) => ({ ...p, instagram: e.target.value }))}
+                  className="bg-[#1a1a1d] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500"
+                  placeholder="@instagram"
+                />
+                <input
+                  value={editForm.website}
+                  onChange={(e) => setEditForm((p) => ({ ...p, website: e.target.value }))}
+                  className="bg-[#1a1a1d] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500"
+                  placeholder="Website"
+                />
+              </div>
               <select
                 value={editForm.source}
                 onChange={(e) => setEditForm((p) => ({ ...p, source: e.target.value }))}
@@ -272,8 +301,15 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
               <input
                 value={editForm.next_step}
                 onChange={(e) => setEditForm((p) => ({ ...p, next_step: e.target.value }))}
-                className="bg-[#1a1a1d] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500 mb-2"
+                className="w-full bg-[#1a1a1d] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500 mb-2"
                 placeholder="Próximo passo..."
+              />
+              <textarea
+                value={editForm.notes}
+                onChange={(e) => setEditForm((p) => ({ ...p, notes: e.target.value }))}
+                rows={2}
+                className="w-full bg-[#1a1a1d] border border-slate-600 text-slate-300 rounded px-2 py-1 text-xs mb-2 focus:outline-none focus:border-indigo-500 resize-none"
+                placeholder="Observações..."
               />
               {leadCustomFields.length > 0 && (
                 <div className="mb-2">
