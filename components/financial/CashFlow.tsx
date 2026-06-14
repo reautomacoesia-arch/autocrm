@@ -15,6 +15,8 @@ import BulkActionBar from '@/components/ui/BulkActionBar'
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  ChevronDown,
+  ChevronUp,
   Plus,
   Trash2,
   Upload,
@@ -26,6 +28,7 @@ import ImportSpreadsheetModal, {
   parseAmount,
   type ImportColumn,
 } from '@/components/financial/ImportSpreadsheetModal'
+import CashFlowCharts from '@/components/financial/CashFlowCharts'
 
 type TransactionWithClient = Transaction & {
   clients: { name: string; company: string | null } | null
@@ -210,6 +213,9 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
   const [showImportPicker, setShowImportPicker] = useState(false)
   const [showImportIncomeModal, setShowImportIncomeModal] = useState(false)
   const [showImportExpenseModal, setShowImportExpenseModal] = useState(false)
+
+  // Gráficos
+  const [showCharts, setShowCharts] = useState(true)
 
   // --- Normalização ---
   const entries: Entry[] = useMemo(() => {
@@ -626,6 +632,18 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
             {formatCurrency(balance)}
           </p>
         </div>
+      </div>
+
+      {/* Gráficos */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowCharts((v) => !v)}
+          className="flex items-center gap-1.5 text-slate-500 hover:text-slate-300 text-xs transition-colors mb-3"
+        >
+          {showCharts ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          {showCharts ? 'Ocultar gráficos' : 'Mostrar gráficos'}
+        </button>
+        {showCharts && <CashFlowCharts entries={filteredEntries} />}
       </div>
 
       {/* Cabeçalho + ações */}
