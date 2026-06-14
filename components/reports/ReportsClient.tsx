@@ -683,6 +683,7 @@ export default function ReportsClient({
                 />
                 <Tooltip
                   {...tooltipStyle}
+                  cursor={false}
                   formatter={(value: unknown, _: unknown, entry: any) => {
                     const n = Number(value)
                     return [`${n} lead${n !== 1 ? 's' : ''} · ${fmtCurrency(entry.payload.value)}`, '']
@@ -730,6 +731,7 @@ export default function ReportsClient({
                 />
                 <Tooltip
                   {...tooltipStyle}
+                  cursor={false}
                   formatter={(value: unknown) => { const n = Number(value); return [`${n} lead${n !== 1 ? 's' : ''}`, 'Quantidade'] }}
                 />
                 <Bar
@@ -774,6 +776,7 @@ export default function ReportsClient({
                 />
                 <Tooltip
                   {...tooltipStyle}
+                  cursor={false}
                   formatter={(value: unknown, _: unknown, entry: { payload?: { count: number } }) => {
                     const n = entry.payload?.count ?? 0
                     return [`${fmtDays(Number(value))} (média de ${n} lead${n !== 1 ? 's' : ''})`, '']
@@ -833,6 +836,7 @@ export default function ReportsClient({
                   </Pie>
                   <Tooltip
                     {...tooltipStyle}
+                    cursor={false}
                     formatter={(count: unknown, _: unknown, entry: any) => {
                       const n = Number(count)
                       return [`${n} proposta${n !== 1 ? 's' : ''} · ${fmtCurrency(entry.payload.totalValue)}`, entry.payload.name]
