@@ -318,7 +318,7 @@ export async function GET(request: Request) {
   // ── 6. Despesas recorrentes ───────────────────────────────────────────────────
   const { data: recurringExpenses } = await supabase
     .from('expenses')
-    .select('id, description, amount, category, recurring_day')
+    .select('id, description, amount, category, recurring_day, client_id')
     .eq('recurring', true)
     .not('recurring_day', 'is', null)
 
@@ -348,6 +348,7 @@ export async function GET(request: Request) {
       recurring: false,
       recurring_key: recurringKey,
       parent_id: exp.id,
+      client_id: exp.client_id ?? null,
     })
 
     if (!insertErr) expensesGenerated++

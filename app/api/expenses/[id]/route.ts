@@ -20,6 +20,7 @@ export async function PATCH(
   if (body.date !== undefined) update.date = body.date
   if (body.recurring !== undefined) update.recurring = body.recurring
   if (body.recurring_day !== undefined) update.recurring_day = body.recurring_day ?? null
+  if (body.client_id !== undefined) update.client_id = body.client_id ?? null
 
   const { data, error } = await supabase
     .from('expenses')

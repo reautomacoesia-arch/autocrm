@@ -22,6 +22,7 @@ export async function POST(request: Request) {
         category: row.category ?? null,
         date: row.date,
         recurring: false,
+        client_id: row.client_id ?? null,
       })),
       { count: 'exact' }
     )

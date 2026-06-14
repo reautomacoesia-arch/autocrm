@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { Expense } from '@/lib/types'
+import type { Client, Expense } from '@/lib/types'
 import { EXPENSE_CATEGORIES } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
 import Badge from '@/components/ui/Badge'
@@ -12,6 +12,7 @@ import { useConfirm } from '@/components/ui/ConfirmModal'
 
 interface RecurringExpensesPanelProps {
   initialRecurringExpenses: Expense[]
+  clients: Client[]
 }
 
 interface RecurringExpenseForm {
@@ -20,6 +21,7 @@ interface RecurringExpenseForm {
   category: string
   customCategory: string
   recurring_day: string
+  client_id: string
 }
 
 function isSuggestedCategory(category: string | null): boolean {
@@ -34,6 +36,7 @@ function formToExpense(exp: Expense): RecurringExpenseForm {
     category: exp.category ? (suggested ? exp.category : '__custom__') : '',
     customCategory: exp.category && !suggested ? exp.category : '',
     recurring_day: exp.recurring_day ? String(exp.recurring_day) : '',
+    client_id: exp.client_id ?? '',
   }
 }
 
@@ -43,13 +46,14 @@ const EMPTY_FORM: RecurringExpenseForm = {
   category: '',
   customCategory: '',
   recurring_day: '',
+  client_id: '',
 }
 
 /**
  * Painel de configuração: templates de despesa recorrente (recurring=true).
  * Permite editar valor/categoria/dia e interromper a recorrência.
  */
-export default function RecurringExpensesPanel({ initialRecurringExpenses }: RecurringExpensesPanelProps) {
+export default function RecurringExpensesPanel({ initialRecurringExpenses, clients }: RecurringExpensesPanelProps) {
   const { toast } = useToast()
   const confirm = useConfirm()
 
@@ -77,6 +81,7 @@ export default function RecurringExpensesPanel({ initialRecurringExpenses }: Rec
       description: editForm.description,
       amount: parseFloat(editForm.amount),
       category: resolveCategory(editForm),
+      client_id: editForm.client_id || null,
     }
     if (editForm.recurring_day) {
       body.recurring_day = parseInt(editForm.recurring_day)
@@ -195,6 +200,21 @@ export default function RecurringExpensesPanel({ initialRecurringExpenses }: Rec
                       />
                     )}
                   </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs text-slate-400 mb-1.5">Cliente (opcional)</label>
+                    <select
+                      value={editForm.client_id}
+                      onChange={(e) => setEditForm((p) => ({ ...p, client_id: e.target.value }))}
+                      className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="">Geral (sem cliente)</option>
+                      {clients.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}{c.company ? ` — ${c.company}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -216,12 +236,15 @@ export default function RecurringExpensesPanel({ initialRecurringExpenses }: Rec
             )
           }
 
+          const client = exp.client_id ? clients.find((c) => c.id === exp.client_id) : null
+
           return (
             <Card key={exp.id} className="px-4 py-3 flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <p className="text-white text-sm font-medium">{exp.description}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   {exp.category && <Badge variant="gray">{exp.category}</Badge>}
+                  {client && <Badge variant="gray">{client.name}</Badge>}
                   <p className="flex items-center gap-1 text-emerald-600 text-xs">
                     <RefreshCw size={9} />
                     Todo dia {exp.recurring_day}

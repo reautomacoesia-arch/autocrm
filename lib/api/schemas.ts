@@ -114,6 +114,7 @@ export const expenseCreateSchema = z.object({
   date: dateStr,
   recurring: z.boolean().optional(),
   recurring_day: z.number().int().min(1).max(31).nullish(),
+  client_id: optUuid,
 })
 
 export const expenseUpdateSchema = expenseCreateSchema.partial()
@@ -124,6 +125,7 @@ export const expenseImportRowSchema = z.object({
   amount: money,
   category: optText(100),
   date: dateStr,
+  client_id: optUuid,
 })
 
 export const expenseImportSchema = z.object({

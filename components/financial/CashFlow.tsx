@@ -47,6 +47,7 @@ interface Entry {
   detail: string
   amount: number
   status?: TransactionType
+  clientId: string | null
   raw: TransactionWithClient | Expense
 }
 
@@ -118,6 +119,7 @@ interface ExpenseImportRow {
   amount: number
   category: string | null
   date: string
+  client_id: string | null
 }
 
 const EXPENSE_IMPORT_COLUMNS: ImportColumn[] = [
@@ -125,11 +127,12 @@ const EXPENSE_IMPORT_COLUMNS: ImportColumn[] = [
   { key: 'amount', label: 'Valor', required: true },
   { key: 'category', label: 'Categoria' },
   { key: 'date', label: 'Data', required: true },
+  { key: 'client', label: 'Cliente' },
 ]
 
 const EXPENSE_IMPORT_TEMPLATE: Record<string, string | number>[] = [
-  { Descrição: 'Aluguel', Valor: 3000, Categoria: 'Aluguel', Data: '2026-06-05' },
-  { Descrição: 'Figma', Valor: 90, Categoria: 'Ferramentas/Software', Data: '2026-06-10' },
+  { Descrição: 'Aluguel', Valor: 3000, Categoria: 'Aluguel', Data: '2026-06-05', Cliente: '' },
+  { Descrição: 'Figma', Valor: 90, Categoria: 'Ferramentas/Software', Data: '2026-06-10', Cliente: 'Nome do cliente' },
 ]
 
 interface IncomeForm {
@@ -148,6 +151,7 @@ interface ExpenseForm {
   date: string
   recurring: boolean
   recurring_day: string
+  client_id: string
 }
 
 const EMPTY_INCOME_FORM: IncomeForm = {
@@ -166,6 +170,7 @@ const EMPTY_EXPENSE_FORM: ExpenseForm = {
   date: todayStr(),
   recurring: false,
   recurring_day: '',
+  client_id: '',
 }
 
 function isSuggestedCategory(category: string | null): boolean {
@@ -186,6 +191,7 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
   const [periodShortcut, setPeriodShortcut] = useState<PeriodShortcut>('this_month')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [clientFilter, setClientFilter] = useState('')
 
   // Novo lançamento
   const [showAddModal, setShowAddModal] = useState(false)
@@ -215,19 +221,25 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
       detail: t.clients?.name ?? 'Cliente desconhecido',
       amount: t.amount,
       status: t.type,
+      clientId: t.client_id,
       raw: t,
     }))
-    const expenseEntries: Entry[] = expenses.map((e) => ({
-      id: e.id,
-      kind: 'expense',
-      date: e.date,
-      description: e.description,
-      detail: e.category ?? 'Sem categoria',
-      amount: e.amount,
-      raw: e,
-    }))
+    const expenseEntries: Entry[] = expenses.map((e) => {
+      const client = e.client_id ? clients.find((c) => c.id === e.client_id) : null
+      const detail = client ? `${e.category ?? 'Sem categoria'} · ${client.name}` : (e.category ?? 'Sem categoria')
+      return {
+        id: e.id,
+        kind: 'expense',
+        date: e.date,
+        description: e.description,
+        detail,
+        amount: e.amount,
+        clientId: e.client_id,
+        raw: e,
+      }
+    })
     return [...incomeEntries, ...expenseEntries].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
-  }, [transactions, expenses])
+  }, [transactions, expenses, clients])
 
   // --- Filtros aplicados ---
   const { from: shortcutFrom, to: shortcutTo } = periodRange(periodShortcut)
@@ -239,6 +251,7 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
     return entries.filter((entry) => {
       if (typeFilter === 'income' && entry.kind !== 'income') return false
       if (typeFilter === 'expense' && entry.kind !== 'expense') return false
+      if (clientFilter && entry.clientId !== clientFilter) return false
       if (effectiveFrom && entry.date < effectiveFrom) return false
       if (effectiveTo && entry.date > effectiveTo) return false
       if (term) {
@@ -247,7 +260,7 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
       }
       return true
     })
-  }, [entries, typeFilter, effectiveFrom, effectiveTo, search])
+  }, [entries, typeFilter, clientFilter, effectiveFrom, effectiveTo, search])
 
   // --- Resumo ---
   const totalReceived = filteredEntries
@@ -260,8 +273,9 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
     .filter((e) => e.kind === 'income' && e.status === 'pending')
     .reduce((sum, e) => sum + e.amount, 0)
   const balance = totalReceived - totalExpenses
+  const balanceLabel = clientFilter ? 'Lucro do cliente' : 'Saldo'
 
-  const hasActiveFilters = Boolean(search || typeFilter !== 'all' || periodShortcut !== 'this_month' || dateFrom || dateTo)
+  const hasActiveFilters = Boolean(search || typeFilter !== 'all' || periodShortcut !== 'this_month' || dateFrom || dateTo || clientFilter)
 
   function clearFilters() {
     setSearch('')
@@ -269,6 +283,7 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
     setPeriodShortcut('this_month')
     setDateFrom('')
     setDateTo('')
+    setClientFilter('')
   }
 
   // --- Novo lançamento ---
@@ -319,6 +334,7 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
           date: expenseForm.date || todayStr(),
           recurring,
           recurring_day: recurringDay,
+          client_id: expenseForm.client_id || null,
         }),
       })
       if (res.ok) {
@@ -368,6 +384,7 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
         date: exp.date,
         recurring: exp.recurring,
         recurring_day: exp.recurring_day ? String(exp.recurring_day) : '',
+        client_id: exp.client_id ?? '',
       })
     }
   }
@@ -411,6 +428,7 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
           amount: parseFloat(editExpenseForm.amount),
           category,
           date: editExpenseForm.date,
+          client_id: editExpenseForm.client_id || null,
         }),
       })
       if (res.ok) {
@@ -524,7 +542,16 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
       ? String(categoryRaw).trim()
       : null
 
-    return { row: { description, amount, category, date } }
+    const clientNameRaw = getCell(raw, 'Cliente')
+    const clientName = clientNameRaw !== undefined && clientNameRaw !== null ? String(clientNameRaw).trim() : ''
+    let client_id: string | null = null
+    if (clientName) {
+      const client = clients.find((c) => c.name.trim().toLowerCase() === clientName.toLowerCase())
+      if (!client) return { error: 'Cliente não encontrado' }
+      client_id = client.id
+    }
+
+    return { row: { description, amount, category, date, client_id } }
   }
 
   async function handleImportTransactions(rows: TransactionImportRow[]): Promise<{ inserted: number; failed: number }> {
@@ -594,7 +621,7 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
           <p className="text-red-400 text-lg font-bold">{formatCurrency(totalExpenses)}</p>
         </div>
         <div className="bg-[#1a1a1d] border border-slate-700 rounded-lg p-4">
-          <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">Saldo</p>
+          <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">{balanceLabel}</p>
           <p className={`text-lg font-bold ${balance >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
             {formatCurrency(balance)}
           </p>
@@ -689,6 +716,19 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
             className="bg-[#1a1a1d] border border-slate-700 text-slate-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-500"
           />
         </div>
+
+        <select
+          value={clientFilter}
+          onChange={(e) => setClientFilter(e.target.value)}
+          className="bg-[#1a1a1d] border border-slate-700 text-slate-300 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
+        >
+          <option value="">Cliente: todos</option>
+          {clients.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}{c.company ? ` — ${c.company}` : ''}
+            </option>
+          ))}
+        </select>
 
         {hasActiveFilters && (
           <button
@@ -981,6 +1021,21 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
                     </div>
                   )}
                 </div>
+                <div className="col-span-2">
+                  <label className="block text-xs text-slate-400 mb-1.5">Cliente (opcional)</label>
+                  <select
+                    value={expenseForm.client_id}
+                    onChange={(e) => setExpenseForm((p) => ({ ...p, client_id: e.target.value }))}
+                    className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="">Geral (sem cliente)</option>
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}{c.company ? ` — ${c.company}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="flex gap-2">
                 <button
@@ -1136,6 +1191,21 @@ export default function CashFlow({ transactions: initialTransactions, expenses: 
                     placeholder="Nome da categoria"
                   />
                 )}
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs text-slate-400 mb-1.5">Cliente (opcional)</label>
+                <select
+                  value={editExpenseForm.client_id}
+                  onChange={(e) => setEditExpenseForm((p) => ({ ...p, client_id: e.target.value }))}
+                  className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="">Geral (sem cliente)</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}{c.company ? ` — ${c.company}` : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="flex gap-2">

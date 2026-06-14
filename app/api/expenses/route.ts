@@ -41,6 +41,7 @@ export async function POST(request: Request) {
       date: body.date,
       recurring: body.recurring ?? false,
       recurring_day: body.recurring_day ?? null,
+      client_id: body.client_id ?? null,
     })
     .select()
     .single()

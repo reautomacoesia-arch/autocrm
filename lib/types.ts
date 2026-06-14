@@ -139,6 +139,7 @@ export interface Expense {
   recurring_day: number | null
   recurring_key: string | null
   parent_id: string | null
+  client_id: string | null
   created_at: string
   updated_at: string
 }

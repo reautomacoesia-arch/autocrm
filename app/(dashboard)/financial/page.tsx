@@ -68,7 +68,7 @@ export default async function FinancialPage() {
 
       <RecurringBillingPanel clients={billingClients} mrr={mrr} />
 
-      <RecurringExpensesPanel initialRecurringExpenses={recurringExpenses} />
+      <RecurringExpensesPanel initialRecurringExpenses={recurringExpenses} clients={clients} />
     </div>
   )
 }
