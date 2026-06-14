@@ -191,3 +191,13 @@ h1, h2, h3, h4 {
   position: absolute; right: -2px; top: 0; bottom: 0;
   width: 4px; background: #d4af37; cursor: col-resize;
 }
+
+/* ── Recharts: remover contorno de foco ao clicar nos gráficos ──────── */
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-surface:focus,
+.recharts-surface:focus-visible,
+.recharts-wrapper *:focus,
+.recharts-wrapper *:focus-visible {
+  outline: none !important;
+}
