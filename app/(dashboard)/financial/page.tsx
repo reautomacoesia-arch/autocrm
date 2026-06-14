@@ -1,13 +1,30 @@
 import { createClient } from '@/lib/supabase/server'
-import TransactionManager from '@/components/financial/TransactionManager'
-import ExpensesSection from '@/components/financial/ExpensesSection'
+import CashFlow from '@/components/financial/CashFlow'
+import RecurringBillingPanel from '@/components/financial/RecurringBillingPanel'
+import RecurringExpensesPanel from '@/components/financial/RecurringExpensesPanel'
 import PageHeader from '@/components/ui/PageHeader'
-import type { Expense } from '@/lib/types'
+import type { Client, Expense, Transaction } from '@/lib/types'
+
+type TransactionWithClient = Transaction & {
+  clients: { name: string; company: string | null } | null
+}
+
+interface BillingClient {
+  id: string
+  name: string
+  company: string | null
+  monthly_value: number
+  billing_day: number | null
+}
 
 export default async function FinancialPage() {
   const supabase = await createClient()
 
-  const [clientsRes, transactionsRes, expensesRes, recurringExpensesRes] = await Promise.all([
+  const [clientsRes, billingClientsRes, transactionsRes, expensesRes, recurringExpensesRes] = await Promise.all([
+    supabase
+      .from('clients')
+      .select('*')
+      .order('monthly_value', { ascending: false }),
     supabase
       .from('clients')
       .select('id, name, company, monthly_value, billing_day')
@@ -32,32 +49,26 @@ export default async function FinancialPage() {
       .order('created_at', { ascending: false }),
   ])
 
-  const clients = (clientsRes.data ?? []) as {
-    id: string
-    name: string
-    company: string | null
-    monthly_value: number
-    billing_day: number | null
-  }[]
-  const transactions = transactionsRes.data ?? []
+  const clients = (clientsRes.data ?? []) as Client[]
+  const billingClients = (billingClientsRes.data ?? []) as BillingClient[]
+  const transactions = (transactionsRes.data ?? []) as TransactionWithClient[]
   const expenses = (expensesRes.data ?? []) as Expense[]
   const recurringExpenses = (recurringExpensesRes.data ?? []) as Expense[]
-  const mrr = clients.reduce((sum: number, c: any) => sum + (c.monthly_value || 0), 0)
+  const mrr = billingClients.reduce((sum, c) => sum + (c.monthly_value || 0), 0)
 
   return (
     <div>
       <PageHeader title="Financeiro" subtitle="Visão geral do fluxo de caixa" />
 
-      <TransactionManager
-        initialTransactions={transactions as any}
-        clients={clients as any}
-        mrr={mrr}
+      <CashFlow
+        transactions={transactions}
+        expenses={expenses}
+        clients={clients}
       />
 
-      <ExpensesSection
-        initialExpenses={expenses}
-        initialRecurringExpenses={recurringExpenses}
-      />
+      <RecurringBillingPanel clients={billingClients} mrr={mrr} />
+
+      <RecurringExpensesPanel initialRecurringExpenses={recurringExpenses} />
     </div>
   )
 }
