@@ -118,6 +118,30 @@ export const expenseCreateSchema = z.object({
 
 export const expenseUpdateSchema = expenseCreateSchema.partial()
 
+// ---------- Importação em massa (planilha) ----------
+export const expenseImportRowSchema = z.object({
+  description: text(300).min(1),
+  amount: money,
+  category: optText(100),
+  date: dateStr,
+})
+
+export const expenseImportSchema = z.object({
+  rows: z.array(expenseImportRowSchema).min(1).max(1000),
+})
+
+export const transactionImportRowSchema = z.object({
+  client_id: uuid,
+  amount: money,
+  type: transactionTypeEnum,
+  date: dateStr,
+  description: optText(1000),
+})
+
+export const transactionImportSchema = z.object({
+  rows: z.array(transactionImportRowSchema).min(1).max(1000),
+})
+
 // ---------- Services ----------
 export const serviceCreateSchema = z.object({
   name: text(200).min(1),

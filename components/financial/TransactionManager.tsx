@@ -4,13 +4,19 @@ import { useState } from 'react'
 import type { TransactionType } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
 import Badge from '@/components/ui/Badge'
-import { Download, Plus, Trash2, RefreshCw, Settings2, X } from 'lucide-react'
+import { Download, Plus, Trash2, RefreshCw, Settings2, X, Upload } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 import EmptyState from '@/components/ui/EmptyState'
 import { exportToExcel } from '@/lib/export-excel'
 import { useBulkSelection, bulkRun } from '@/lib/hooks/useBulkSelection'
 import BulkActionBar from '@/components/ui/BulkActionBar'
+import ImportSpreadsheetModal, {
+  getCell,
+  parseSheetDate,
+  parseAmount,
+  type ImportColumn,
+} from '@/components/financial/ImportSpreadsheetModal'
 
 interface TransactionWithClient {
   id: string
@@ -51,6 +57,27 @@ const TYPE_BADGE: Record<TransactionType, { label: string; variant: 'green' | 'y
   pending: { label: 'Pendente', variant: 'yellow' },
 }
 
+interface TransactionImportRow {
+  client_id: string
+  amount: number
+  type: TransactionType
+  date: string
+  description: string | null
+}
+
+const TRANSACTION_IMPORT_COLUMNS: ImportColumn[] = [
+  { key: 'client', label: 'Cliente', required: true },
+  { key: 'amount', label: 'Valor', required: true },
+  { key: 'date', label: 'Data', required: true },
+  { key: 'status', label: 'Status' },
+  { key: 'description', label: 'Descrição' },
+]
+
+const TRANSACTION_IMPORT_TEMPLATE: Record<string, string | number>[] = [
+  { Cliente: 'Nome do cliente', Valor: 1500, Data: '2026-06-10', Status: 'recebido', Descrição: 'Mensalidade junho' },
+  { Cliente: 'Nome do cliente', Valor: 1500, Data: '2026-07-10', Status: 'pendente', Descrição: 'Mensalidade julho' },
+]
+
 export default function TransactionManager({
   initialTransactions,
   clients,
@@ -78,6 +105,8 @@ export default function TransactionManager({
     description: '',
   })
   const [editSaving, setEditSaving] = useState(false)
+
+  const [showImportModal, setShowImportModal] = useState(false)
 
   // FN1 — filtros
   const [filterType, setFilterType] = useState<'all' | 'received' | 'pending'>('all')
@@ -222,6 +251,63 @@ export default function TransactionManager({
       toast('Erro ao salvar configuração', 'error')
     }
     setRecurringLoading(false)
+  }
+
+  function mapAndValidateTransactionRow(
+    raw: Record<string, unknown>
+  ): { row?: TransactionImportRow; error?: string } {
+    const clientName = String(getCell(raw, 'Cliente') ?? '').trim()
+    if (!clientName) return { error: 'Cliente vazio' }
+
+    const client = clients.find(
+      (c) => c.name.trim().toLowerCase() === clientName.toLowerCase()
+    )
+    if (!client) return { error: 'Cliente não encontrado' }
+
+    const amount = parseAmount(getCell(raw, 'Valor'))
+    if (amount === null) return { error: 'Valor inválido' }
+
+    const date = parseSheetDate(getCell(raw, 'Data'))
+    if (!date) return { error: 'Data inválida' }
+
+    const statusRaw = String(getCell(raw, 'Status') ?? '').trim().toLowerCase()
+    let type: TransactionType = 'received'
+    if (statusRaw === 'pendente') type = 'pending'
+    else if (statusRaw === 'recebido' || statusRaw === '') type = 'received'
+    else return { error: 'Status inválido (use "recebido" ou "pendente")' }
+
+    const descriptionRaw = getCell(raw, 'Descrição')
+    const description = descriptionRaw !== undefined && descriptionRaw !== null && String(descriptionRaw).trim() !== ''
+      ? String(descriptionRaw).trim()
+      : null
+
+    return { row: { client_id: client.id, amount, type, date, description } }
+  }
+
+  async function handleImportTransactions(rows: TransactionImportRow[]): Promise<{ inserted: number; failed: number }> {
+    const res = await fetch('/api/transactions/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows }),
+    })
+    if (!res.ok) return { inserted: 0, failed: rows.length }
+    return res.json()
+  }
+
+  async function handleImportDone() {
+    const res = await fetch('/api/transactions')
+    if (res.ok) {
+      const data: { id: string; client_id: string; amount: number; type: TransactionType; date: string; description: string | null; recurring_key: string | null }[] = await res.json()
+      setTransactions(
+        data.map((t) => {
+          const client = clients.find((c) => c.id === t.client_id)
+          return {
+            ...t,
+            clients: client ? { name: client.name, company: client.company } : null,
+          }
+        })
+      )
+    }
   }
 
   function handleExport() {
@@ -528,6 +614,13 @@ export default function TransactionManager({
                 Exportar Excel
               </button>
               <button
+                onClick={() => setShowImportModal(true)}
+                className="flex items-center gap-1.5 text-slate-400 hover:text-slate-200 text-sm transition-colors"
+              >
+                <Upload size={14} />
+                Importar Excel
+              </button>
+              <button
                 onClick={() => setShowAddForm((v) => !v)}
                 className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 text-sm transition-colors"
               >
@@ -782,6 +875,17 @@ export default function TransactionManager({
           </div>
         </div>
       )}
+
+      <ImportSpreadsheetModal<TransactionImportRow>
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        title="Importar receitas"
+        columns={TRANSACTION_IMPORT_COLUMNS}
+        templateRows={TRANSACTION_IMPORT_TEMPLATE}
+        mapAndValidate={mapAndValidateTransactionRow}
+        onImport={handleImportTransactions}
+        onDone={handleImportDone}
+      />
     </div>
   )
 }

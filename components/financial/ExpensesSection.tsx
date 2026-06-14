@@ -7,9 +7,15 @@ import { formatCurrency } from '@/lib/pipeline'
 import Badge from '@/components/ui/Badge'
 import Card from '@/components/ui/Card'
 import EmptyState from '@/components/ui/EmptyState'
-import { Plus, Trash2, RefreshCw, Pencil } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, Pencil, Upload } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
+import ImportSpreadsheetModal, {
+  getCell,
+  parseSheetDate,
+  parseAmount,
+  type ImportColumn,
+} from '@/components/financial/ImportSpreadsheetModal'
 
 interface ExpensesSectionProps {
   initialExpenses: Expense[]
@@ -55,6 +61,45 @@ const EMPTY_FORM: ExpenseForm = {
   recurring_day: '',
 }
 
+interface ExpenseImportRow {
+  description: string
+  amount: number
+  category: string | null
+  date: string
+}
+
+const EXPENSE_IMPORT_COLUMNS: ImportColumn[] = [
+  { key: 'description', label: 'Descrição', required: true },
+  { key: 'amount', label: 'Valor', required: true },
+  { key: 'category', label: 'Categoria' },
+  { key: 'date', label: 'Data', required: true },
+]
+
+const EXPENSE_IMPORT_TEMPLATE: Record<string, string | number>[] = [
+  { Descrição: 'Aluguel', Valor: 3000, Categoria: 'Aluguel', Data: '2026-06-05' },
+  { Descrição: 'Figma', Valor: 90, Categoria: 'Ferramentas/Software', Data: '2026-06-10' },
+]
+
+function mapAndValidateExpenseRow(
+  raw: Record<string, unknown>
+): { row?: ExpenseImportRow; error?: string } {
+  const description = String(getCell(raw, 'Descrição') ?? '').trim()
+  if (!description) return { error: 'Descrição vazia' }
+
+  const amount = parseAmount(getCell(raw, 'Valor'))
+  if (amount === null) return { error: 'Valor inválido' }
+
+  const date = parseSheetDate(getCell(raw, 'Data'))
+  if (!date) return { error: 'Data inválida' }
+
+  const categoryRaw = getCell(raw, 'Categoria')
+  const category = categoryRaw !== undefined && categoryRaw !== null && String(categoryRaw).trim() !== ''
+    ? String(categoryRaw).trim()
+    : null
+
+  return { row: { description, amount, category, date } }
+}
+
 export default function ExpensesSection({
   initialExpenses,
   initialRecurringExpenses,
@@ -72,6 +117,8 @@ export default function ExpensesSection({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<ExpenseForm>(EMPTY_FORM)
   const [editSaving, setEditSaving] = useState(false)
+
+  const [showImportModal, setShowImportModal] = useState(false)
 
   const currentMonth = currentMonthStr()
   const monthExpenses = expenses.filter((e) => e.date.startsWith(currentMonth))
@@ -184,6 +231,24 @@ export default function ExpensesSection({
     toast('Despesa removida')
   }
 
+  async function handleImportExpenses(rows: ExpenseImportRow[]): Promise<{ inserted: number; failed: number }> {
+    const res = await fetch('/api/expenses/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rows }),
+    })
+    if (!res.ok) return { inserted: 0, failed: rows.length }
+    return res.json()
+  }
+
+  async function handleImportDone() {
+    const res = await fetch('/api/expenses?recurring=false')
+    if (res.ok) {
+      const data = await res.json()
+      setExpenses(data)
+    }
+  }
+
   async function handleStopRecurring(exp: Expense) {
     const ok = await confirm({
       title: 'Parar recorrência?',
@@ -218,13 +283,22 @@ export default function ExpensesSection({
             <span className="text-slate-500 text-xs font-normal ml-2">neste mês</span>
           </p>
         </div>
-        <button
-          onClick={() => setShowAddForm((v) => !v)}
-          className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 text-sm transition-colors"
-        >
-          <Plus size={14} />
-          Nova despesa
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-1.5 text-slate-400 hover:text-slate-200 text-sm transition-colors"
+          >
+            <Upload size={14} />
+            Importar Excel
+          </button>
+          <button
+            onClick={() => setShowAddForm((v) => !v)}
+            className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 text-sm transition-colors"
+          >
+            <Plus size={14} />
+            Nova despesa
+          </button>
+        </div>
       </div>
 
       {showAddForm && (
@@ -604,6 +678,17 @@ export default function ExpensesSection({
           </div>
         </div>
       )}
+
+      <ImportSpreadsheetModal<ExpenseImportRow>
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        title="Importar despesas"
+        columns={EXPENSE_IMPORT_COLUMNS}
+        templateRows={EXPENSE_IMPORT_TEMPLATE}
+        mapAndValidate={mapAndValidateExpenseRow}
+        onImport={handleImportExpenses}
+        onDone={handleImportDone}
+      />
     </div>
   )
 }
