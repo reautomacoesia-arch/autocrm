@@ -129,6 +129,31 @@ export interface Transaction {
   updated_at: string
 }
 
+export interface Expense {
+  id: string
+  description: string
+  amount: number
+  category: string | null
+  date: string
+  recurring: boolean
+  recurring_day: number | null
+  recurring_key: string | null
+  parent_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export const EXPENSE_CATEGORIES = [
+  'Aluguel',
+  'Salários',
+  'Ferramentas/Software',
+  'Impostos',
+  'Marketing',
+  'Serviços',
+  'Pró-labore',
+  'Outros',
+] as const
+
 export interface Profile {
   id: string
   name: string

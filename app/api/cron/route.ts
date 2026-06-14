@@ -315,9 +315,47 @@ export async function GET(request: Request) {
     }
   }
 
+  // ── 6. Despesas recorrentes ───────────────────────────────────────────────────
+  const { data: recurringExpenses } = await supabase
+    .from('expenses')
+    .select('id, description, amount, category, recurring_day')
+    .eq('recurring', true)
+    .not('recurring_day', 'is', null)
+
+  let expensesGenerated = 0
+
+  for (const exp of recurringExpenses ?? []) {
+    const day = exp.recurring_day as number
+    if (todayDay < day) continue
+
+    const recurringKey = `expense:${exp.id}:${currentMonth}`
+
+    const { data: existing } = await supabase
+      .from('expenses')
+      .select('id')
+      .eq('recurring_key', recurringKey)
+      .maybeSingle()
+
+    if (existing) continue
+
+    const expenseDate = `${currentMonth}-${String(day).padStart(2, '0')}`
+
+    const { error: insertErr } = await supabase.from('expenses').insert({
+      description: exp.description,
+      amount: exp.amount,
+      category: exp.category,
+      date: expenseDate,
+      recurring: false,
+      recurring_key: recurringKey,
+      parent_id: exp.id,
+    })
+
+    if (!insertErr) expensesGenerated++
+  }
+
   console.log(
     `[cron] notified=${notified} tasksCreated=${tasksCreated} ` +
-    `billingGenerated=${billingGenerated} emailsSent=${emailsSent}`,
+    `billingGenerated=${billingGenerated} expensesGenerated=${expensesGenerated} emailsSent=${emailsSent}`,
   )
 
   return NextResponse.json({
@@ -325,6 +363,7 @@ export async function GET(request: Request) {
     notified,
     tasksCreated,
     billingGenerated,
+    expensesGenerated,
     emailsSent,
     timestamp: new Date().toISOString(),
   })

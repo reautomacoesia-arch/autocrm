@@ -106,6 +106,18 @@ export const transactionCreateSchema = z.object({
 
 export const transactionUpdateSchema = transactionCreateSchema.omit({ client_id: true })
 
+// ---------- Expenses ----------
+export const expenseCreateSchema = z.object({
+  description: text(300).min(1),
+  amount: z.number().finite(),
+  category: optText(100),
+  date: dateStr,
+  recurring: z.boolean().optional(),
+  recurring_day: z.number().int().min(1).max(31).nullish(),
+})
+
+export const expenseUpdateSchema = expenseCreateSchema.partial()
+
 // ---------- Services ----------
 export const serviceCreateSchema = z.object({
   name: text(200).min(1),

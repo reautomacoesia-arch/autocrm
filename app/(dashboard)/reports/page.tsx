@@ -4,7 +4,7 @@ import ReportsClient from '@/components/reports/ReportsClient'
 export default async function ReportsPage() {
   const supabase = await createClient()
 
-  const [transactionsRes, leadsRes, proposalsRes, clientsRes, pipelineEventsRes] = await Promise.all([
+  const [transactionsRes, leadsRes, proposalsRes, clientsRes, pipelineEventsRes, expensesRes] = await Promise.all([
     supabase
       .from('transactions')
       .select('amount, type, date')
@@ -22,6 +22,11 @@ export default async function ReportsPage() {
       .from('pipeline_events')
       .select('lead_id, from_stage, to_stage, happened_at')
       .order('happened_at', { ascending: true }),
+    supabase
+      .from('expenses')
+      .select('amount, category, date')
+      .eq('recurring', false)
+      .order('date', { ascending: true }),
   ])
 
   const transactions = (transactionsRes.data ?? []) as {
@@ -51,6 +56,12 @@ export default async function ReportsPage() {
     happened_at: string
   }[]
 
+  const expenses = (expensesRes.data ?? []) as {
+    amount: number
+    category: string | null
+    date: string
+  }[]
+
   const allClients = (clientsRes.data ?? []) as {
     monthly_value: number
     status: string
@@ -75,6 +86,7 @@ export default async function ReportsPage() {
       leads={leads}
       proposals={proposals}
       pipelineEvents={pipelineEvents}
+      expenses={expenses}
       mrr={mrr}
       activeClients={activeClients}
       churnedClients={churnedClients}

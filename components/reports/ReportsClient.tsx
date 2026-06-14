@@ -16,12 +16,14 @@ interface Transaction { amount: number; type: 'received' | 'pending'; date: stri
 interface Lead { id: string; stage: string; estimated_value: number; source: string | null; created_at: string }
 interface Proposal { status: string; value: number; created_at: string }
 interface PipelineEvent { lead_id: string; from_stage: string; to_stage: string; happened_at: string }
+interface ExpenseRow { amount: number; category: string | null; date: string }
 
 interface Props {
   transactions: Transaction[]
   leads: Lead[]
   proposals: Proposal[]
   pipelineEvents: PipelineEvent[]
+  expenses: ExpenseRow[]
   mrr: number
   activeClients: number
   churnedClients: number
@@ -120,7 +122,7 @@ const tooltipStyle = {
 
 // ── main component ─────────────────────────────────────────────────────────────
 export default function ReportsClient({
-  transactions, leads, proposals, pipelineEvents, mrr, activeClients, churnedClients, churnedMrr, churnRate,
+  transactions, leads, proposals, pipelineEvents, expenses, mrr, activeClients, churnedClients, churnedMrr, churnRate,
 }: Props) {
   const [range, setRange] = useState<Range>('6m')
 
@@ -157,6 +159,18 @@ export default function ReportsClient({
       totalPending: filtered.filter((t) => t.type === 'pending').reduce((s, t) => s + t.amount, 0),
     }
   }, [transactions, range, monthCount])
+
+  // ── Despesas do período + Lucro líquido ─────────────────────────────────────
+  const totalExpenses = useMemo(() => {
+    const cutoff = range === 'all' ? null : monthsAgo(monthCount)
+    const filtered = cutoff
+      ? expenses.filter((e) => new Date(e.date) >= cutoff)
+      : expenses
+    return filtered.reduce((s, e) => s + e.amount, 0)
+  }, [expenses, range, monthCount])
+
+  // Lucro líquido = receita RECEBIDA no período − despesas no período (critério de caixa, não de pendentes)
+  const netProfit = totalReceived - totalExpenses
 
   // ── Win rate ────────────────────────────────────────────────────────────────
   const { winRate, wonCount, lostCount } = useMemo(() => {
@@ -283,6 +297,8 @@ export default function ReportsClient({
       { Indicador: 'Previsão de receita', Valor: forecastValue, Detalhe: `pipeline em aberto: ${fmtCurrency(openPipelineValue)}` },
       { Indicador: 'Taxa de churn (%)', Valor: churnRate, Detalhe: `${churnedClients} cliente(s) perdido(s)` },
       { Indicador: 'MRR perdido (churn)', Valor: churnedMrr, Detalhe: '' },
+      { Indicador: 'Despesas', Valor: totalExpenses, Detalhe: rangeLabel },
+      { Indicador: 'Lucro líquido', Valor: netProfit, Detalhe: `Recebido − despesas · ${rangeLabel}` },
     ]
 
     const revenueRows: Record<string, unknown>[] = revenueData.map((d) => ({
@@ -340,6 +356,8 @@ export default function ReportsClient({
       { label: 'Pipeline em aberto', value: fmtCurrency(openPipelineValue) },
       { label: 'Taxa de churn', value: `${churnRate.toFixed(1)}%` },
       { label: 'MRR perdido (churn)', value: fmtCurrency(churnedMrr) },
+      { label: 'Despesas', value: fmtCurrency(totalExpenses) },
+      { label: 'Lucro líquido', value: fmtCurrency(netProfit) },
     ])
 
     addSection(
@@ -460,6 +478,19 @@ export default function ReportsClient({
           sub={`${churnedClients} cliente${churnedClients !== 1 ? 's' : ''} perdido${churnedClients !== 1 ? 's' : ''}${churnedMrr > 0 ? ` · -${fmtCurrency(churnedMrr)}/mês` : ''}`}
           color={churnRate <= 5 ? 'emerald' : churnRate <= 15 ? 'amber' : 'red'}
           icon={churnRate <= 5 ? 'up' : churnRate <= 15 ? 'flat' : 'down'}
+        />
+        <KPICard
+          label="Despesas"
+          value={fmtCurrency(totalExpenses)}
+          sub={rangeLabel}
+          color="red"
+        />
+        <KPICard
+          label="Lucro líquido"
+          value={fmtCurrency(netProfit)}
+          sub={`Recebido − despesas · ${rangeLabel}`}
+          color={netProfit >= 0 ? 'emerald' : 'red'}
+          icon={netProfit >= 0 ? 'up' : 'down'}
         />
       </div>
 
