@@ -32,7 +32,6 @@ export async function PATCH(
   if (body.tags !== undefined)            fields.tags = body.tags
 
   // Busca status/responsáveis atuais antes de atualizar (para detectar mudanças reais)
-  let previousStatus: string | null = null
   let previousAssigneeIds: string[] = []
   const needsAssigneeDiff = body.assigned_to_id !== undefined || body.assigned_to_ids !== undefined
   if (body.status !== undefined || needsAssigneeDiff) {
@@ -41,22 +40,25 @@ export async function PATCH(
       .select('status, client_id, title, assigned_to_id, assigned_to_ids')
       .eq('id', id)
       .single()
-    previousStatus = current?.status ?? null
     previousAssigneeIds = [
       ...(current?.assigned_to_ids ?? []),
       ...(current?.assigned_to_id ? [current.assigned_to_id] : []),
     ]
 
-    // Se status realmente mudou e tarefa tem cliente, registra no histórico
-    if (current && current.client_id && body.status !== undefined && current.status !== body.status) {
-      const from = STATUS_LABELS[current.status] ?? current.status
-      const to   = STATUS_LABELS[body.status]    ?? body.status
-      await supabase.from('interactions').insert({
-        client_id:    current.client_id,
-        type:         'task_update',
-        description:  `Tarefa "${current.title}" avançou de ${from} → ${to}`,
-        happened_at:  new Date().toISOString(),
-      })
+    // Se o status realmente mudou, registra a conclusão (para medir tempo até concluir) e o histórico
+    if (current && body.status !== undefined && current.status !== body.status) {
+      fields.completed_at = body.status === 'done' ? new Date().toISOString() : null
+
+      if (current.client_id) {
+        const from = STATUS_LABELS[current.status] ?? current.status
+        const to   = STATUS_LABELS[body.status]    ?? body.status
+        await supabase.from('interactions').insert({
+          client_id:    current.client_id,
+          type:         'task_update',
+          description:  `Tarefa "${current.title}" avançou de ${from} → ${to}`,
+          happened_at:  new Date().toISOString(),
+        })
+      }
     }
   }
 

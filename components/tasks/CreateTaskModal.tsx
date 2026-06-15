@@ -14,6 +14,7 @@ interface CreateTaskModalProps {
   onTaskCreated: (task: Task) => void
   defaultClientId?: string
   defaultStatus?: TaskStatus
+  suggestedTags?: string[]
 }
 
 export default function CreateTaskModal({
@@ -24,6 +25,7 @@ export default function CreateTaskModal({
   onTaskCreated,
   defaultClientId,
   defaultStatus = 'pending',
+  suggestedTags = [],
 }: CreateTaskModalProps) {
   const [form, setForm] = useState({
     title: '',
@@ -166,6 +168,20 @@ export default function CreateTaskModal({
               +
             </button>
           </div>
+          {suggestedTags.filter((t) => !tags.includes(t)).length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {suggestedTags.filter((t) => !tags.includes(t)).map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setTags((prev) => [...prev, tag])}
+                  className="text-xs px-2 py-0.5 rounded-full border border-slate-700 text-slate-400 hover:border-indigo-500 hover:text-indigo-400 transition-colors"
+                >
+                  + {tag}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         {clients.length > 0 && (
           <div>

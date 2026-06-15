@@ -16,6 +16,8 @@ import { exportToExcel } from '@/lib/export-excel'
 import { useBulkSelection, bulkRun } from '@/lib/hooks/useBulkSelection'
 import { useNewParamModal } from '@/lib/hooks/useNewParamModal'
 import BulkActionBar from '@/components/ui/BulkActionBar'
+import { getSuggestedTags } from '@/lib/tags'
+import { formatDuration } from '@/lib/duration'
 
 const PRIORITY_BADGE: Record<TaskPriority, { label: string; variant: 'red' | 'yellow' | 'gray' }> = {
   high: { label: 'Alta', variant: 'red' },
@@ -43,6 +45,19 @@ const STATUS_VARIANT: Record<TaskStatus, 'gray' | 'blue' | 'green'> = {
 
 type GroupBy = 'none' | 'status' | 'priority' | 'client'
 type ViewMode = 'list' | 'kanban'
+type SortBy = 'created_at' | 'priority' | 'due_date'
+
+const SORT_LABELS: Record<SortBy, string> = {
+  created_at: 'Mais recentes',
+  priority: 'Prioridade',
+  due_date: 'Vencimento',
+}
+
+const PRIORITY_RANK: Record<TaskPriority, number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+}
 
 const GROUP_LABELS_PRIORITY: Record<string, string> = {
   high: 'Alta prioridade',
@@ -81,6 +96,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
   const [filter, setFilter] = useState<TaskStatus | 'all' | 'mine'>('all')
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [groupBy, setGroupBy] = useState<GroupBy>('none')
+  const [sortBy, setSortBy] = useState<SortBy>('created_at')
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
@@ -110,6 +126,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
         const pref = JSON.parse(raw)
         if (pref.viewMode === 'list' || pref.viewMode === 'kanban') setViewMode(pref.viewMode)
         if (['none', 'status', 'priority', 'client'].includes(pref.groupBy)) setGroupBy(pref.groupBy)
+        if (['created_at', 'priority', 'due_date'].includes(pref.sortBy)) setSortBy(pref.sortBy)
       } catch {
         // ignora pref corrompida
       }
@@ -120,11 +137,11 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
   useEffect(() => {
     if (!userId) return
     try {
-      localStorage.setItem(`tasks-view-pref:${userId}`, JSON.stringify({ viewMode, groupBy }))
+      localStorage.setItem(`tasks-view-pref:${userId}`, JSON.stringify({ viewMode, groupBy, sortBy }))
     } catch {
       // localStorage indisponível
     }
-  }, [userId, viewMode, groupBy])
+  }, [userId, viewMode, groupBy, sortBy])
 
   const { toast } = useToast()
   const confirm = useConfirm()
@@ -185,6 +202,31 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
     })
   }, [tasks, filter, search, filterAssignee, filterPriority, filterTag, filterDue, userId])
 
+  // Ordena: tarefas concluídas sempre vão para o fim; dentro de cada grupo, aplica o critério escolhido
+  const sorted = useMemo(() => {
+    const arr = [...filtered]
+    arr.sort((a, b) => {
+      const aDone = a.status === 'done' ? 1 : 0
+      const bDone = b.status === 'done' ? 1 : 0
+      if (aDone !== bDone) return aDone - bDone
+
+      if (sortBy === 'priority') {
+        return PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]
+      }
+      if (sortBy === 'due_date') {
+        if (!a.due_date && !b.due_date) return 0
+        if (!a.due_date) return 1
+        if (!b.due_date) return -1
+        return a.due_date.localeCompare(b.due_date)
+      }
+      return b.created_at.localeCompare(a.created_at)
+    })
+    return arr
+  }, [filtered, sortBy])
+
+  // Tags sugeridas (mais usadas) para facilitar a marcação de novas tarefas
+  const suggestedTags = useMemo(() => getSuggestedTags(tasks), [tasks])
+
   // Quantas tarefas estão atribuídas a mim e ainda não concluídas (aba "Minhas")
   const myPendingCount = useMemo(
     () => tasks.filter(
@@ -227,12 +269,12 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
     return []
   }
 
-  const groups = computeGroups(filtered)
+  const groups = computeGroups(sorted)
 
   function handleExport() {
     exportToExcel(
       'tarefas',
-      filtered.map((t) => {
+      sorted.map((t) => {
         const ids = t.assigned_to_ids?.length
           ? t.assigned_to_ids
           : t.assigned_to_id ? [t.assigned_to_id] : []
@@ -452,6 +494,11 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          {task.status === 'done' && task.completed_at && (
+            <span className="text-slate-500 text-xs" title="Tempo até a conclusão">
+              ⏱ {formatDuration(task.created_at, task.completed_at)}
+            </span>
+          )}
           <Badge variant={priority.variant}>{priority.label}</Badge>
           <Badge variant={STATUS_VARIANT[task.status]}>{STATUS_LABEL[task.status]}</Badge>
         </div>
@@ -500,6 +547,17 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
             </button>
           </div>
 
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortBy)}
+            title="Ordenar por"
+            className="bg-[#1a1a1d] border border-slate-700 text-slate-400 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500"
+          >
+            {(Object.keys(SORT_LABELS) as SortBy[]).map((key) => (
+              <option key={key} value={key}>Ordenar: {SORT_LABELS[key]}</option>
+            ))}
+          </select>
+
           {viewMode === 'list' && (
             <select
               value={groupBy}
@@ -515,7 +573,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
 
           <button
             onClick={handleExport}
-            disabled={filtered.length === 0}
+            disabled={sorted.length === 0}
             className="flex items-center gap-1.5 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-3 py-1.5 text-xs transition-colors"
           >
             <Download size={13} />
@@ -632,14 +690,14 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
         {/* Results count when filtering */}
         {hasAdvancedFilters && (
           <p className="text-slate-500 text-xs mt-2">
-            {filtered.length} tarefa{filtered.length !== 1 ? 's' : ''} encontrada{filtered.length !== 1 ? 's' : ''}
+            {sorted.length} tarefa{sorted.length !== 1 ? 's' : ''} encontrada{sorted.length !== 1 ? 's' : ''}
           </p>
         )}
       </div>
 
       {viewMode === 'kanban' ? (
         <TaskKanban
-          tasks={tasks}
+          tasks={sorted}
           clientMap={clientMap}
           profiles={profiles}
           onTaskClick={setSelectedTask}
@@ -688,12 +746,12 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
             </button>
           </BulkActionBar>
 
-          {filtered.length > 0 && (
+          {sorted.length > 0 && (
             <label className="flex items-center gap-2 mb-2 text-xs text-slate-500 cursor-pointer select-none w-fit">
               <input
                 type="checkbox"
-                checked={bulk.allSelected(filtered.map((t) => t.id))}
-                onChange={() => bulk.toggleAll(filtered.map((t) => t.id))}
+                checked={bulk.allSelected(sorted.map((t) => t.id))}
+                onChange={() => bulk.toggleAll(sorted.map((t) => t.id))}
                 className="w-4 h-4 rounded border-slate-600 bg-[#050505] text-indigo-600 focus:ring-indigo-500 cursor-pointer"
               />
               Selecionar todos
@@ -701,7 +759,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
           )}
 
           <div className="space-y-2">
-          {filtered.length === 0 ? (
+          {sorted.length === 0 ? (
             filter === 'all' ? (
               <EmptyState
                 icon="✅"
@@ -741,7 +799,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
               )
             })
           ) : (
-            filtered.map((task) => renderTask(task))
+            sorted.map((task) => renderTask(task))
           )}
           </div>
         </div>
@@ -754,6 +812,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
         profiles={profiles}
         onTaskCreated={handleTaskCreated}
         defaultStatus={modalDefaultStatus}
+        suggestedTags={suggestedTags}
       />
 
       {selectedTask && (
@@ -761,6 +820,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
           task={selectedTask}
           clientName={selectedTask.client_id ? clientMap[selectedTask.client_id] : undefined}
           profiles={profiles}
+          suggestedTags={suggestedTags}
           onClose={() => setSelectedTask(null)}
           onTaskUpdated={handleTaskUpdated}
           onTaskDeleted={handleTaskDeleted}

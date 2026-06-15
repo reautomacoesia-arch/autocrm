@@ -231,6 +231,11 @@ export const checklistUpdateSchema = z.object({
   text: text(500).min(1).optional(),
 })
 
+export const checklistItemReorderSchema = z.object({
+  checklist_id: uuid,
+  ids: z.array(uuid).min(1).max(200),
+})
+
 export const taskChecklistCreateSchema = z.object({
   title: text(200).min(1).optional(),
 })

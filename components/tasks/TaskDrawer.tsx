@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import type { Profile, Task, TaskChecklistWithItems, TaskComment, TaskPriority, TaskStatus } from '@/lib/types'
-import { X, Plus, Trash2, Check, Tag } from 'lucide-react'
+import { X, Plus, Trash2, Check, Tag, GripVertical } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 import MultiAssigneeSelector from '@/components/team/MultiAssigneeSelector'
+import { formatDuration } from '@/lib/duration'
 
 const STATUS_LABEL: Record<TaskStatus, string> = {
   pending: 'Pendente',
@@ -23,6 +25,7 @@ interface TaskDrawerProps {
   task: Task | null
   clientName?: string
   profiles: Profile[]
+  suggestedTags?: string[]
   onClose: () => void
   onTaskUpdated: (task: Task) => void
   onTaskDeleted: (id: string) => void
@@ -41,6 +44,7 @@ export default function TaskDrawer({
   task,
   clientName,
   profiles,
+  suggestedTags = [],
   onClose,
   onTaskUpdated,
   onTaskDeleted,
@@ -53,6 +57,7 @@ export default function TaskDrawer({
   const [newComment, setNewComment] = useState('')
   const [editingField, setEditingField] = useState<string | null>(null)
   const [editingChecklistId, setEditingChecklistId] = useState<string | null>(null)
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [localTask, setLocalTask] = useState<Task | null>(
     task ? { ...task, tags: task.tags ?? [] } : null
   )
@@ -177,6 +182,54 @@ export default function TaskDrawer({
       )
     )
     await fetch(`/api/tasks/${localTask!.id}/checklist/${itemId}`, { method: 'DELETE' })
+  }
+
+  async function renameChecklistItem(checklistId: string, itemId: string, text: string) {
+    const trimmed = text.trim()
+    if (!trimmed || !localTask) return
+    const previous = checklists
+    setChecklists((prev) =>
+      prev.map((c) =>
+        c.id === checklistId
+          ? { ...c, items: c.items.map((i) => (i.id === itemId ? { ...i, text: trimmed } : i)) }
+          : c
+      )
+    )
+    const res = await fetch(`/api/tasks/${localTask.id}/checklist/${itemId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: trimmed }),
+    })
+    if (!res.ok) {
+      setChecklists(previous)
+      toast('Erro ao editar item', 'error')
+    }
+  }
+
+  async function reorderChecklistItems(checklistId: string, items: TaskChecklistWithItems['items']) {
+    setChecklists((prev) =>
+      prev.map((c) => (c.id === checklistId ? { ...c, items } : c))
+    )
+    await fetch(`/api/tasks/${localTask!.id}/checklist/reorder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ checklist_id: checklistId, ids: items.map((i) => i.id) }),
+    })
+  }
+
+  function handleChecklistDragEnd(result: DropResult) {
+    const { source, destination } = result
+    if (!destination) return
+    if (source.droppableId !== destination.droppableId) return
+    if (source.index === destination.index) return
+
+    const checklist = checklists.find((c) => c.id === source.droppableId)
+    if (!checklist) return
+
+    const items = [...checklist.items]
+    const [moved] = items.splice(source.index, 1)
+    items.splice(destination.index, 0, moved)
+    reorderChecklistItems(checklist.id, items)
   }
 
   async function addComment() {
@@ -354,9 +407,24 @@ export default function TaskDrawer({
                 <Plus size={12} />
               </button>
             </div>
+            {suggestedTags.filter((t) => !localTask.tags.includes(t)).length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {suggestedTags.filter((t) => !localTask.tags.includes(t)).map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => addTag(tag)}
+                    className="text-xs px-2 py-0.5 rounded-full border border-slate-700 text-slate-400 hover:border-indigo-500 hover:text-indigo-400 transition-colors"
+                  >
+                    + {tag}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Checklists */}
+          <DragDropContext onDragEnd={handleChecklistDragEnd}>
           <div className="space-y-4">
             {checklists.map((cl) => {
               const doneCount = cl.items.filter((i) => i.done).length
@@ -410,31 +478,73 @@ export default function TaskDrawer({
                       />
                     </div>
                   )}
-                  <div className="space-y-1.5 mb-2">
-                    {cl.items.map((item) => (
-                      <div key={item.id} className="flex items-center gap-2 group">
-                        <button
-                          onClick={() => toggleChecklistItem(cl.id, item.id, item.done)}
-                          className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
-                            item.done
-                              ? 'bg-emerald-600 border-emerald-600'
-                              : 'border-slate-600 hover:border-indigo-500'
-                          }`}
-                        >
-                          {item.done && <Check size={9} className="text-white" />}
-                        </button>
-                        <span className={`flex-1 text-xs ${item.done ? 'line-through text-slate-500' : 'text-slate-300'}`}>
-                          {item.text}
-                        </span>
-                        <button
-                          onClick={() => deleteChecklistItem(cl.id, item.id)}
-                          className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all"
-                        >
-                          <Trash2 size={11} />
-                        </button>
+                  <Droppable droppableId={cl.id}>
+                    {(provided) => (
+                      <div className="space-y-1.5 mb-2" ref={provided.innerRef} {...provided.droppableProps}>
+                        {cl.items.map((item, idx) => (
+                          <Draggable key={item.id} draggableId={item.id} index={idx}>
+                            {(dragProvided) => (
+                              <div
+                                ref={dragProvided.innerRef}
+                                {...dragProvided.draggableProps}
+                                className="flex items-center gap-2 group"
+                              >
+                                <span
+                                  {...dragProvided.dragHandleProps}
+                                  className="text-slate-700 hover:text-slate-500 cursor-grab flex-shrink-0"
+                                >
+                                  <GripVertical size={11} />
+                                </span>
+                                <button
+                                  onClick={() => toggleChecklistItem(cl.id, item.id, item.done)}
+                                  className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
+                                    item.done
+                                      ? 'bg-emerald-600 border-emerald-600'
+                                      : 'border-slate-600 hover:border-indigo-500'
+                                  }`}
+                                >
+                                  {item.done && <Check size={9} className="text-white" />}
+                                </button>
+                                {editingItemId === item.id ? (
+                                  <input
+                                    autoFocus
+                                    defaultValue={item.text}
+                                    onFocus={(e) => e.target.select()}
+                                    onBlur={(e) => {
+                                      setEditingItemId(null)
+                                      if (e.target.value.trim() && e.target.value.trim() !== item.text) {
+                                        renameChecklistItem(cl.id, item.id, e.target.value)
+                                      }
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() }
+                                      if (e.key === 'Escape') { e.preventDefault(); setEditingItemId(null) }
+                                    }}
+                                    className="flex-1 bg-[#0a0a0c] border border-indigo-500 text-white rounded px-1.5 py-0.5 text-xs focus:outline-none"
+                                  />
+                                ) : (
+                                  <span
+                                    onClick={() => setEditingItemId(item.id)}
+                                    className={`flex-1 text-xs cursor-text hover:text-indigo-300 transition-colors ${item.done ? 'line-through text-slate-500' : 'text-slate-300'}`}
+                                    title="Clique para editar"
+                                  >
+                                    {item.text}
+                                  </span>
+                                )}
+                                <button
+                                  onClick={() => deleteChecklistItem(cl.id, item.id)}
+                                  className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all"
+                                >
+                                  <Trash2 size={11} />
+                                </button>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </Droppable>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -461,6 +571,7 @@ export default function TaskDrawer({
               <Plus size={12} /> Adicionar checklist
             </button>
           </div>
+          </DragDropContext>
 
           {/* Comments */}
           <div>
@@ -509,6 +620,9 @@ export default function TaskDrawer({
         <div className="px-5 py-3 border-t border-slate-700 flex items-center justify-between">
           <span className="text-slate-600 text-xs">
             Criada em {formatDatetime(localTask.created_at)}
+            {localTask.status === 'done' && localTask.completed_at && (
+              <> • Concluída em {formatDatetime(localTask.completed_at)} (levou {formatDuration(localTask.created_at, localTask.completed_at)})</>
+            )}
           </span>
           <button
             onClick={async () => {
