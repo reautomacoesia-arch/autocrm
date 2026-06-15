@@ -41,6 +41,9 @@ export async function POST(request: Request) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('POST /api/docs insert error:', JSON.stringify(error))
+    return NextResponse.json({ error: error.message, code: error.code, details: error.details, hint: error.hint }, { status: 500 })
+  }
   return NextResponse.json(data, { status: 201 })
 }

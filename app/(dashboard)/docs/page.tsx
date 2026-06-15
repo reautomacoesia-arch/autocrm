@@ -59,7 +59,8 @@ export default function DocsPage() {
       const doc = await res.json()
       router.push(`/docs/${doc.id}`)
     } else {
-      toast('Erro ao criar documento', 'error')
+      const body = await res.json().catch(() => null)
+      toast(body?.error ? `Erro ao criar documento: ${body.error}` : 'Erro ao criar documento', 'error')
       setCreating(false)
     }
   }
