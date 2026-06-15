@@ -226,7 +226,7 @@ export const commentCreateSchema = z.object({
 })
 
 // ---------- Workspace Docs ----------
-export const docVisibilityEnum = z.enum(['personal', 'shared'])
+export const docVisibilityEnum = z.enum(['personal', 'shared', 'specific'])
 
 export const docCreateSchema = z.object({
   title: optText(300),
@@ -237,6 +237,10 @@ export const docUpdateSchema = z.object({
   title: text(300).optional(),
   content: z.unknown().optional(),
   visibility: docVisibilityEnum.optional(),
+})
+
+export const docSharesSchema = z.object({
+  user_ids: z.array(uuid).max(200),
 })
 
 export const docPageCreateSchema = z.object({

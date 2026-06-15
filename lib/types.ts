@@ -11,6 +11,7 @@ export type InteractionType = 'note' | 'meeting' | 'email' | 'task_update'
 export type InboxChannel = 'whatsapp' | 'instagram' | 'facebook'
 export type ConversationStatus = 'open' | 'pending' | 'resolved'
 export type MessageDirection = 'inbound' | 'outbound'
+export type DocVisibility = 'personal' | 'shared' | 'specific'
 
 export interface Lead {
   id: string

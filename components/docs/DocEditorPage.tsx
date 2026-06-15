@@ -18,23 +18,25 @@ import { Table, TableRow, TableHeader, TableCell } from '@tiptap/extension-table
 import Suggestion from '@tiptap/suggestion'
 import type { SuggestionProps, SuggestionKeyDownProps } from '@tiptap/suggestion'
 import {
-  ArrowLeft, Bold, BookOpen, Code, ChevronDown, FileText, Globe,
+  ArrowLeft, Bold, BookOpen, Code, ChevronDown, FileText,
   GripVertical, Heading1, Heading2, Heading3, Highlighter, Italic, List,
-  ListChecks, ListOrdered, Lock, Minus, Palette, Plus, Quote,
+  ListChecks, ListOrdered, Minus, Palette, Plus, Quote,
   RotateCcw, SquareCode, Strikethrough, TableIcon, Trash2, Type,
   Underline as UnderlineIcon,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
+import DocVisibilityControl from './DocVisibilityControl'
+import type { DocVisibility } from '@/lib/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface WorkspaceDoc {
   id: string; title: string; content: object
-  visibility: 'personal' | 'shared'; created_by: string
+  visibility: DocVisibility; created_by: string
   parent_id?: string | null; created_at: string; updated_at: string
 }
 interface NotebookInfo {
-  id: string; title: string; visibility: 'personal' | 'shared'; created_by: string
+  id: string; title: string; visibility: DocVisibility; created_by: string
 }
 interface PageInfo { id: string; title: string; created_at: string }
 interface SlashCmd {
@@ -201,7 +203,7 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
   const [title, setTitle] = useState(doc.title)
   const [notebookTitle, setNotebookTitle] = useState(notebook.title)
   const [editingNotebook, setEditingNotebook] = useState(false)
-  const [visibility, setVisibility] = useState<'personal' | 'shared'>(doc.visibility)
+  const [visibility, setVisibility] = useState<DocVisibility>(doc.visibility)
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'idle'>('saved')
   const [pages, setPages] = useState<PageInfo[]>(initialPages)
   const [addingPage, setAddingPage] = useState(false)
@@ -353,15 +355,6 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
     else { toast('Erro ao excluir caderno', 'error') }
   }
 
-  async function toggleVisibility() {
-    if (!isOwner) return
-    const next = visibility === 'personal' ? 'shared' : 'personal'
-    setVisibility(next)
-    const res = await fetch(`/api/docs/${doc.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ visibility: next }) })
-    if (res.ok) { toast(next === 'shared' ? 'Documento compartilhado' : 'Definido como pessoal') }
-    else { setVisibility(visibility); toast('Erro ao alterar visibilidade', 'error') }
-  }
-
   const currentTextColor = editor?.getAttributes('textStyle')?.color ?? null
   const currentHighlight = editor?.getAttributes('highlight')?.color ?? null
 
@@ -477,13 +470,12 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
         <div className="border-t border-slate-700/30 p-2 space-y-1">
           <div className="flex items-center gap-1 px-1">
             {isOwner && (
-              <button onClick={toggleVisibility} title={visibility === 'shared' ? 'Compartilhado' : 'Pessoal'}
-                className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-md border transition-colors flex-1 ${
-                  visibility === 'shared' ? 'border-indigo-800 text-indigo-400' : 'border-slate-700 text-slate-600 hover:text-slate-400'
-                }`}>
-                {visibility === 'shared' ? <Globe size={10} /> : <Lock size={10} />}
-                {visibility === 'shared' ? 'Compartilhado' : 'Pessoal'}
-              </button>
+              <DocVisibilityControl
+                docId={notebookId}
+                visibility={visibility}
+                currentUserId={currentUserId}
+                onChange={setVisibility}
+              />
             )}
             {notebookIsOwner && (
               <button onClick={handleDeleteNotebook} title="Excluir caderno" className="p-1 text-slate-700 hover:text-red-400 transition-colors rounded-md hover:bg-slate-800/50">

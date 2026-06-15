@@ -2,16 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Globe, Lock, Plus, Trash2 } from 'lucide-react'
+import { FileText, Globe, Lock, Plus, Trash2, Users } from 'lucide-react'
 import { useToast } from '@/components/ui/ToastProvider'
 import { useConfirm } from '@/components/ui/ConfirmModal'
 import PageHeader from '@/components/ui/PageHeader'
 import { createClient } from '@/lib/supabase/client'
+import type { DocVisibility } from '@/lib/types'
 
 interface Doc {
   id: string
   title: string
-  visibility: 'personal' | 'shared'
+  visibility: DocVisibility
   created_by: string
   updated_at: string
 }
@@ -47,7 +48,7 @@ export default function DocsPage() {
       .catch(() => setLoading(false))
   }, [])
 
-  async function handleCreate(visibility: 'personal' | 'shared') {
+  async function handleCreate(visibility: DocVisibility) {
     setCreating(true)
     const res = await fetch('/api/docs', {
       method: 'POST',
@@ -82,7 +83,9 @@ export default function DocsPage() {
   }
 
   const myDocs = docs.filter((d) => d.created_by === currentUserId)
-  const sharedDocs = docs.filter((d) => d.visibility === 'shared' && d.created_by !== currentUserId)
+  const sharedDocs = docs.filter(
+    (d) => (d.visibility === 'shared' || d.visibility === 'specific') && d.created_by !== currentUserId
+  )
 
   function DocRow({ doc }: { doc: Doc }) {
     const isOwner = doc.created_by === currentUserId
@@ -100,6 +103,10 @@ export default function DocsPage() {
           {doc.visibility === 'shared' ? (
             <span className="flex items-center gap-1 text-indigo-400 text-xs">
               <Globe size={11} /> Compartilhado
+            </span>
+          ) : doc.visibility === 'specific' ? (
+            <span className="flex items-center gap-1 text-amber-400 text-xs">
+              <Users size={11} /> Pessoas específicas
             </span>
           ) : (
             <span className="flex items-center gap-1 text-slate-600 text-xs">
