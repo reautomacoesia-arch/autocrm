@@ -646,12 +646,12 @@ export default function ReportsClient({
               <YAxis tickFormatter={fmtShort} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} width={60} />
               <Tooltip
                 {...tooltipStyle}
-                cursor={false}
+                cursor={{ fill: 'rgba(148,163,184,0.12)' }}
                 formatter={(value: unknown, name: unknown) => [fmtCurrency(Number(value)), String(name)]}
               />
               <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8', paddingTop: 8 }} />
-              <Bar dataKey="Recebido" fill="#22c55e" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="Pendente" fill="#f59e0b" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="Recebido" fill="#22c55e" radius={[3, 3, 0, 0]} activeBar={{ stroke: '#d4af37', strokeWidth: 2 }} />
+              <Bar dataKey="Pendente" fill="#f59e0b" radius={[3, 3, 0, 0]} activeBar={{ stroke: '#d4af37', strokeWidth: 2 }} />
             </BarChart>
           </ResponsiveContainer>
         )}
@@ -683,7 +683,7 @@ export default function ReportsClient({
                 />
                 <Tooltip
                   {...tooltipStyle}
-                  cursor={false}
+                  cursor={{ fill: 'rgba(148,163,184,0.12)' }}
                   formatter={(value: unknown, _: unknown, entry: any) => {
                     const n = Number(value)
                     return [`${n} lead${n !== 1 ? 's' : ''} · ${fmtCurrency(entry.payload.value)}`, '']
@@ -693,6 +693,7 @@ export default function ReportsClient({
                   dataKey="count"
                   radius={[0, 3, 3, 0]}
                   cursor="pointer"
+                  activeBar={{ stroke: '#d4af37', strokeWidth: 2 }}
                   onClick={(data) => {
                     const payload = data.payload as { stageKey: string; stage: string }
                     openFunnelDetail(payload.stageKey, payload.stage)
@@ -731,7 +732,7 @@ export default function ReportsClient({
                 />
                 <Tooltip
                   {...tooltipStyle}
-                  cursor={false}
+                  cursor={{ fill: 'rgba(148,163,184,0.12)' }}
                   formatter={(value: unknown) => { const n = Number(value); return [`${n} lead${n !== 1 ? 's' : ''}`, 'Quantidade'] }}
                 />
                 <Bar
@@ -739,6 +740,7 @@ export default function ReportsClient({
                   fill="#6366f1"
                   radius={[0, 3, 3, 0]}
                   cursor="pointer"
+                  activeBar={{ stroke: '#d4af37', strokeWidth: 2 }}
                   onClick={(data) => {
                     const payload = data.payload as { sourceKey: string; source: string }
                     openSourceDetail(payload.sourceKey, payload.source)
@@ -776,7 +778,7 @@ export default function ReportsClient({
                 />
                 <Tooltip
                   {...tooltipStyle}
-                  cursor={false}
+                  cursor={{ fill: 'rgba(148,163,184,0.12)' }}
                   formatter={(value: unknown, _: unknown, entry: { payload?: { count: number } }) => {
                     const n = entry.payload?.count ?? 0
                     return [`${fmtDays(Number(value))} (média de ${n} lead${n !== 1 ? 's' : ''})`, '']
@@ -786,6 +788,7 @@ export default function ReportsClient({
                   dataKey="avgDays"
                   radius={[0, 3, 3, 0]}
                   cursor="pointer"
+                  activeBar={{ stroke: '#d4af37', strokeWidth: 2 }}
                   onClick={(data) => {
                     const payload = data.payload as {
                       stage: string
@@ -836,7 +839,7 @@ export default function ReportsClient({
                   </Pie>
                   <Tooltip
                     {...tooltipStyle}
-                    cursor={false}
+                    cursor={{ fill: 'rgba(148,163,184,0.12)' }}
                     formatter={(count: unknown, _: unknown, entry: any) => {
                       const n = Number(count)
                       return [`${n} proposta${n !== 1 ? 's' : ''} · ${fmtCurrency(entry.payload.totalValue)}`, entry.payload.name]
