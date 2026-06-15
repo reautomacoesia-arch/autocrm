@@ -623,6 +623,9 @@ export default function TaskDrawer({
             {localTask.status === 'done' && localTask.completed_at && (
               <> • Concluída em {formatDatetime(localTask.completed_at)} (levou {formatDuration(localTask.created_at, localTask.completed_at)})</>
             )}
+            {localTask.status !== 'done' && (
+              <> • {formatDuration(localTask.created_at, new Date().toISOString())} em aberto</>
+            )}
           </span>
           <button
             onClick={async () => {

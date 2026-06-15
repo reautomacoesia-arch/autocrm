@@ -101,6 +101,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
   const [editingTitleId, setEditingTitleId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [now, setNow] = useState(() => new Date().toISOString())
 
   // ── advanced filters ────────────────────────────────────────────────────────
   const [search, setSearch] = useState('')
@@ -112,6 +113,12 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
 
   useEffect(() => {
     fetch('/api/profiles').then((r) => r.json()).then((d) => setProfiles(Array.isArray(d) ? d : []))
+  }, [])
+
+  // Atualiza o "tempo em aberto" das tarefas pendentes periodicamente
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date().toISOString()), 60_000)
+    return () => clearInterval(interval)
   }, [])
 
   // Carrega o estilo de visualização salvo individualmente por perfil
@@ -497,6 +504,11 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
           {task.status === 'done' && task.completed_at && (
             <span className="text-slate-500 text-xs" title="Tempo até a conclusão">
               ⏱ {formatDuration(task.created_at, task.completed_at)}
+            </span>
+          )}
+          {task.status !== 'done' && (
+            <span className="text-slate-500 text-xs" title="Tempo em aberto desde a criação">
+              ⏱ {formatDuration(task.created_at, now)} em aberto
             </span>
           )}
           <Badge variant={priority.variant}>{priority.label}</Badge>
