@@ -78,7 +78,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
   // Auto-abre o modal de nova tarefa quando a URL tem ?new=1 (ex.: launcher de comandos)
   const [isModalOpen, setIsModalOpen] = useNewParamModal('/tasks')
   const [modalDefaultStatus, setModalDefaultStatus] = useState<TaskStatus>('pending')
-  const [filter, setFilter] = useState<TaskStatus | 'all'>('all')
+  const [filter, setFilter] = useState<TaskStatus | 'all' | 'mine'>('all')
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [groupBy, setGroupBy] = useState<GroupBy>('none')
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
@@ -170,7 +170,10 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
     const weekEndStr = weekEnd.toISOString().split('T')[0]
 
     return tasks.filter((t) => {
-      if (filter !== 'all' && t.status !== filter) return false
+      if (filter === 'mine') {
+        const mine = !!userId && ((t.assigned_to_ids?.includes(userId)) || t.assigned_to_id === userId)
+        if (!mine || t.status === 'done') return false
+      } else if (filter !== 'all' && t.status !== filter) return false
       if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false
       if (filterAssignee && !(t.assigned_to_ids?.includes(filterAssignee) || t.assigned_to_id === filterAssignee)) return false
       if (filterPriority && t.priority !== filterPriority) return false
@@ -180,7 +183,15 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
       if (filterDue === 'week' && (!t.due_date || t.due_date > weekEndStr)) return false
       return true
     })
-  }, [tasks, filter, search, filterAssignee, filterPriority, filterTag, filterDue])
+  }, [tasks, filter, search, filterAssignee, filterPriority, filterTag, filterDue, userId])
+
+  // Quantas tarefas estão atribuídas a mim e ainda não concluídas (aba "Minhas")
+  const myPendingCount = useMemo(
+    () => tasks.filter(
+      (t) => !!userId && ((t.assigned_to_ids?.includes(userId)) || t.assigned_to_id === userId) && t.status !== 'done'
+    ).length,
+    [tasks, userId]
+  )
 
   interface TaskGroup { key: string; label: string; tasks: Task[] }
 
@@ -452,7 +463,7 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
     <>
       <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <div className="flex gap-2 flex-wrap">
-          {(['all', 'pending', 'in_progress', 'done'] as const).map((f) => (
+          {(['all', 'mine', 'pending', 'in_progress', 'done'] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
@@ -462,7 +473,11 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
                   : 'bg-slate-800 text-slate-400 hover:text-slate-200'
               }`}
             >
-              {f === 'all' ? `Todas (${tasks.length})` : STATUS_LABEL[f as TaskStatus]}
+              {f === 'all'
+                ? `Todas (${tasks.length})`
+                : f === 'mine'
+                ? `Minhas (${myPendingCount})`
+                : STATUS_LABEL[f as TaskStatus]}
             </button>
           ))}
         </div>
@@ -694,6 +709,10 @@ export default function TaskList({ initialTasks, clients, onTaskAdded = () => {}
                 description="Crie tarefas para acompanhar o que precisa ser feito."
                 action={{ label: '+ Nova Tarefa', onClick: () => openNewTaskModal() }}
               />
+            ) : filter === 'mine' ? (
+              <div className="text-center py-12 text-slate-500 text-sm">
+                Nenhuma tarefa pendente atribuída a você 🎉
+              </div>
             ) : (
               <div className="text-center py-12 text-slate-500 text-sm">
                 Nenhuma tarefa "{STATUS_LABEL[filter as TaskStatus]}".
