@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import ReportsClient from '@/components/reports/ReportsClient'
+import { DEFAULT_STAGES } from '@/lib/pipeline'
+import type { PipelineStage } from '@/lib/types'
 
 export default async function ReportsPage() {
   const supabase = await createClient()
 
-  const [transactionsRes, leadsRes, proposalsRes, clientsRes, pipelineEventsRes, expensesRes] = await Promise.all([
+  const [transactionsRes, leadsRes, proposalsRes, clientsRes, pipelineEventsRes, expensesRes, stagesRes] = await Promise.all([
     supabase
       .from('transactions')
       .select('amount, type, date, description, clients(name)')
@@ -27,7 +29,15 @@ export default async function ReportsPage() {
       .select('amount, category, date')
       .eq('recurring', false)
       .order('date', { ascending: true }),
+    supabase
+      .from('pipeline_stages')
+      .select('*')
+      .order('position', { ascending: true }),
   ])
+
+  const stages = (stagesRes.data as PipelineStage[] | null)?.length
+    ? (stagesRes.data as PipelineStage[])
+    : DEFAULT_STAGES
 
   // Supabase retorna joins como objeto ou array dependendo da relação inferida.
   type RelatedName = { name: string | null } | { name: string | null }[] | null
@@ -122,6 +132,7 @@ export default async function ReportsPage() {
       churnedClients={churnedClients}
       churnedMrr={churnedMrr}
       churnRate={churnRate}
+      stages={stages}
     />
   )
 }

@@ -9,16 +9,15 @@ const optUuid = uuid.nullish()
 const dateStr = z.string().max(40)
 
 // ---------- Leads ----------
-export const leadStageEnum = z.enum([
-  'lead', 'contacted', 'proposal_sent', 'negotiating', 'won', 'lost',
-])
+// Estágio agora é o slug de um pipeline_stages dinâmico (não mais enum fixo).
+export const leadStageSchema = text(100).min(1)
 
 export const leadCreateSchema = z.object({
   name: text(200).min(1),
   company: optText(200),
   email: optText(320),
   phone: optText(50),
-  stage: leadStageEnum.optional(),
+  stage: leadStageSchema.optional(),
   estimated_value: money.nullish(),
   notes: optText(5000),
   instagram: optText(200),
@@ -36,6 +35,27 @@ export const leadUpdateSchema = leadCreateSchema.partial().extend({
 export const leadConvertSchema = z.object({
   monthly_value: money.nullish(),
   referred_by: optText(200),
+})
+
+// ---------- Pipeline Stages ----------
+export const pipelineStageTypeEnum = z.enum(['open', 'won', 'lost'])
+
+export const pipelineStageCreateSchema = z.object({
+  label: text(100).min(1),
+  color: text(20).optional(),
+  type: pipelineStageTypeEnum.optional(),
+  probability: z.number().min(0).max(1).optional(),
+})
+
+export const pipelineStageUpdateSchema = z.object({
+  label: text(100).min(1).optional(),
+  color: text(20).optional(),
+  type: pipelineStageTypeEnum.optional(),
+  probability: z.number().min(0).max(1).optional(),
+})
+
+export const pipelineStageReorderSchema = z.object({
+  ids: z.array(uuid).min(1).max(100),
 })
 
 // ---------- Clients ----------

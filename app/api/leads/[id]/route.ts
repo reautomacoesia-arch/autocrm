@@ -55,9 +55,28 @@ export async function PATCH(
       to_stage: body.stage,
     }).then(() => {}, () => {})
     const context = { leadId: id, leadName }
-    if (body.stage === 'won') {
+
+    // Determina o tipo do estágio destino via pipeline_stages (dinâmico);
+    // se a tabela não existir/sem match, cai no fallback pelo slug 'won'/'lost'.
+    let stageType: string | null = null
+    try {
+      const { data: stageRow } = await supabase
+        .from('pipeline_stages')
+        .select('type')
+        .eq('slug', body.stage)
+        .maybeSingle()
+      stageType = stageRow?.type ?? null
+    } catch {
+      stageType = null
+    }
+    if (stageType === null) {
+      if (body.stage === 'won') stageType = 'won'
+      else if (body.stage === 'lost') stageType = 'lost'
+    }
+
+    if (stageType === 'won') {
       void runAutomation(supabase, 'lead_won', { ...context, clientId: body.clientId ?? undefined })
-    } else if (body.stage === 'lost') {
+    } else if (stageType === 'lost') {
       void runAutomation(supabase, 'lead_lost', context)
     }
     void runWorkflows(supabase, 'lead.stage_changed', {

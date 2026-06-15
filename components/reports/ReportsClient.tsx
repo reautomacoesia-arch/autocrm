@@ -7,6 +7,8 @@ import {
 } from 'recharts'
 import { Download, FileText, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { SOURCE_LABELS } from '@/lib/types'
+import type { PipelineStage } from '@/lib/types'
+import { DEFAULT_STAGES } from '@/lib/pipeline'
 import PageHeader from '@/components/ui/PageHeader'
 import * as XLSX from 'xlsx'
 import { newReportDoc, addKpiGrid, addSection, saveReportDoc } from '@/lib/export-pdf'
@@ -37,6 +39,7 @@ interface Props {
   churnedClients: number
   churnedMrr: number
   churnRate: number
+  stages?: PipelineStage[]
 }
 
 type Range = '3m' | '6m' | '12m' | 'all'
@@ -77,32 +80,6 @@ function generateMonthList(n: number): string[] {
   return list
 }
 
-const STAGE_ORDER = ['lead', 'contacted', 'proposal_sent', 'negotiating', 'won', 'lost']
-const STAGE_LABELS: Record<string, string> = {
-  lead: 'Lead',
-  contacted: 'Contato feito',
-  proposal_sent: 'Proposta enviada',
-  negotiating: 'Negociando',
-  won: 'Fechado ✓',
-  lost: 'Perdido ✗',
-}
-const STAGE_COLORS: Record<string, string> = {
-  lead: '#64748b',
-  contacted: '#3b82f6',
-  proposal_sent: '#f59e0b',
-  negotiating: '#a855f7',
-  won: '#22c55e',
-  lost: '#ef4444',
-}
-// Probabilidade de fechamento por estágio, usada no forecast ponderado
-const STAGE_PROBABILITY: Record<string, number> = {
-  lead: 0.1,
-  contacted: 0.25,
-  proposal_sent: 0.5,
-  negotiating: 0.75,
-}
-const OPEN_STAGES = Object.keys(STAGE_PROBABILITY)
-
 function fmtDays(v: number) {
   if (v < 1) return `${Math.round(v * 24)}h`
   return `${v.toFixed(1)}d`
@@ -135,11 +112,35 @@ const tooltipStyle = {
 // ── main component ─────────────────────────────────────────────────────────────
 export default function ReportsClient({
   transactions, leads, proposals, pipelineEvents, expenses, mrr, activeClients, churnedClients, churnedMrr, churnRate,
+  stages,
 }: Props) {
   const [range, setRange] = useState<Range>('6m')
   const [detail, setDetail] = useState<DetailState | null>(null)
 
   const monthCount = range === 'all' ? 24 : range === '12m' ? 12 : range === '6m' ? 6 : 3
+
+  // ── Estágios dinâmicos (fallback aos defaults se a prop vier vazia) ─────────
+  const pipelineStages = useMemo(
+    () => (stages && stages.length > 0 ? [...stages].sort((a, b) => a.position - b.position) : DEFAULT_STAGES),
+    [stages]
+  )
+  const STAGE_ORDER = useMemo(() => pipelineStages.map((s) => s.slug), [pipelineStages])
+  const STAGE_LABELS = useMemo(() => {
+    const map: Record<string, string> = {}
+    pipelineStages.forEach((s) => { map[s.slug] = s.label })
+    return map
+  }, [pipelineStages])
+  const STAGE_COLORS = useMemo(() => {
+    const map: Record<string, string> = {}
+    pipelineStages.forEach((s) => { map[s.slug] = s.color })
+    return map
+  }, [pipelineStages])
+  const STAGE_PROBABILITY = useMemo(() => {
+    const map: Record<string, number> = {}
+    pipelineStages.forEach((s) => { if (s.type === 'open') map[s.slug] = s.probability })
+    return map
+  }, [pipelineStages])
+  const OPEN_STAGES = useMemo(() => pipelineStages.filter((s) => s.type === 'open').map((s) => s.slug), [pipelineStages])
 
   // ── Revenue by month ────────────────────────────────────────────────────────
   const revenueData = useMemo(() => {
@@ -186,16 +187,23 @@ export default function ReportsClient({
   // Lucro líquido = receita RECEBIDA no período − despesas no período (critério de caixa, não de pendentes)
   const netProfit = totalReceived - totalExpenses
 
+  // Mapa slug → stage, para checar o `type` (ganho/perdido/aberto) dinamicamente
+  const stagesBySlug = useMemo(() => {
+    const map: Record<string, PipelineStage> = {}
+    pipelineStages.forEach((s) => { map[s.slug] = s })
+    return map
+  }, [pipelineStages])
+
   // ── Win rate ────────────────────────────────────────────────────────────────
   const { winRate, wonCount, lostCount } = useMemo(() => {
-    const won = leads.filter((l) => l.stage === 'won').length
-    const lost = leads.filter((l) => l.stage === 'lost').length
+    const won = leads.filter((l) => stagesBySlug[l.stage]?.type === 'won').length
+    const lost = leads.filter((l) => stagesBySlug[l.stage]?.type === 'lost').length
     return {
       winRate: won + lost > 0 ? Math.round((won / (won + lost)) * 100) : 0,
       wonCount: won,
       lostCount: lost,
     }
-  }, [leads])
+  }, [leads, stagesBySlug])
 
   // ── Proposals approved ──────────────────────────────────────────────────────
   const { approvedCount, approvedValue } = useMemo(() => {
@@ -209,7 +217,7 @@ export default function ReportsClient({
   // ── Leads funnel ────────────────────────────────────────────────────────────
   const funnelData = useMemo(() =>
     STAGE_ORDER
-      .filter((s) => s !== 'lost') // show lost separately
+      .filter((s) => stagesBySlug[s]?.type !== 'lost') // mostra "perdido" separadamente
       .map((stage) => {
         const group = leads.filter((l) => l.stage === stage)
         return {
@@ -221,20 +229,20 @@ export default function ReportsClient({
         }
       })
       .filter((d) => d.count > 0)
-  , [leads])
+  , [leads, STAGE_ORDER, STAGE_LABELS, STAGE_COLORS, stagesBySlug])
 
   // ── Forecast (valor × probabilidade do estágio) ─────────────────────────────
   const forecastValue = useMemo(() =>
     leads
       .filter((l) => OPEN_STAGES.includes(l.stage))
-      .reduce((sum, l) => sum + (l.estimated_value ?? 0) * STAGE_PROBABILITY[l.stage], 0)
-  , [leads])
+      .reduce((sum, l) => sum + (l.estimated_value ?? 0) * (STAGE_PROBABILITY[l.stage] ?? 0), 0)
+  , [leads, OPEN_STAGES, STAGE_PROBABILITY])
 
   const openPipelineValue = useMemo(() =>
     leads
       .filter((l) => OPEN_STAGES.includes(l.stage))
       .reduce((sum, l) => sum + (l.estimated_value ?? 0), 0)
-  , [leads])
+  , [leads, OPEN_STAGES])
 
   // ── Tempo médio por etapa ────────────────────────────────────────────────────
   const stageTimeData = useMemo(() => {
@@ -278,7 +286,7 @@ export default function ReportsClient({
         fill: STAGE_COLORS[stage],
         leads: leadsByStage[stage] ?? [],
       }))
-  }, [leads, pipelineEvents])
+  }, [leads, pipelineEvents, STAGE_ORDER, STAGE_LABELS, STAGE_COLORS])
 
   // ── Proposals by status ─────────────────────────────────────────────────────
   const proposalData = useMemo(() => {

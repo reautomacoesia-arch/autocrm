@@ -2,31 +2,25 @@
 
 import { useState, useEffect } from 'react'
 import Modal from '@/components/ui/Modal'
-import type { Lead, LeadStage } from '@/lib/types'
+import type { Lead, PipelineStage } from '@/lib/types'
+import { DEFAULT_STAGES } from '@/lib/pipeline'
 
 interface EditLeadModalProps {
   lead: Lead | null
+  stages?: PipelineStage[]
   onClose: () => void
   onLeadUpdated: (lead: Lead) => void
 }
 
-const STAGE_OPTIONS: { value: LeadStage; label: string }[] = [
-  { value: 'lead', label: 'Lead' },
-  { value: 'contacted', label: 'Contactado' },
-  { value: 'proposal_sent', label: 'Proposta Enviada' },
-  { value: 'negotiating', label: 'Negociando' },
-  { value: 'won', label: 'Ganho' },
-  { value: 'lost', label: 'Perdido' },
-]
-
-export default function EditLeadModal({ lead, onClose, onLeadUpdated }: EditLeadModalProps) {
+export default function EditLeadModal({ lead, stages, onClose, onLeadUpdated }: EditLeadModalProps) {
+  const stageOptions = stages && stages.length > 0 ? stages : DEFAULT_STAGES
   const [form, setForm] = useState({
     name: '',
     company: '',
     email: '',
     phone: '',
     estimated_value: '',
-    stage: 'lead' as LeadStage,
+    stage: 'lead',
     notes: '',
     instagram: '',
     website: '',
@@ -172,8 +166,8 @@ export default function EditLeadModal({ lead, onClose, onLeadUpdated }: EditLead
               onChange={(e) => handleChange('stage', e.target.value)}
               className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
             >
-              {STAGE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+              {stageOptions.map((o) => (
+                <option key={o.slug} value={o.slug}>{o.label}</option>
               ))}
             </select>
           </div>

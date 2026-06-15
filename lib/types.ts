@@ -1,6 +1,7 @@
 import type { WorkflowTriggerType, WorkflowCondition, WorkflowAction } from './workflow-catalog'
 
 export type LeadStage = 'lead' | 'contacted' | 'proposal_sent' | 'negotiating' | 'won' | 'lost'
+export type PipelineStageType = 'open' | 'won' | 'lost'
 export type ClientStatus = 'active' | 'inactive' | 'churned'
 export type ProposalStatus = 'draft' | 'sent' | 'approved' | 'rejected'
 export type ProjectStatus = 'in_progress' | 'completed' | 'paused' | 'cancelled'
@@ -13,13 +14,24 @@ export type ConversationStatus = 'open' | 'pending' | 'resolved'
 export type MessageDirection = 'inbound' | 'outbound'
 export type DocVisibility = 'personal' | 'shared' | 'specific'
 
+export interface PipelineStage {
+  id: string
+  slug: string
+  label: string
+  color: string
+  type: PipelineStageType
+  probability: number
+  position: number
+  created_at: string
+}
+
 export interface Lead {
   id: string
   name: string
   company: string | null
   email: string | null
   phone: string | null
-  stage: LeadStage
+  stage: string
   estimated_value: number
   notes: string | null
   instagram: string | null

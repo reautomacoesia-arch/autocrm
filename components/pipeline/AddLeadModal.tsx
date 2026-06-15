@@ -2,21 +2,25 @@
 
 import { useState } from 'react'
 import Modal from '@/components/ui/Modal'
-import type { Lead } from '@/lib/types'
+import type { Lead, PipelineStage } from '@/lib/types'
+import { DEFAULT_STAGES } from '@/lib/pipeline'
 
 interface AddLeadModalProps {
   isOpen: boolean
+  stages?: PipelineStage[]
   onClose: () => void
   onLeadAdded: (lead: Lead) => void
 }
 
-export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadModalProps) {
+export default function AddLeadModal({ isOpen, stages, onClose, onLeadAdded }: AddLeadModalProps) {
+  const stageOptions = stages && stages.length > 0 ? stages : DEFAULT_STAGES
   const [form, setForm] = useState({
     name: '',
     company: '',
     email: '',
     phone: '',
     estimated_value: '',
+    stage: '',
     instagram: '',
     website: '',
     notes: '',
@@ -44,6 +48,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
         email: form.email || null,
         phone: form.phone || null,
         estimated_value: form.estimated_value ? parseFloat(form.estimated_value) : 0,
+        stage: form.stage || undefined,
         instagram: form.instagram || null,
         website: form.website || null,
         notes: form.notes || null,
@@ -60,7 +65,7 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
 
     const lead = await res.json()
     onLeadAdded(lead)
-    setForm({ name: '', company: '', email: '', phone: '', estimated_value: '', instagram: '', website: '', notes: '', source: '', next_step: '' })
+    setForm({ name: '', company: '', email: '', phone: '', estimated_value: '', stage: '', instagram: '', website: '', notes: '', source: '', next_step: '' })
     setLoading(false)
   }
 
@@ -132,17 +137,32 @@ export default function AddLeadModal({ isOpen, onClose, onLeadAdded }: AddLeadMo
             />
           </div>
         </div>
-        <div>
-          <label className="block text-xs text-slate-400 mb-1.5">Valor estimado (R$)</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={form.estimated_value}
-            onChange={(e) => handleChange('estimated_value', e.target.value)}
-            className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-            placeholder="0"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">Valor estimado (R$)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.estimated_value}
+              onChange={(e) => handleChange('estimated_value', e.target.value)}
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+              placeholder="0"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">Estágio</label>
+            <select
+              value={form.stage}
+              onChange={(e) => handleChange('stage', e.target.value)}
+              className="w-full bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+            >
+              <option value="">Padrão (primeira coluna)</option>
+              {stageOptions.map((s) => (
+                <option key={s.slug} value={s.slug}>{s.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <div>
           <label className="block text-xs text-slate-400 mb-1.5">Observações</label>

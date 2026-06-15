@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { formatCurrency, STAGE_LABELS } from '@/lib/pipeline'
+import { formatCurrency, DEFAULT_STAGES } from '@/lib/pipeline'
 import MetricCard from '@/components/dashboard/MetricCard'
 import PageHeader from '@/components/ui/PageHeader'
 import Link from 'next/link'
@@ -7,10 +7,8 @@ import DashboardCalendar from '@/components/dashboard/DashboardCalendar'
 import FocusToday from '@/components/dashboard/FocusToday'
 import PipelineFunnel from '@/components/dashboard/PipelineFunnel'
 import QuickActions from '@/components/dashboard/QuickActions'
-import type { LeadStage } from '@/lib/types'
+import type { PipelineStage } from '@/lib/types'
 import { formatDate } from '@/lib/format-date'
-
-const OPEN_STAGES: LeadStage[] = ['lead', 'contacted', 'proposal_sent', 'negotiating']
 
 const PRIORITY_COLOR: Record<string, string> = {
   high: 'text-red-400',
@@ -126,12 +124,12 @@ export default async function DashboardPage() {
     myTasksRes,
     interactionsRes,
     pipelineEventsRes,
+    stagesRes,
   ] = await Promise.all([
     supabase.from('clients').select('id, monthly_value, created_at').eq('status', 'active').eq('is_internal', false),
     supabase
       .from('leads')
-      .select('id, stage, estimated_value, created_at')
-      .not('stage', 'in', '("won","lost")'),
+      .select('id, stage, estimated_value, created_at'),
     supabase
       .from('proposals')
       .select('id, value, created_at')
@@ -161,11 +159,29 @@ export default async function DashboardPage() {
       .select('id, lead_name, from_stage, to_stage, happened_at')
       .order('happened_at', { ascending: false })
       .limit(5),
+    supabase
+      .from('pipeline_stages')
+      .select('*')
+      .order('position', { ascending: true }),
   ])
+
+  const stages = (stagesRes.data as PipelineStage[] | null)?.length
+    ? (stagesRes.data as PipelineStage[])
+    : DEFAULT_STAGES
+
+  const stagesBySlug: Record<string, PipelineStage> = {}
+  stages.forEach((s) => { stagesBySlug[s.slug] = s })
+
+  const STAGE_LABELS: Record<string, string> = {}
+  stages.forEach((s) => { STAGE_LABELS[s.slug] = s.label })
+
+  const OPEN_STAGE_SLUGS = stages.filter((s) => s.type === 'open').map((s) => s.slug)
 
   const clients = clientsRes.data ?? []
   const mrr = clients.reduce((sum: number, c: any) => sum + (c.monthly_value ?? 0), 0)
-  const leadsCount = leadsRes.data?.length ?? 0
+  const allLeads: { id: string; stage: string; estimated_value: number | null; created_at: string }[] = leadsRes.data ?? []
+  const openLeadsList = allLeads.filter((l) => stagesBySlug[l.stage]?.type === 'open')
+  const leadsCount = openLeadsList.length
   const openProposals = proposalsRes.data ?? []
   const openProposalsValue = openProposals.reduce((sum: number, p: any) => sum + (p.value ?? 0), 0)
 
@@ -187,7 +203,7 @@ export default async function DashboardPage() {
     mrr4WeeksAgo > 0 ? ((mrrLatest - mrr4WeeksAgo) / mrr4WeeksAgo) * 100 : 0
 
   // Leads ativos: sparkline = contagem por semana, delta semana atual vs anterior
-  const leadsByWeek = bucketByWeek(leadsRes.data ?? [], 'created_at', WEEKS)
+  const leadsByWeek = bucketByWeek(openLeadsList, 'created_at', WEEKS)
   const leadsThisWeek = leadsByWeek[WEEKS - 1] ?? 0
   const leadsLastWeek = leadsByWeek[WEEKS - 2] ?? 0
   const leadsTrendDelta = weekOverWeekDelta(leadsThisWeek, leadsLastWeek)
@@ -205,12 +221,11 @@ export default async function DashboardPage() {
   const myDueTodayCount = dueTodayTasks.length
 
   // ── Funil do pipeline: agrupa leads abertos por estágio ─────────────────
-  const openLeads: { stage: LeadStage; estimated_value: number | null }[] = leadsRes.data ?? []
-  const pipelineStages = OPEN_STAGES.map((stage) => {
-    const leadsInStage = openLeads.filter((l) => l.stage === stage)
+  const pipelineFunnelStages = OPEN_STAGE_SLUGS.map((stage) => {
+    const leadsInStage = openLeadsList.filter((l) => l.stage === stage)
     return {
       stage,
-      label: STAGE_LABELS[stage],
+      label: STAGE_LABELS[stage] ?? stage,
       count: leadsInStage.length,
       value: leadsInStage.reduce((sum, l) => sum + (l.estimated_value ?? 0), 0),
     }
@@ -231,10 +246,10 @@ export default async function DashboardPage() {
       icon: isNew ? '✨' : '🔄',
       description: isNew
         ? `Novo lead: ${e.lead_name}`
-        : `${e.lead_name} avançou para ${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage}`,
+        : `${e.lead_name} avançou para ${STAGE_LABELS[e.to_stage] ?? e.to_stage}`,
       sub: isNew
-        ? `Adicionado ao pipeline (${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage})`
-        : `Pipeline: ${STAGE_LABELS[e.from_stage as LeadStage] ?? e.from_stage} → ${STAGE_LABELS[e.to_stage as LeadStage] ?? e.to_stage}`,
+        ? `Adicionado ao pipeline (${STAGE_LABELS[e.to_stage] ?? e.to_stage})`
+        : `Pipeline: ${STAGE_LABELS[e.from_stage] ?? e.from_stage} → ${STAGE_LABELS[e.to_stage] ?? e.to_stage}`,
       date: e.happened_at,
     }
   })
@@ -300,7 +315,7 @@ export default async function DashboardPage() {
       {/* Foco do dia + Funil do pipeline */}
       <div className="grid grid-cols-2 gap-6 mb-8">
         <FocusToday overdueTasks={overdueTasks} dueTodayTasks={dueTodayTasks} />
-        <PipelineFunnel stages={pipelineStages} />
+        <PipelineFunnel stages={pipelineFunnelStages} />
       </div>
 
       <DashboardCalendar />

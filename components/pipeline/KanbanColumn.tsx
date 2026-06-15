@@ -1,27 +1,28 @@
 'use client'
 
 import { Droppable } from '@hello-pangea/dnd'
-import type { Lead, LeadStage } from '@/lib/types'
-import { STAGE_LABELS, STAGE_COLORS, formatCurrency } from '@/lib/pipeline'
+import type { Lead, PipelineStage } from '@/lib/types'
+import { formatCurrency } from '@/lib/pipeline'
 import KanbanCard from './KanbanCard'
 
 interface KanbanColumnProps {
-  stage: LeadStage
+  stage: PipelineStage
   leads: Lead[]
+  stagesBySlug: Record<string, PipelineStage>
   onCardEdit: (lead: Lead) => void
   onCardDelete: (leadId: string) => void
   onCardUpdated: (updated: Lead) => void
 }
 
-export default function KanbanColumn({ stage, leads, onCardEdit, onCardDelete, onCardUpdated }: KanbanColumnProps) {
+export default function KanbanColumn({ stage, leads, stagesBySlug, onCardEdit, onCardDelete, onCardUpdated }: KanbanColumnProps) {
   const totalValue = leads.reduce((sum, lead) => sum + lead.estimated_value, 0)
 
   return (
     <div className="flex flex-col w-64 flex-shrink-0">
       <div className="mb-3">
         <div className="flex items-center justify-between mb-1">
-          <h3 className={`text-xs font-semibold uppercase tracking-wider ${STAGE_COLORS[stage]}`}>
-            {STAGE_LABELS[stage]}
+          <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: stage.color }}>
+            {stage.label}
           </h3>
           <div className="flex items-center gap-1.5">
             {totalValue > 0 && (
@@ -36,7 +37,7 @@ export default function KanbanColumn({ stage, leads, onCardEdit, onCardDelete, o
         </div>
       </div>
 
-      <Droppable droppableId={stage}>
+      <Droppable droppableId={stage.slug}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
@@ -50,6 +51,7 @@ export default function KanbanColumn({ stage, leads, onCardEdit, onCardDelete, o
                 key={lead.id}
                 lead={lead}
                 index={index}
+                stagesBySlug={stagesBySlug}
                 onEdit={onCardEdit}
                 onDelete={onCardDelete}
                 onLeadUpdated={onCardUpdated}

@@ -45,7 +45,7 @@ export async function POST(
 
   const lines: string[] = []
   lines.push(`Lead: ${leadData.name}${leadData.company ? ` (${leadData.company})` : ''}`)
-  lines.push(`Estágio no pipeline: ${STAGE_LABELS[leadData.stage] ?? leadData.stage}`)
+  lines.push(`Estágio no pipeline: ${(STAGE_LABELS as Record<string, string>)[leadData.stage] ?? leadData.stage}`)
   if (leadData.estimated_value > 0) lines.push(`Valor estimado: ${formatCurrency(leadData.estimated_value)}`)
   if (leadData.source) lines.push(`Origem: ${SOURCE_LABELS[leadData.source] ?? leadData.source}`)
   if (leadData.next_step) lines.push(`Próximo passo definido: ${leadData.next_step}`)

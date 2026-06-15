@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Draggable } from '@hello-pangea/dnd'
-import type { Lead } from '@/lib/types'
+import type { Lead, PipelineStage } from '@/lib/types'
 import type { FieldWithValue } from '@/lib/types'
 import { SOURCE_LABELS } from '@/lib/types'
 import { formatCurrency } from '@/lib/pipeline'
@@ -14,6 +14,7 @@ import LeadScoreBadge from './LeadScoreBadge'
 interface KanbanCardProps {
   lead: Lead
   index: number
+  stagesBySlug: Record<string, PipelineStage>
   onEdit: (lead: Lead) => void
   onDelete: (leadId: string) => void
   onLeadUpdated: (updated: Lead) => void
@@ -23,7 +24,7 @@ function cleanPhone(phone: string): string {
   return phone.replace(/\D/g, '')
 }
 
-export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdated }: KanbanCardProps) {
+export default function KanbanCard({ lead, index, stagesBySlug, onEdit, onDelete, onLeadUpdated }: KanbanCardProps) {
   const confirm = useConfirm()
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
@@ -98,7 +99,7 @@ export default function KanbanCard({ lead, index, onEdit, onDelete, onLeadUpdate
   }
 
   function handleCardClick() {
-    if (lead.stage === 'won') {
+    if (stagesBySlug[lead.stage]?.type === 'won') {
       onEdit(lead)
     } else {
       setEditForm({

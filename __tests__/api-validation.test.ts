@@ -66,9 +66,11 @@ describe('parseBody', () => {
 })
 
 describe('schemas', () => {
-  it('lead: rejeita stage inválido', () => {
-    expect(leadUpdateSchema.safeParse({ stage: 'hacked' }).success).toBe(false)
+  it('lead: aceita stage string (estágios dinâmicos), rejeita vazio', () => {
+    // Estágios do pipeline agora são customizáveis → stage é um slug string
     expect(leadUpdateSchema.safeParse({ stage: 'won' }).success).toBe(true)
+    expect(leadUpdateSchema.safeParse({ stage: 'minha_coluna_custom' }).success).toBe(true)
+    expect(leadUpdateSchema.safeParse({ stage: '' }).success).toBe(false)
   })
 
   it('client: rejeita status fora do enum', () => {

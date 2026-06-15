@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import KanbanColumn from '@/components/pipeline/KanbanColumn'
 import { ConfirmProvider } from '@/components/ui/ConfirmModal'
-import type { Lead } from '@/lib/types'
+import type { Lead, PipelineStage } from '@/lib/types'
 
 // Mock @hello-pangea/dnd
 vi.mock('@hello-pangea/dnd', () => ({
@@ -27,6 +27,17 @@ const mockLead: Lead = {
   updated_at: '2026-01-01T00:00:00Z',
 }
 
+const mockStage: PipelineStage = {
+  id: 's1',
+  slug: 'lead',
+  label: 'Lead',
+  color: '#64748b',
+  type: 'open',
+  probability: 0.1,
+  position: 0,
+  created_at: '2026-01-01T00:00:00Z',
+}
+
 function renderWithProviders(ui: React.ReactElement) {
   return render(<ConfirmProvider>{ui}</ConfirmProvider>)
 }
@@ -34,21 +45,21 @@ function renderWithProviders(ui: React.ReactElement) {
 describe('KanbanColumn', () => {
   it('renderiza o título da coluna', () => {
     renderWithProviders(
-      <KanbanColumn stage="lead" leads={[mockLead]} onCardEdit={vi.fn()} onCardDelete={vi.fn()} />
+      <KanbanColumn stage={mockStage} leads={[mockLead]} stagesBySlug={{ lead: mockStage }} onCardEdit={vi.fn()} onCardDelete={vi.fn()} onCardUpdated={vi.fn()} />
     )
     expect(screen.getByText('Lead')).toBeInTheDocument()
   })
 
   it('mostra a contagem de leads', () => {
     renderWithProviders(
-      <KanbanColumn stage="lead" leads={[mockLead]} onCardEdit={vi.fn()} onCardDelete={vi.fn()} />
+      <KanbanColumn stage={mockStage} leads={[mockLead]} stagesBySlug={{ lead: mockStage }} onCardEdit={vi.fn()} onCardDelete={vi.fn()} onCardUpdated={vi.fn()} />
     )
     expect(screen.getByText('1')).toBeInTheDocument()
   })
 
   it('renderiza o nome do lead', () => {
     renderWithProviders(
-      <KanbanColumn stage="lead" leads={[mockLead]} onCardEdit={vi.fn()} onCardDelete={vi.fn()} />
+      <KanbanColumn stage={mockStage} leads={[mockLead]} stagesBySlug={{ lead: mockStage }} onCardEdit={vi.fn()} onCardDelete={vi.fn()} onCardUpdated={vi.fn()} />
     )
     expect(screen.getByText('João Silva')).toBeInTheDocument()
   })

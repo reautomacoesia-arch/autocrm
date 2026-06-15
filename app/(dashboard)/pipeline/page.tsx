@@ -1,13 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
 import KanbanBoard from '@/components/pipeline/KanbanBoard'
-import type { Lead } from '@/lib/types'
+import { DEFAULT_STAGES } from '@/lib/pipeline'
+import type { Lead, PipelineStage } from '@/lib/types'
 
 export default async function PipelinePage() {
   const supabase = await createClient()
-  const { data: leads } = await supabase
-    .from('leads')
-    .select('*')
-    .order('created_at', { ascending: false })
+  const [leadsRes, stagesRes] = await Promise.all([
+    supabase.from('leads').select('*').order('created_at', { ascending: false }),
+    supabase.from('pipeline_stages').select('*').order('position', { ascending: true }),
+  ])
 
-  return <KanbanBoard initialLeads={(leads as Lead[]) ?? []} />
+  const leads = (leadsRes.data as Lead[]) ?? []
+  const stages = (stagesRes.data as PipelineStage[] | null)?.length
+    ? (stagesRes.data as PipelineStage[])
+    : DEFAULT_STAGES
+
+  return <KanbanBoard initialLeads={leads} initialStages={stages} />
 }
