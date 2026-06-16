@@ -261,6 +261,18 @@ export default function InboxClient({
     toast('Conversa vinculada com sucesso.')
   }
 
+  async function handleDeleteMessage(messageId: string) {
+    if (!selectedId) return
+    const res = await fetch(`/api/inbox/conversations/${selectedId}/messages/${messageId}`, {
+      method: 'DELETE',
+    })
+    if (!res.ok) {
+      toast('Erro ao apagar mensagem.', 'error')
+      return
+    }
+    setMessages((prev) => prev.filter((m) => m.id !== messageId))
+  }
+
   async function handleCreateLead() {
     if (!selectedId) return
     const res = await fetch(`/api/inbox/conversations/${selectedId}/lead`, { method: 'POST' })
@@ -302,6 +314,7 @@ export default function InboxClient({
             attachmentUrls={attachmentUrls}
             linkedEntity={getLinkedEntity(selectedConversation)}
             onSendMessage={handleSendMessage}
+            onDeleteMessage={handleDeleteMessage}
             onUpdateStatus={handleUpdateStatus}
             onUpdateAssignee={handleUpdateAssignee}
             onToggleAi={handleToggleAi}

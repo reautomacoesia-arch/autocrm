@@ -40,6 +40,7 @@ interface ConversationThreadProps {
   attachmentUrls: Record<string, string>
   linkedEntity: LinkedEntity | null
   onSendMessage: (data: SendMessageData) => void
+  onDeleteMessage: (messageId: string) => void
   onUpdateStatus: (status: ConversationStatus) => void
   onUpdateAssignee: (assignedTo: string | null) => void
   onLinkClick: () => void
@@ -54,6 +55,7 @@ export default function ConversationThread({
   attachmentUrls,
   linkedEntity,
   onSendMessage,
+  onDeleteMessage,
   onUpdateStatus,
   onUpdateAssignee,
   onLinkClick,
@@ -183,6 +185,7 @@ export default function ConversationThread({
               message={msg}
               senderName={profiles.find((p) => p.id === msg.sender_id)?.name ?? null}
               attachmentUrl={attachmentUrls[msg.id] ?? null}
+              onDelete={onDeleteMessage}
             />
           ))
         )}
@@ -231,7 +234,13 @@ export default function ConversationThread({
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Digite a mensagem..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSend()
+              }
+            }}
+            placeholder="Digite a mensagem... (Enter envia, Shift+Enter pula linha)"
             rows={2}
             className="flex-1 bg-[#050505] border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 resize-none"
           />

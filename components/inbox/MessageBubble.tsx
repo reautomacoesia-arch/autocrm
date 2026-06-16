@@ -3,20 +3,22 @@
 import { useState } from 'react'
 import type { InboxMessage } from '@/lib/types'
 import { formatFileSize } from '@/lib/inbox'
-import { File, Download, X, Bot } from 'lucide-react'
+import { File, Download, X, Bot, Trash2 } from 'lucide-react'
 
 interface MessageBubbleProps {
   message: InboxMessage
   senderName: string | null
   attachmentUrl: string | null
+  onDelete?: (id: string) => void
 }
 
 function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
-export default function MessageBubble({ message, senderName, attachmentUrl }: MessageBubbleProps) {
+export default function MessageBubble({ message, senderName, attachmentUrl, onDelete }: MessageBubbleProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [hovered, setHovered] = useState(false)
   const isOutbound = message.direction === 'outbound'
   const mime = message.attachment_mime_type ?? ''
   const isImage = mime.startsWith('image/')
@@ -25,7 +27,20 @@ export default function MessageBubble({ message, senderName, attachmentUrl }: Me
   const isGenericFile = message.attachment_r2_key !== null && !isImage && !isVideo && !isAudio
 
   return (
-    <div className={`flex ${isOutbound ? 'justify-end' : 'justify-start'}`}>
+    <div
+      className={`flex items-end gap-1.5 group ${isOutbound ? 'justify-end' : 'justify-start'}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {isOutbound && onDelete && (
+        <button
+          onClick={() => onDelete(message.id)}
+          title="Apagar mensagem"
+          className={`p-1 text-slate-600 hover:text-red-400 transition-all flex-shrink-0 ${hovered ? 'opacity-100' : 'opacity-0'}`}
+        >
+          <Trash2 size={13} />
+        </button>
+      )}
       <div
         className={`max-w-[70%] rounded-lg px-3 py-2 ${
           isOutbound
@@ -110,6 +125,15 @@ export default function MessageBubble({ message, senderName, attachmentUrl }: Me
           {isOutbound && senderName && <span className="text-[10px] opacity-60">· {senderName}</span>}
         </div>
       </div>
+      {!isOutbound && onDelete && (
+        <button
+          onClick={() => onDelete(message.id)}
+          title="Apagar mensagem"
+          className={`p-1 text-slate-600 hover:text-red-400 transition-all flex-shrink-0 ${hovered ? 'opacity-100' : 'opacity-0'}`}
+        >
+          <Trash2 size={13} />
+        </button>
+      )}
     </div>
   )
 }
