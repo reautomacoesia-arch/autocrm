@@ -469,7 +469,7 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
         {/* Notebook controls */}
         <div className="border-t border-slate-700/30 p-2 space-y-1">
           <div className="flex items-center gap-1 px-1">
-            {isOwner && (
+            {notebookIsOwner && (
               <DocVisibilityControl
                 docId={notebookId}
                 visibility={visibility}
