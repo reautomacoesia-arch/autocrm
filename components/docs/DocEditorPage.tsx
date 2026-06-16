@@ -494,9 +494,20 @@ export default function DocEditorPage({ doc, notebook, pages: initialPages, curr
             <span className="text-slate-500">{(isPage ? notebookTitle : title) || 'Caderno'}</span>
             {isPage && <><span>/</span><span className="text-slate-400">{title || 'Nova página'}</span></>}
           </div>
-          <span className="text-slate-600 text-xs">
-            {saveStatus === 'saving' ? 'Salvando…' : saveStatus === 'saved' ? 'Salvo' : ''}
-          </span>
+          <div className="flex items-center gap-3">
+            {notebookIsOwner && (
+              <DocVisibilityControl
+                docId={notebookId}
+                visibility={visibility}
+                currentUserId={currentUserId}
+                onChange={setVisibility}
+                compact
+              />
+            )}
+            <span className="text-slate-600 text-xs">
+              {saveStatus === 'saving' ? 'Salvando…' : saveStatus === 'saved' ? 'Salvo' : ''}
+            </span>
+          </div>
         </div>
 
         {/* Document */}
