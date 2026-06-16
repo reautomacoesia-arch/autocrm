@@ -13,7 +13,7 @@ import type {
 import { CHANNEL_LABELS, STATUS_LABELS } from '@/lib/inbox'
 import MessageBubble from './MessageBubble'
 import { getInitials } from '@/components/team/ProfileAvatar'
-import { Paperclip, Send, X, MessageCircle, Camera, ThumbsUp, Bot, type LucideIcon } from 'lucide-react'
+import { Paperclip, Send, X, MessageCircle, Camera, ThumbsUp, Bot, Trash2, type LucideIcon } from 'lucide-react'
 
 const CHANNEL_ICONS: Record<InboxChannel, LucideIcon> = {
   whatsapp: MessageCircle,
@@ -41,6 +41,7 @@ interface ConversationThreadProps {
   linkedEntity: LinkedEntity | null
   onSendMessage: (data: SendMessageData) => void
   onDeleteMessage: (messageId: string) => void
+  onDeleteConversation: () => void
   onUpdateStatus: (status: ConversationStatus) => void
   onUpdateAssignee: (assignedTo: string | null) => void
   onLinkClick: () => void
@@ -56,6 +57,7 @@ export default function ConversationThread({
   linkedEntity,
   onSendMessage,
   onDeleteMessage,
+  onDeleteConversation,
   onUpdateStatus,
   onUpdateAssignee,
   onLinkClick,
@@ -172,6 +174,14 @@ export default function ConversationThread({
               </option>
             ))}
           </select>
+
+          <button
+            onClick={onDeleteConversation}
+            title="Apagar conversa"
+            className="p-1.5 text-slate-600 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <Trash2 size={14} />
+          </button>
         </div>
       </div>
 

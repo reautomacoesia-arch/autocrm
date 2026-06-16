@@ -14,6 +14,7 @@ import ConversationThread, { type LinkedEntity, type SendMessageData } from './C
 import NewConversationModal from './NewConversationModal'
 import LinkLeadModal, { type LinkSelection } from './LinkLeadModal'
 import { useToast } from '@/components/ui/ToastProvider'
+import { useConfirm } from '@/components/ui/ConfirmModal'
 import EmptyState from '@/components/ui/EmptyState'
 
 interface InboxClientProps {
@@ -34,6 +35,7 @@ export default function InboxClient({
   initialSelectedId,
 }: InboxClientProps) {
   const { toast } = useToast()
+  const confirm = useConfirm()
   const [conversations, setConversations] = useState<InboxConversation[]>(initialConversations)
   const [clients, setClients] = useState<Client[]>(initialClients)
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
@@ -261,6 +263,24 @@ export default function InboxClient({
     toast('Conversa vinculada com sucesso.')
   }
 
+  async function handleDeleteConversation() {
+    if (!selectedId) return
+    const ok = await confirm({
+      title: 'Apagar conversa',
+      description: 'Tem certeza que deseja apagar esta conversa e todas as suas mensagens? Essa ação não pode ser desfeita.',
+      confirmLabel: 'Apagar',
+    })
+    if (!ok) return
+    const res = await fetch(`/api/inbox/conversations/${selectedId}`, { method: 'DELETE' })
+    if (!res.ok) {
+      toast('Erro ao apagar conversa.', 'error')
+      return
+    }
+    setConversations((prev) => prev.filter((c) => c.id !== selectedId))
+    setSelectedId(null)
+    setMessages([])
+  }
+
   async function handleDeleteMessage(messageId: string) {
     if (!selectedId) return
     const res = await fetch(`/api/inbox/conversations/${selectedId}/messages/${messageId}`, {
@@ -315,6 +335,7 @@ export default function InboxClient({
             linkedEntity={getLinkedEntity(selectedConversation)}
             onSendMessage={handleSendMessage}
             onDeleteMessage={handleDeleteMessage}
+            onDeleteConversation={handleDeleteConversation}
             onUpdateStatus={handleUpdateStatus}
             onUpdateAssignee={handleUpdateAssignee}
             onToggleAi={handleToggleAi}
